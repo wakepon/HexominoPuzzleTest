@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C /Users/kenwatanabe/Projects/HexominoPuzzleTest log --oneline -20)",
+      "Bash(git -C /Users/kenwatanabe/Projects/HexominoPuzzleTest show 42c544c --stat)",
+      "Bash(git -C /Users/kenwatanabe/Projects/HexominoPuzzleTest show 08657ac --stat)",
+      "Bash(git -C /Users/kenwatanabe/Projects/HexominoPuzzleTest show 08657ac)",
+      "Bash(git -C /Users/kenwatanabe/Projects/HexominoPuzzleTest status --short -uall)"
+    ]
+  }
+}
