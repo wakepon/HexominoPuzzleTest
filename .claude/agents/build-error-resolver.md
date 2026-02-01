@@ -1,6 +1,6 @@
 ---
 name: build-error-resolver
-description: Build and TypeScript error resolution specialist. Use PROACTIVELY when build fails or type errors occur. Fixes build/type errors only with minimal diffs, no architectural edits. Focuses on getting the build green quickly.
+description: ビルド・TypeScriptエラー解決の専門家。ビルド失敗や型エラー発生時に使用。最小限の変更でビルドを通すことに集中。
 tools: Read, Write, Edit, Bash, Grep, Glob
 model: opus
 ---

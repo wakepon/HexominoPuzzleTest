@@ -1,6 +1,6 @@
 ---
 name: tdd-guide
-description: Test-Driven Development specialist enforcing write-tests-first methodology.
+description: テスト駆動開発（TDD）の専門家。テストを先に書く手法を徹底。
 tools: Read, Write, Edit, Bash, Grep
 model: opus
 ---
