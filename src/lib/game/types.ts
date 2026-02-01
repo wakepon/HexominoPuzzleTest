@@ -19,6 +19,25 @@ export type Board = Cell[][]
 // ブロックの形状（true = ブロックあり）
 export type PieceShape = boolean[][]
 
+// ミノのカテゴリ（セル数による分類）
+export type MinoCategory = 'monomino' | 'domino' | 'tromino' | 'tetromino' | 'pentomino' | 'hexomino'
+
+// カテゴリ別の重み
+export type CategoryWeights = Record<MinoCategory, number>
+
+// ミノの定義
+export interface MinoDefinition {
+  id: string
+  category: MinoCategory
+  shape: PieceShape
+  cellCount: number
+}
+
+// 乱数生成器インターフェース（DI用）
+export interface RandomGenerator {
+  next(): number  // 0以上1未満の乱数を返す
+}
+
 // ブロックの定義
 export interface Piece {
   id: string
