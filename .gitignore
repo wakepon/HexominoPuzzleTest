@@ -13,6 +13,7 @@ dist-ssr/
 coverage/
 *.local
 .playwright-mcp/
+RawData/
 
 # Editor directories and files
 .vscode/*
