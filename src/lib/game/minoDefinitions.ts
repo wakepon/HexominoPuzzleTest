@@ -1,7 +1,7 @@
 import { MinoDefinition, MinoCategory, PieceShape } from './types'
 
 /**
- * 全307種類のミノ定義（向き考慮）
+ * 全ミノ定義（向き考慮）
  *
  * カテゴリ別のミノ数:
  * - モノミノ: 1種類 (1セル)
@@ -9,22 +9,44 @@ import { MinoDefinition, MinoCategory, PieceShape } from './types'
  * - トロミノ: 6種類 (3セル、I型2向き + L型4向き)
  * - テトロミノ: 19種類 (4セル)
  * - ペントミノ: 63種類 (5セル)
- * - ヘキソミノ: 216種類 (6セル)
+ * - ヘキソミノ: 216種類 (6セル、35基本形 x 回転・反転)
  * 合計: 307種類
+ *
+ * ヘキソミノの色分け（hexomino.md参照）:
+ * - 紫(2回転): I6, O6 → 2種 x 2 = 4
+ * - 赤(4回転): R1〜R6 → 6種 x 4 = 24
+ * - 青(2回転x2反転): B1〜B5 → 5種 x 4 = 20
+ * - 緑(4回転): G1, G2 → 2種 x 4 = 8
+ * - 黒(4回転x2反転): K1〜K20 → 20種 x 8 = 160
+ * 合計: 4 + 24 + 20 + 8 + 160 = 216
  */
 
 /**
  * ASCII アート文字列から PieceShape に変換
  * '#' = true（ブロックあり）
  * '.' = false（ブロックなし）
+ *
+ * 各行の長さが異なる場合、最大幅に合わせてfalseでパディングする
  */
 function shape(ascii: string): PieceShape {
-  return ascii
+  const rows = ascii
     .trim()
     .split('\n')
     .map(row => row.trim())
     .filter(row => row.length > 0)
-    .map(row => [...row].map(char => char === '#'))
+
+  // 最大幅を求める
+  const maxWidth = Math.max(...rows.map(row => row.length))
+
+  // 各行をboolean配列に変換し、最大幅に合わせてパディング
+  return rows.map(row => {
+    const boolRow = [...row].map(char => char === '#')
+    // 足りない分をfalseでパディング
+    while (boolRow.length < maxWidth) {
+      boolRow.push(false)
+    }
+    return boolRow
+  })
 }
 
 // ヘルパー関数: 形状からセル数を計算
@@ -53,9 +75,7 @@ const MONOMINOS: MinoDefinition[] = [
 // ドミノ (2種類)
 // =========================================
 const DOMINOS: MinoDefinition[] = [
-  // 横
   createMino('dom-h', 'domino', shape(`##`)),
-  // 縦
   createMino('dom-v', 'domino', shape(`
     #
     #
@@ -66,14 +86,12 @@ const DOMINOS: MinoDefinition[] = [
 // トロミノ (6種類)
 // =========================================
 const TROMINOS: MinoDefinition[] = [
-  // I型 (2向き)
   createMino('tro-i-h', 'tromino', shape(`###`)),
   createMino('tro-i-v', 'tromino', shape(`
     #
     #
     #
   `)),
-  // L型 (4向き)
   createMino('tro-l-0', 'tromino', shape(`
     #.
     ##
@@ -96,7 +114,6 @@ const TROMINOS: MinoDefinition[] = [
 // テトロミノ (19種類)
 // =========================================
 const TETROMINOS: MinoDefinition[] = [
-  // I型 (2向き)
   createMino('tet-i-h', 'tetromino', shape(`####`)),
   createMino('tet-i-v', 'tetromino', shape(`
     #
@@ -104,12 +121,10 @@ const TETROMINOS: MinoDefinition[] = [
     #
     #
   `)),
-  // O型 (1向き)
   createMino('tet-o', 'tetromino', shape(`
     ##
     ##
   `)),
-  // T型 (4向き)
   createMino('tet-t-0', 'tetromino', shape(`
     ###
     .#.
@@ -128,7 +143,6 @@ const TETROMINOS: MinoDefinition[] = [
     ##
     #.
   `)),
-  // S型 (2向き)
   createMino('tet-s-h', 'tetromino', shape(`
     .##
     ##.
@@ -138,7 +152,6 @@ const TETROMINOS: MinoDefinition[] = [
     ##
     .#
   `)),
-  // Z型 (2向き)
   createMino('tet-z-h', 'tetromino', shape(`
     ##.
     .##
@@ -148,7 +161,6 @@ const TETROMINOS: MinoDefinition[] = [
     ##
     #.
   `)),
-  // J型 (4向き)
   createMino('tet-j-0', 'tetromino', shape(`
     #..
     ###
@@ -167,7 +179,6 @@ const TETROMINOS: MinoDefinition[] = [
     .#
     ##
   `)),
-  // L型 (4向き)
   createMino('tet-l-0', 'tetromino', shape(`
     ..#
     ###
@@ -190,7 +201,6 @@ const TETROMINOS: MinoDefinition[] = [
 
 // =========================================
 // ペントミノ (63種類)
-// 12種類の形状 x 回転・反転
 // =========================================
 const PENTOMINOS: MinoDefinition[] = [
   // F型 (8向き)
@@ -234,7 +244,6 @@ const PENTOMINOS: MinoDefinition[] = [
     ###
     .#.
   `)),
-
   // I型 (2向き)
   createMino('pent-i-h', 'pentomino', shape(`#####`)),
   createMino('pent-i-v', 'pentomino', shape(`
@@ -244,7 +253,6 @@ const PENTOMINOS: MinoDefinition[] = [
     #
     #
   `)),
-
   // L型 (8向き)
   createMino('pent-l-0', 'pentomino', shape(`
     #.
@@ -286,7 +294,6 @@ const PENTOMINOS: MinoDefinition[] = [
     ####
     ...#
   `)),
-
   // N型 (8向き)
   createMino('pent-n-0', 'pentomino', shape(`
     .#
@@ -295,7 +302,7 @@ const PENTOMINOS: MinoDefinition[] = [
     #.
   `)),
   createMino('pent-n-90', 'pentomino', shape(`
-    ##.
+    ##..
     .###
   `)),
   createMino('pent-n-180', 'pentomino', shape(`
@@ -328,7 +335,6 @@ const PENTOMINOS: MinoDefinition[] = [
     ..##
     ###.
   `)),
-
   // P型 (8向き)
   createMino('pent-p-0', 'pentomino', shape(`
     ##
@@ -366,7 +372,6 @@ const PENTOMINOS: MinoDefinition[] = [
     ###
     ##.
   `)),
-
   // T型 (4向き)
   createMino('pent-t-0', 'pentomino', shape(`
     ###
@@ -388,7 +393,6 @@ const PENTOMINOS: MinoDefinition[] = [
     ###
     #..
   `)),
-
   // U型 (4向き)
   createMino('pent-u-0', 'pentomino', shape(`
     #.#
@@ -408,7 +412,6 @@ const PENTOMINOS: MinoDefinition[] = [
     .#
     ##
   `)),
-
   // V型 (4向き)
   createMino('pent-v-0', 'pentomino', shape(`
     #..
@@ -430,7 +433,6 @@ const PENTOMINOS: MinoDefinition[] = [
     ..#
     ###
   `)),
-
   // W型 (4向き)
   createMino('pent-w-0', 'pentomino', shape(`
     #..
@@ -452,14 +454,12 @@ const PENTOMINOS: MinoDefinition[] = [
     .##
     ##.
   `)),
-
   // X型 (1向き)
   createMino('pent-x', 'pentomino', shape(`
     .#.
     ###
     .#.
   `)),
-
   // Y型 (8向き)
   createMino('pent-y-0', 'pentomino', shape(`
     .#
@@ -501,7 +501,6 @@ const PENTOMINOS: MinoDefinition[] = [
     .#..
     ####
   `)),
-
   // Z型 (4向き)
   createMino('pent-z-0', 'pentomino', shape(`
     ##.
@@ -527,1071 +526,326 @@ const PENTOMINOS: MinoDefinition[] = [
 
 // =========================================
 // ヘキソミノ (216種類)
-// 35種類の形状 x 回転・反転
+// hexomino.mdの35種類の基本形状 x 回転・反転
 // =========================================
+
+// 回転（時計回り90度）
+function rotate90(s: PieceShape): PieceShape {
+  const rows = s.length
+  const cols = s[0].length
+  const result: PieceShape = []
+  for (let c = 0; c < cols; c++) {
+    const newRow: boolean[] = []
+    for (let r = rows - 1; r >= 0; r--) {
+      newRow.push(s[r][c])
+    }
+    result.push(newRow)
+  }
+  return result
+}
+
+// 左右反転
+function flipH(s: PieceShape): PieceShape {
+  return s.map(row => [...row].reverse())
+}
+
+// 4回転を生成（0°, 90°, 180°, 270°）
+function rotations4(base: PieceShape): PieceShape[] {
+  const r0 = base
+  const r90 = rotate90(r0)
+  const r180 = rotate90(r90)
+  const r270 = rotate90(r180)
+  return [r0, r90, r180, r270]
+}
+
+// 2回転を生成（0°, 90°）
+function rotations2(base: PieceShape): PieceShape[] {
+  return [base, rotate90(base)]
+}
+
+// 8向きを生成（4回転 + 反転4回転）
+function orientations8(base: PieceShape): PieceShape[] {
+  const normal = rotations4(base)
+  const flipped = rotations4(flipH(base))
+  return [...normal, ...flipped]
+}
+
+// 4向きを生成（2回転 + 反転2回転）
+function orientations4flip(base: PieceShape): PieceShape[] {
+  const normal = rotations2(base)
+  const flipped = rotations2(flipH(base))
+  return [...normal, ...flipped]
+}
+
+// ミノ配列を作成するヘルパー
+function createHexMinos(
+  baseName: string,
+  baseShape: PieceShape,
+  orientationType: '2rot' | '4rot' | '4flip' | '8'
+): MinoDefinition[] {
+  let shapes: PieceShape[]
+  let suffixes: string[]
+
+  switch (orientationType) {
+    case '2rot':
+      shapes = rotations2(baseShape)
+      suffixes = ['0', '90']
+      break
+    case '4rot':
+      shapes = rotations4(baseShape)
+      suffixes = ['0', '90', '180', '270']
+      break
+    case '4flip':
+      shapes = orientations4flip(baseShape)
+      suffixes = ['0', '90', 'm0', 'm90']
+      break
+    case '8':
+      shapes = orientations8(baseShape)
+      suffixes = ['0', '90', '180', '270', 'm0', 'm90', 'm180', 'm270']
+      break
+  }
+
+  return shapes.map((s, i) =>
+    createMino(`hex-${baseName}-${suffixes[i]}`, 'hexomino', s)
+  )
+}
+
+// ===== 紫 (2種 × 2回転 = 4) =====
+const HEX_PURPLE: MinoDefinition[] = [
+  // I6 (横棒)
+  ...createHexMinos('I6', shape(`######`), '2rot'),
+  // O6 (2×3長方形)
+  ...createHexMinos('O6', shape(`
+    ###
+    ###
+  `), '2rot'),
+]
+
+// ===== 赤 (6種 × 4回転 = 24) =====
+const HEX_RED: MinoDefinition[] = [
+  // R1 (T型ブリッジ)
+  ...createHexMinos('R1', shape(`
+    .#
+    .#
+    ##
+    .#
+    .#
+  `), '4rot'),
+  // R2 (C型)
+  ...createHexMinos('R2', shape(`
+    ##
+    #.
+    #.
+    ##
+  `), '4rot'),
+  // R3 (T型)
+  ...createHexMinos('R3', shape(`
+    ###
+    .#.
+    .#.
+    .#.
+  `), '4rot'),
+  // R4 (十字型)
+  ...createHexMinos('R4', shape(`
+    .#.
+    ###
+    .#.
+    .#.
+  `), '4rot'),
+  // R5 (凸型)
+  ...createHexMinos('R5', shape(`
+    .##.
+    ####
+  `), '4rot'),
+  // R6 (飛行機型)
+  ...createHexMinos('R6', shape(`
+    .#.
+    ###
+    #.#
+  `), '4rot'),
+]
+
+// ===== 青 (5種 × 2回転 × 2反転 = 20) =====
+const HEX_BLUE: MinoDefinition[] = [
+  // B1 (十字変形)
+  ...createHexMinos('B1', shape(`
+    .#.
+    ##.
+    .##
+    .#.
+  `), '4flip'),
+  // B2 (Z型)
+  ...createHexMinos('B2', shape(`
+    #.
+    #.
+    ##
+    .#
+    .#
+  `), '4flip'),
+  // B3 (Z2型)
+  ...createHexMinos('B3', shape(`
+    .#
+    ##
+    ##
+    #.
+  `), '4flip'),
+  // B4 (Z階段)
+  ...createHexMinos('B4', shape(`
+    #..
+    ##.
+    .#.
+    .##
+  `), '4flip'),
+  // B5 (2階段)
+  ...createHexMinos('B5', shape(`
+    ##.
+    .#.
+    .#.
+    .##
+  `), '4flip'),
+]
+
+// ===== 緑 (2種 × 4回転 = 8) =====
+const HEX_GREEN: MinoDefinition[] = [
+  // G1 (階段型)
+  ...createHexMinos('G1', shape(`
+    ..#
+    .##
+    ###
+  `), '4rot'),
+  // G2 (ミジンコ型)
+  ...createHexMinos('G2', shape(`
+    .#.
+    ###
+    .##
+  `), '4rot'),
+]
+
+// ===== 黒 (20種 × 4回転 × 2反転 = 160) =====
+const HEX_BLACK: MinoDefinition[] = [
+  // K1 (L型)
+  ...createHexMinos('K1', shape(`
+    ....#
+    #####
+  `), '8'),
+  // K2 (電柱型)
+  ...createHexMinos('K2', shape(`
+    ...#.
+    #####
+  `), '8'),
+  // K3 (歯ブラシ型)
+  ...createHexMinos('K3', shape(`
+    ..##
+    ####
+  `), '8'),
+  // K4 (F型)
+  ...createHexMinos('K4', shape(`
+    .#.#
+    ####
+  `), '8'),
+  // K5 (L型2)
+  ...createHexMinos('K5', shape(`
+    ...#
+    ...#
+    ####
+  `), '8'),
+  // K6 (L変形)
+  ...createHexMinos('K6', shape(`
+    ..#.
+    ..#.
+    ####
+  `), '8'),
+  // K7 (T変形型)
+  ...createHexMinos('K7', shape(`
+    ..#.
+    ####
+    ...#
+  `), '8'),
+  // K8 (T変形型2)
+  ...createHexMinos('K8', shape(`
+    .#..
+    ####
+    ...#
+  `), '8'),
+  // K9 (スネーク型)
+  ...createHexMinos('K9', shape(`
+    ...##
+    ####.
+  `), '8'),
+  // K10 (アヒル)
+  ...createHexMinos('K10', shape(`
+    .#.
+    ##.
+    .###
+  `), '8'),
+  // K11 (鈎型)
+  ...createHexMinos('K11', shape(`
+    ##.#
+    .###
+  `), '8'),
+  // K12 (鼻高アヒル型)
+  ...createHexMinos('K12', shape(`
+    ..#.
+    ###.
+    ..##
+  `), '8'),
+  // K13 (つのありスネーク型)
+  ...createHexMinos('K13', shape(`
+    .#..
+    ###.
+    ..##
+  `), '8'),
+  // K14 (立ちスネーク型)
+  ...createHexMinos('K14', shape(`
+    ##..
+    .#..
+    .###
+  `), '8'),
+  // K15 (W型)
+  ...createHexMinos('K15', shape(`
+    #...
+    ##..
+    .###
+  `), '8'),
+  // K16 (C型変形)
+  ...createHexMinos('K16', shape(`
+    .##
+    ..#
+    ###
+  `), '8'),
+  // K17 (階段型2)
+  ...createHexMinos('K17', shape(`
+    ##..
+    .###
+    ...#
+  `), '8'),
+  // K18 (犬型)
+  ...createHexMinos('K18', shape(`
+    ..#
+    ###
+    .##
+  `), '8'),
+  // K19 (錠型)
+  ...createHexMinos('K19', shape(`
+    ##.
+    .##
+    .##
+  `), '8'),
+  // K20 (椅子型)
+  ...createHexMinos('K20', shape(`
+    ..#
+    ###
+    #.#
+  `), '8'),
+]
+
 const HEXOMINOS: MinoDefinition[] = [
-  // ===== 1. I型 (2向き) =====
-  createMino('hex-i-h', 'hexomino', shape(`######`)),
-  createMino('hex-i-v', 'hexomino', shape(`
-    #
-    #
-    #
-    #
-    #
-    #
-  `)),
-
-  // ===== 2. 2x3長方形型 (2向き) =====
-  createMino('hex-rect-0', 'hexomino', shape(`
-    ###
-    ###
-  `)),
-  createMino('hex-rect-90', 'hexomino', shape(`
-    ##
-    ##
-    ##
-  `)),
-
-  // ===== 3. L5型 (8向き) =====
-  createMino('hex-l5-0', 'hexomino', shape(`
-    #.
-    #.
-    #.
-    #.
-    ##
-  `)),
-  createMino('hex-l5-90', 'hexomino', shape(`
-    #####
-    #....
-  `)),
-  createMino('hex-l5-180', 'hexomino', shape(`
-    ##
-    .#
-    .#
-    .#
-    .#
-  `)),
-  createMino('hex-l5-270', 'hexomino', shape(`
-    ....#
-    #####
-  `)),
-  createMino('hex-l5-m0', 'hexomino', shape(`
-    .#
-    .#
-    .#
-    .#
-    ##
-  `)),
-  createMino('hex-l5-m90', 'hexomino', shape(`
-    #....
-    #####
-  `)),
-  createMino('hex-l5-m180', 'hexomino', shape(`
-    ##
-    #.
-    #.
-    #.
-    #.
-  `)),
-  createMino('hex-l5-m270', 'hexomino', shape(`
-    #####
-    ....#
-  `)),
-
-  // ===== 4. J5型 (8向き) =====
-  createMino('hex-j5-0', 'hexomino', shape(`
-    #.
-    #.
-    #.
-    ##
-    #.
-  `)),
-  createMino('hex-j5-90', 'hexomino', shape(`
-    #####
-    .#...
-  `)),
-  createMino('hex-j5-180', 'hexomino', shape(`
-    .#
-    ##
-    .#
-    .#
-    .#
-  `)),
-  createMino('hex-j5-270', 'hexomino', shape(`
-    ..#..
-    #####
-  `)),
-  createMino('hex-j5-m0', 'hexomino', shape(`
-    .#
-    .#
-    .#
-    ##
-    .#
-  `)),
-  createMino('hex-j5-m90', 'hexomino', shape(`
-    .#...
-    #####
-  `)),
-  createMino('hex-j5-m180', 'hexomino', shape(`
-    #.
-    ##
-    #.
-    #.
-    #.
-  `)),
-  createMino('hex-j5-m270', 'hexomino', shape(`
-    #####
-    ..#..
-  `)),
-
-  // ===== 5. T5型 (4向き) =====
-  createMino('hex-t5-0', 'hexomino', shape(`
-    #####
-    ..#..
-  `)),
-  createMino('hex-t5-90', 'hexomino', shape(`
-    .#
-    .#
-    ##
-    .#
-    .#
-  `)),
-  createMino('hex-t5-180', 'hexomino', shape(`
-    ..#..
-    #####
-  `)),
-  createMino('hex-t5-270', 'hexomino', shape(`
-    #.
-    #.
-    ##
-    #.
-    #.
-  `)),
-
-  // ===== 6. Y5型 (8向き) =====
-  createMino('hex-y5-0', 'hexomino', shape(`
-    #####
-    .#...
-  `)),
-  createMino('hex-y5-90', 'hexomino', shape(`
-    .#
-    ##
-    .#
-    .#
-    .#
-  `)),
-  createMino('hex-y5-180', 'hexomino', shape(`
-    ...#.
-    #####
-  `)),
-  createMino('hex-y5-270', 'hexomino', shape(`
-    #.
-    #.
-    #.
-    ##
-    #.
-  `)),
-  createMino('hex-y5-m0', 'hexomino', shape(`
-    .#...
-    #####
-  `)),
-  createMino('hex-y5-m90', 'hexomino', shape(`
-    #.
-    ##
-    #.
-    #.
-    #.
-  `)),
-  createMino('hex-y5-m180', 'hexomino', shape(`
-    #####
-    ...#.
-  `)),
-  createMino('hex-y5-m270', 'hexomino', shape(`
-    .#
-    .#
-    .#
-    ##
-    .#
-  `)),
-
-  // ===== 7. S4型 (4向き) =====
-  createMino('hex-s4-0', 'hexomino', shape(`
-    .##
-    .#.
-    ##.
-    #..
-  `)),
-  createMino('hex-s4-90', 'hexomino', shape(`
-    ##..
-    .#..
-    .###
-  `)),
-  createMino('hex-s4-180', 'hexomino', shape(`
-    ..#
-    .##
-    .#.
-    ##.
-  `)),
-  createMino('hex-s4-270', 'hexomino', shape(`
-    ###.
-    ..#.
-    ..##
-  `)),
-
-  // ===== 8. Z4型 (4向き) =====
-  createMino('hex-z4-0', 'hexomino', shape(`
-    ##.
-    .#.
-    .##
-    ..#
-  `)),
-  createMino('hex-z4-90', 'hexomino', shape(`
-    ..##
-    ..#.
-    ###.
-  `)),
-  createMino('hex-z4-180', 'hexomino', shape(`
-    #..
-    ##.
-    .#.
-    .##
-  `)),
-  createMino('hex-z4-270', 'hexomino', shape(`
-    .###
-    .#..
-    ##..
-  `)),
-
-  // ===== 9. N4型 (8向き) =====
-  createMino('hex-n4-0', 'hexomino', shape(`
-    .#
-    .#
-    ##
-    #.
-    #.
-  `)),
-  createMino('hex-n4-90', 'hexomino', shape(`
-    ###..
-    ..###
-  `)),
-  createMino('hex-n4-180', 'hexomino', shape(`
-    .#
-    .#
-    ##
-    #.
-    #.
-  `)),
-  createMino('hex-n4-270', 'hexomino', shape(`
-    ###..
-    ..###
-  `)),
-  createMino('hex-n4-m0', 'hexomino', shape(`
-    #.
-    #.
-    ##
-    .#
-    .#
-  `)),
-  createMino('hex-n4-m90', 'hexomino', shape(`
-    ..###
-    ###..
-  `)),
-  createMino('hex-n4-m180', 'hexomino', shape(`
-    #.
-    #.
-    ##
-    .#
-    .#
-  `)),
-  createMino('hex-n4-m270', 'hexomino', shape(`
-    ..###
-    ###..
-  `)),
-
-  // ===== 10. W4型 (4向き) =====
-  createMino('hex-w4-0', 'hexomino', shape(`
-    #..
-    ##.
-    .##
-    ..#
-  `)),
-  createMino('hex-w4-90', 'hexomino', shape(`
-    ..##
-    .##.
-    ##..
-  `)),
-  createMino('hex-w4-180', 'hexomino', shape(`
-    #..
-    ##.
-    .##
-    ..#
-  `)),
-  createMino('hex-w4-270', 'hexomino', shape(`
-    ..##
-    .##.
-    ##..
-  `)),
-
-  // ===== 11. P5型 (8向き) =====
-  createMino('hex-p5-0', 'hexomino', shape(`
-    ##
-    ##
-    #.
-    #.
-  `)),
-  createMino('hex-p5-90', 'hexomino', shape(`
-    ####
-    ..##
-  `)),
-  createMino('hex-p5-180', 'hexomino', shape(`
-    .#
-    .#
-    ##
-    ##
-  `)),
-  createMino('hex-p5-270', 'hexomino', shape(`
-    ##..
-    ####
-  `)),
-  createMino('hex-p5-m0', 'hexomino', shape(`
-    ##
-    ##
-    .#
-    .#
-  `)),
-  createMino('hex-p5-m90', 'hexomino', shape(`
-    ..##
-    ####
-  `)),
-  createMino('hex-p5-m180', 'hexomino', shape(`
-    #.
-    #.
-    ##
-    ##
-  `)),
-  createMino('hex-p5-m270', 'hexomino', shape(`
-    ####
-    ##..
-  `)),
-
-  // ===== 12. Q5型 (8向き) =====
-  createMino('hex-q5-0', 'hexomino', shape(`
-    ##
-    ##
-    #.
-    #.
-  `)),
-  createMino('hex-q5-90', 'hexomino', shape(`
-    ####
-    ..##
-  `)),
-  createMino('hex-q5-180', 'hexomino', shape(`
-    .#
-    .#
-    ##
-    ##
-  `)),
-  createMino('hex-q5-270', 'hexomino', shape(`
-    ##..
-    ####
-  `)),
-  createMino('hex-q5-m0', 'hexomino', shape(`
-    ##
-    ##
-    .#
-    .#
-  `)),
-  createMino('hex-q5-m90', 'hexomino', shape(`
-    ..##
-    ####
-  `)),
-  createMino('hex-q5-m180', 'hexomino', shape(`
-    #.
-    #.
-    ##
-    ##
-  `)),
-  createMino('hex-q5-m270', 'hexomino', shape(`
-    ####
-    ##..
-  `)),
-
-  // ===== 13. U6型 (4向き) - コの字型6セル =====
-  createMino('hex-u6-0', 'hexomino', shape(`
-    ##
-    #.
-    ##
-    #.
-  `)),
-  createMino('hex-u6-90', 'hexomino', shape(`
-    ####
-    #..#
-  `)),
-  createMino('hex-u6-180', 'hexomino', shape(`
-    .#
-    ##
-    .#
-    ##
-  `)),
-  createMino('hex-u6-270', 'hexomino', shape(`
-    #..#
-    ####
-  `)),
-
-  // ===== 14. C型 (4向き) - C字型6セル =====
-  createMino('hex-c-0', 'hexomino', shape(`
-    ##
-    #.
-    #.
-    ##
-  `)),
-  createMino('hex-c-90', 'hexomino', shape(`
-    ####
-    #..#
-  `)),
-  createMino('hex-c-180', 'hexomino', shape(`
-    ##
-    .#
-    .#
-    ##
-  `)),
-  createMino('hex-c-270', 'hexomino', shape(`
-    #..#
-    ####
-  `)),
-
-  // ===== 15. O5型 (1向き) =====
-  createMino('hex-o5', 'hexomino', shape(`
-    .##
-    ##.
-    ##.
-  `)),
-
-  // ===== 16. 階段型A (4向き) =====
-  createMino('hex-stair-a-0', 'hexomino', shape(`
-    #..
-    ##.
-    .##
-    ..#
-  `)),
-  createMino('hex-stair-a-90', 'hexomino', shape(`
-    ..##
-    ###.
-    #...
-  `)),
-  createMino('hex-stair-a-180', 'hexomino', shape(`
-    #..
-    ##.
-    .##
-    ..#
-  `)),
-  createMino('hex-stair-a-270', 'hexomino', shape(`
-    ...#
-    .###
-    ##..
-  `)),
-
-  // ===== 17. 階段型B (4向き) =====
-  createMino('hex-stair-b-0', 'hexomino', shape(`
-    ..#
-    .##
-    ##.
-    #..
-  `)),
-  createMino('hex-stair-b-90', 'hexomino', shape(`
-    #...
-    ###.
-    ..##
-  `)),
-  createMino('hex-stair-b-180', 'hexomino', shape(`
-    ..#
-    .##
-    ##.
-    #..
-  `)),
-  createMino('hex-stair-b-270', 'hexomino', shape(`
-    ##..
-    .###
-    ...#
-  `)),
-
-  // ===== 18. F5型 (8向き) =====
-  createMino('hex-f5-0', 'hexomino', shape(`
-    .##
-    ##.
-    .#.
-    .#.
-  `)),
-  createMino('hex-f5-90', 'hexomino', shape(`
-    #...
-    ####
-    .#..
-  `)),
-  createMino('hex-f5-180', 'hexomino', shape(`
-    .#.
-    .#.
-    .##
-    ##.
-  `)),
-  createMino('hex-f5-270', 'hexomino', shape(`
-    ..#.
-    ####
-    ...#
-  `)),
-  createMino('hex-f5-m0', 'hexomino', shape(`
-    ##.
-    .##
-    .#.
-    .#.
-  `)),
-  createMino('hex-f5-m90', 'hexomino', shape(`
-    .#..
-    ####
-    #...
-  `)),
-  createMino('hex-f5-m180', 'hexomino', shape(`
-    .#.
-    .#.
-    ##.
-    .##
-  `)),
-  createMino('hex-f5-m270', 'hexomino', shape(`
-    ...#
-    ####
-    ..#.
-  `)),
-
-  // ===== 19. V5型 (4向き) =====
-  createMino('hex-v5-0', 'hexomino', shape(`
-    #..
-    #..
-    #..
-    ###
-  `)),
-  createMino('hex-v5-90', 'hexomino', shape(`
-    ####
-    #...
-    #...
-  `)),
-  createMino('hex-v5-180', 'hexomino', shape(`
-    ###
-    ..#
-    ..#
-    ..#
-  `)),
-  createMino('hex-v5-270', 'hexomino', shape(`
-    ..#
-    ..#
-    ####
-  `)),
-
-  // ===== 20. H型 (2向き) =====
-  createMino('hex-h-0', 'hexomino', shape(`
-    #.#
-    ###
-    #..
-  `)),
-  createMino('hex-h-90', 'hexomino', shape(`
-    ###
-    .#.
-    .##
-  `)),
-
-  // ===== 21. 十字5型 (4向き) =====
-  createMino('hex-cross5-0', 'hexomino', shape(`
-    .#.
-    ###
-    .#.
-    .#.
-  `)),
-  createMino('hex-cross5-90', 'hexomino', shape(`
-    .#..
-    ####
-    .#..
-  `)),
-  createMino('hex-cross5-180', 'hexomino', shape(`
-    .#.
-    .#.
-    ###
-    .#.
-  `)),
-  createMino('hex-cross5-270', 'hexomino', shape(`
-    ..#.
-    ####
-    ..#.
-  `)),
-
-  // ===== 22. 十字6型 (1向き) =====
-  createMino('hex-cross6', 'hexomino', shape(`
-    .#.
-    ###
-    .#.
-    .#.
-  `)),
-
-  // ===== 23. E型 (8向き) =====
-  createMino('hex-e-0', 'hexomino', shape(`
-    #.
-    ##
-    #.
-    ##
-  `)),
-  createMino('hex-e-90', 'hexomino', shape(`
-    ####
-    #.#.
-  `)),
-  createMino('hex-e-180', 'hexomino', shape(`
-    ##
-    .#
-    ##
-    .#
-  `)),
-  createMino('hex-e-270', 'hexomino', shape(`
-    .#.#
-    ####
-  `)),
-  createMino('hex-e-m0', 'hexomino', shape(`
-    .#
-    ##
-    .#
-    ##
-  `)),
-  createMino('hex-e-m90', 'hexomino', shape(`
-    #.#.
-    ####
-  `)),
-  createMino('hex-e-m180', 'hexomino', shape(`
-    ##
-    #.
-    ##
-    #.
-  `)),
-  createMino('hex-e-m270', 'hexomino', shape(`
-    ####
-    .#.#
-  `)),
-
-  // ===== 24. T6型 (4向き) =====
-  createMino('hex-t6-0', 'hexomino', shape(`
-    ###
-    .#.
-    .#.
-    .#.
-  `)),
-  createMino('hex-t6-90', 'hexomino', shape(`
-    ...#
-    ####
-    ...#
-  `)),
-  createMino('hex-t6-180', 'hexomino', shape(`
-    .#.
-    .#.
-    .#.
-    ###
-  `)),
-  createMino('hex-t6-270', 'hexomino', shape(`
-    #...
-    ####
-    #...
-  `)),
-
-  // ===== 25. 2x2+2型 (8向き) =====
-  createMino('hex-sq2-0', 'hexomino', shape(`
-    ##.
-    ##.
-    .##
-  `)),
-  createMino('hex-sq2-90', 'hexomino', shape(`
-    .##
-    ###
-    #..
-  `)),
-  createMino('hex-sq2-180', 'hexomino', shape(`
-    ##.
-    .##
-    .##
-  `)),
-  createMino('hex-sq2-270', 'hexomino', shape(`
-    ..#
-    ###
-    ##.
-  `)),
-  createMino('hex-sq2-m0', 'hexomino', shape(`
-    .##
-    .##
-    ##.
-  `)),
-  createMino('hex-sq2-m90', 'hexomino', shape(`
-    #..
-    ###
-    .##
-  `)),
-  createMino('hex-sq2-m180', 'hexomino', shape(`
-    .##
-    ##.
-    ##.
-  `)),
-  createMino('hex-sq2-m270', 'hexomino', shape(`
-    ##.
-    ###
-    ..#
-  `)),
-
-  // ===== 26. 3+3型 (4向き) =====
-  createMino('hex-33-0', 'hexomino', shape(`
-    ###
-    ...
-    ###
-  `)),
-  createMino('hex-33-90', 'hexomino', shape(`
-    #.#
-    #.#
-    #.#
-  `)),
-  createMino('hex-33-h0', 'hexomino', shape(`
-    ###.
-    .###
-  `)),
-  createMino('hex-33-h90', 'hexomino', shape(`
-    .#
-    ##
-    #.
-    ##
-  `)),
-
-  // ===== 27. Y6型 (8向き) =====
-  createMino('hex-y6-0', 'hexomino', shape(`
-    .#.
-    ###
-    .#.
-    .#.
-  `)),
-  createMino('hex-y6-90', 'hexomino', shape(`
-    ..#.
-    ####
-    ..#.
-  `)),
-  createMino('hex-y6-180', 'hexomino', shape(`
-    .#.
-    .#.
-    ###
-    .#.
-  `)),
-  createMino('hex-y6-270', 'hexomino', shape(`
-    .#..
-    ####
-    .#..
-  `)),
-  createMino('hex-y6-m0', 'hexomino', shape(`
-    .#.
-    ##.
-    .##
-    .#.
-  `)),
-  createMino('hex-y6-m90', 'hexomino', shape(`
-    .#..
-    ####
-    ..#.
-  `)),
-  createMino('hex-y6-m180', 'hexomino', shape(`
-    .#.
-    ##.
-    .##
-    .#.
-  `)),
-  createMino('hex-y6-m270', 'hexomino', shape(`
-    ..#.
-    ####
-    .#..
-  `)),
-
-  // ===== 28. K型 (8向き) =====
-  createMino('hex-k-0', 'hexomino', shape(`
-    #..
-    ##.
-    ###
-  `)),
-  createMino('hex-k-90', 'hexomino', shape(`
-    ###
-    ##.
-    #..
-  `)),
-  createMino('hex-k-180', 'hexomino', shape(`
-    ###
-    .##
-    ..#
-  `)),
-  createMino('hex-k-270', 'hexomino', shape(`
-    ..#
-    .##
-    ###
-  `)),
-  createMino('hex-k-m0', 'hexomino', shape(`
-    ..#
-    .##
-    ###
-  `)),
-  createMino('hex-k-m90', 'hexomino', shape(`
-    #..
-    ##.
-    ###
-  `)),
-  createMino('hex-k-m180', 'hexomino', shape(`
-    ###
-    ##.
-    #..
-  `)),
-  createMino('hex-k-m270', 'hexomino', shape(`
-    ###
-    .##
-    ..#
-  `)),
-
-  // ===== 29. A型 (4向き) =====
-  createMino('hex-a-0', 'hexomino', shape(`
-    .#.
-    ###
-    #.#
-  `)),
-  createMino('hex-a-90', 'hexomino', shape(`
-    ##.
-    .##
-    ##.
-  `)),
-  createMino('hex-a-180', 'hexomino', shape(`
-    #.#
-    ###
-    .#.
-  `)),
-  createMino('hex-a-270', 'hexomino', shape(`
-    .##
-    ##.
-    .##
-  `)),
-
-  // ===== 30. ボート型 (8向き) =====
-  createMino('hex-boat-0', 'hexomino', shape(`
-    ###
-    #.#
-    #..
-  `)),
-  createMino('hex-boat-90', 'hexomino', shape(`
-    ###
-    #..
-    #.#
-  `)),
-  createMino('hex-boat-180', 'hexomino', shape(`
-    ..#
-    #.#
-    ###
-  `)),
-  createMino('hex-boat-270', 'hexomino', shape(`
-    #.#
-    ..#
-    ###
-  `)),
-  createMino('hex-boat-m0', 'hexomino', shape(`
-    ###
-    #.#
-    ..#
-  `)),
-  createMino('hex-boat-m90', 'hexomino', shape(`
-    #.#
-    #..
-    ###
-  `)),
-  createMino('hex-boat-m180', 'hexomino', shape(`
-    #..
-    #.#
-    ###
-  `)),
-  createMino('hex-boat-m270', 'hexomino', shape(`
-    ###
-    ..#
-    #.#
-  `)),
-
-  // ===== 31. ハンマー型 (8向き) =====
-  createMino('hex-hammer-0', 'hexomino', shape(`
-    ###
-    .#.
-    ##.
-  `)),
-  createMino('hex-hammer-90', 'hexomino', shape(`
-    #.#
-    ###
-    ..#
-  `)),
-  createMino('hex-hammer-180', 'hexomino', shape(`
-    .##
-    .#.
-    ###
-  `)),
-  createMino('hex-hammer-270', 'hexomino', shape(`
-    #..
-    ###
-    #.#
-  `)),
-  createMino('hex-hammer-m0', 'hexomino', shape(`
-    ###
-    .#.
-    .##
-  `)),
-  createMino('hex-hammer-m90', 'hexomino', shape(`
-    ..#
-    ###
-    #.#
-  `)),
-  createMino('hex-hammer-m180', 'hexomino', shape(`
-    ##.
-    .#.
-    ###
-  `)),
-  createMino('hex-hammer-m270', 'hexomino', shape(`
-    #.#
-    ###
-    #..
-  `)),
-
-  // ===== 32. フック型 (8向き) =====
-  createMino('hex-hook-0', 'hexomino', shape(`
-    ##.
-    .#.
-    .##
-    ..#
-  `)),
-  createMino('hex-hook-90', 'hexomino', shape(`
-    ..##
-    ###.
-    #...
-  `)),
-  createMino('hex-hook-180', 'hexomino', shape(`
-    #..
-    ##.
-    .#.
-    .##
-  `)),
-  createMino('hex-hook-270', 'hexomino', shape(`
-    ...#
-    .###
-    ##..
-  `)),
-  createMino('hex-hook-m0', 'hexomino', shape(`
-    .##
-    .#.
-    ##.
-    #..
-  `)),
-  createMino('hex-hook-m90', 'hexomino', shape(`
-    #...
-    ###.
-    ..##
-  `)),
-  createMino('hex-hook-m180', 'hexomino', shape(`
-    ..#
-    .##
-    .#.
-    ##.
-  `)),
-  createMino('hex-hook-m270', 'hexomino', shape(`
-    ##..
-    .###
-    ...#
-  `)),
-
-  // ===== 33. J6型 (8向き) =====
-  createMino('hex-j6-0', 'hexomino', shape(`
-    #.
-    ##
-    .#
-    .#
-    .#
-  `)),
-  createMino('hex-j6-90', 'hexomino', shape(`
-    ..###
-    ###..
-  `)),
-  createMino('hex-j6-180', 'hexomino', shape(`
-    #.
-    #.
-    #.
-    ##
-    .#
-  `)),
-  createMino('hex-j6-270', 'hexomino', shape(`
-    ..###
-    ###..
-  `)),
-  createMino('hex-j6-m0', 'hexomino', shape(`
-    .#
-    ##
-    #.
-    #.
-    #.
-  `)),
-  createMino('hex-j6-m90', 'hexomino', shape(`
-    ###..
-    ..###
-  `)),
-  createMino('hex-j6-m180', 'hexomino', shape(`
-    .#
-    .#
-    .#
-    ##
-    #.
-  `)),
-  createMino('hex-j6-m270', 'hexomino', shape(`
-    ###..
-    ..###
-  `)),
-
-  // ===== 34. S6型 (4向き) =====
-  createMino('hex-s6-0', 'hexomino', shape(`
-    .###
-    ###.
-  `)),
-  createMino('hex-s6-90', 'hexomino', shape(`
-    #.
-    #.
-    ##
-    .#
-    .#
-  `)),
-  createMino('hex-s6-180', 'hexomino', shape(`
-    .###
-    ###.
-  `)),
-  createMino('hex-s6-270', 'hexomino', shape(`
-    #.
-    #.
-    ##
-    .#
-    .#
-  `)),
-
-  // ===== 35. Z6型 (4向き) =====
-  createMino('hex-z6-0', 'hexomino', shape(`
-    ###.
-    .###
-  `)),
-  createMino('hex-z6-90', 'hexomino', shape(`
-    .#
-    .#
-    ##
-    #.
-    #.
-  `)),
-  createMino('hex-z6-180', 'hexomino', shape(`
-    ###.
-    .###
-  `)),
-  createMino('hex-z6-270', 'hexomino', shape(`
-    .#
-    .#
-    ##
-    #.
-    #.
-  `)),
+  ...HEX_PURPLE,  // 4
+  ...HEX_RED,     // 24
+  ...HEX_BLUE,    // 20
+  ...HEX_GREEN,   // 8
+  ...HEX_BLACK,   // 160
+  // 合計: 216
 ]
 
 // カテゴリ別ミノ配列

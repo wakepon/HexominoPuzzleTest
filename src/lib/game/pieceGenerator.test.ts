@@ -31,14 +31,15 @@ describe('minoDefinitions', () => {
       expect(MINO_COUNTS.pentomino).toBe(63)
     })
 
-    it('ヘキソミノは188種類以上', () => {
-      // 最終的には216種類になる予定
-      expect(MINO_COUNTS.hexomino).toBeGreaterThanOrEqual(188)
+    it('ヘキソミノは216種類', () => {
+      // 紫2種×2回転 + 赤6種×4回転 + 青5種×4向き + 緑2種×4回転 + 黒20種×8向き
+      // = 4 + 24 + 20 + 8 + 160 = 216種類
+      expect(MINO_COUNTS.hexomino).toBe(216)
     })
 
-    it('合計279種類以上', () => {
-      // 最終的には307種類になる予定
-      expect(ALL_MINOS.length).toBeGreaterThanOrEqual(279)
+    it('合計307種類', () => {
+      // 1 + 2 + 6 + 19 + 63 + 216 = 307種類
+      expect(ALL_MINOS.length).toBe(307)
     })
   })
 
