@@ -12,6 +12,7 @@
 | build-error-resolver | ビルドエラーの修正 | ビルド失敗時           |
 | refactor-cleaner | 不要コードの削除  | コードメンテナンス        |
 | tdd-guide | テスト駆動開発   | テストを書くことを指定されたとき |
+| doc-updater | 仕様書の作成・更新  | コードから仕様書を生成・同期するとき |
 
 ## Agent の即時利用
 
