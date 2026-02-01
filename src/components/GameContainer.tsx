@@ -4,7 +4,7 @@ import { GameCanvas } from './GameCanvas'
 
 export function GameContainer() {
   const { state, actions } = useGame()
-  const layout = useCanvasLayout()
+  const layout = useCanvasLayout(state.pieceSlots)
 
   if (!layout) {
     return (

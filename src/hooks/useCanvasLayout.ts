@@ -1,13 +1,28 @@
-import { useState, useEffect, useCallback } from 'react'
-import { CanvasLayout, Position } from '../lib/game/types'
-import { GRID_SIZE, SLOT_COUNT, LAYOUT } from '../lib/game/constants'
-import { getPieceSize, getInitialPieces } from '../lib/game/pieceDefinitions'
+import { useState, useEffect, useCallback, useMemo } from 'react'
+import { CanvasLayout, Position, PieceSlot } from '../lib/game/types'
+import { GRID_SIZE, LAYOUT } from '../lib/game/constants'
+import { getPieceSize } from '../lib/game/pieceDefinitions'
 
 /**
  * Canvasレイアウト計算フック
+ * @param pieceSlots 現在のピーススロット（動的にスロット位置を計算するため）
  */
-export function useCanvasLayout(): CanvasLayout | null {
+export function useCanvasLayout(pieceSlots: PieceSlot[]): CanvasLayout | null {
   const [layout, setLayout] = useState<CanvasLayout | null>(null)
+
+  // pieceSlots の参照が変わるたびに再計算されないよう、形状のみを比較するキーを生成
+  const pieceSlotsKey = useMemo(() => {
+    return pieceSlots.map(slot => {
+      if (!slot.piece) return 'empty'
+      return slot.piece.shape
+        .map(row => row.map(cell => cell ? '1' : '0').join(''))
+        .join('|')
+    }).join('_')
+  }, [pieceSlots])
+
+  // pieceSlotsKey を使って形状が変わったときのみ再計算
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const stablePieceSlots = useMemo(() => pieceSlots, [pieceSlotsKey])
 
   const calculateLayout = useCallback(() => {
     // 画面サイズ取得
@@ -42,11 +57,12 @@ export function useCanvasLayout(): CanvasLayout | null {
     // スロットエリアの位置
     const slotAreaY = boardOffsetY + boardSize + LAYOUT.slotAreaPadding * 2
 
-    // スロット位置を計算
+    // スロット位置を計算（実際のピースに基づいて動的に計算）
     const slotPositions = calculateSlotPositions(
       canvasWidth,
       slotAreaY,
-      cellSize
+      cellSize,
+      stablePieceSlots
     )
 
     setLayout({
@@ -58,7 +74,7 @@ export function useCanvasLayout(): CanvasLayout | null {
       slotAreaY,
       slotPositions,
     })
-  }, [])
+  }, [stablePieceSlots])
 
   useEffect(() => {
     calculateLayout()
@@ -80,30 +96,33 @@ export function useCanvasLayout(): CanvasLayout | null {
 }
 
 /**
- * スロット位置を計算
+ * スロット位置を計算（実際のピースに基づいて動的に計算）
  */
 function calculateSlotPositions(
   canvasWidth: number,
   slotAreaY: number,
-  cellSize: number
+  cellSize: number,
+  pieceSlots: PieceSlot[]
 ): Position[] {
-  const pieces = getInitialPieces()
   const slotCellSize = cellSize * LAYOUT.slotCellSizeRatio
   const positions: Position[] = []
 
-  // 各ブロックの幅を計算
-  const pieceWidths = pieces.map(piece => {
-    const size = getPieceSize(piece.shape)
+  // 各ブロックの幅を計算（空スロットは最小幅1セル）
+  const pieceWidths = pieceSlots.map(slot => {
+    if (!slot.piece) {
+      return slotCellSize  // 空スロットは1セル分の幅
+    }
+    const size = getPieceSize(slot.piece.shape)
     return size.width * slotCellSize
   })
 
   // 全体の幅を計算
-  const totalWidth = pieceWidths.reduce((sum, w) => sum + w, 0) + LAYOUT.slotGap * (SLOT_COUNT - 1)
+  const totalWidth = pieceWidths.reduce((sum, w) => sum + w, 0) + LAYOUT.slotGap * Math.max(0, pieceSlots.length - 1)
 
-  // 開始位置
+  // 開始位置（中央揃え）
   let currentX = (canvasWidth - totalWidth) / 2
 
-  for (let i = 0; i < SLOT_COUNT; i++) {
+  for (let i = 0; i < pieceSlots.length; i++) {
     positions.push({
       x: currentX,
       y: slotAreaY,
