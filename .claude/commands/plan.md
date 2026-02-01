@@ -52,4 +52,4 @@ planner Agent は以下を行います:
 ## 関連 Agent
 
 このコマンドは以下に配置された `planner` Agent を呼び出します:
-`~/.claude/agents/planner.md`
+`.claude/agents/planner.md`

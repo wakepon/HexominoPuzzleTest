@@ -10,7 +10,18 @@
 
 Types: feat, fix, refactor, docs, test, chore, perf, ci
 
-注意: Attribution は ~/.claude/settings.json でグローバルに無効化されています。
+## Git コマンドの実行
+
+現在の作業ディレクトリがgitリポジトリ内の場合、`-C` オプションは使用しない:
+
+```bash
+# ✅ 良い例（リポジトリ内にいる場合）
+git show 42c544c --stat
+git log --oneline -10
+
+# ❌ 悪い例（不要な -C オプション）
+git -C /path/to/repo show 42c544c --stat
+```
 
 ## Pull Request ワークフロー
 

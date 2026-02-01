@@ -33,7 +33,7 @@
 
 ## 出力形式
 
-`~/.claude/skills/learned/[pattern-name].md` に Skill ファイルを作成:
+`.claude/skills/learned/[pattern-name].md` に Skill ファイルを作成:
 
 ```markdown
 # [説明的なパターン名]
@@ -60,7 +60,7 @@
 2. 最も価値があり再利用可能な洞察を特定
 3. Skill ファイルをドラフト
 4. 保存前にユーザーの確認を求める
-5. `~/.claude/skills/learned/` に保存
+5. `.claude/skills/learned/` に保存
 
 ## 注意事項
 

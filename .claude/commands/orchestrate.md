@@ -67,7 +67,7 @@ Agent 間で引き継ぎドキュメントを作成:
 ## 例: tdd-feature ワークフロー
 
 ```
-/orchestrate feature "ユーザー認証を追加"
+/orchestrate tdd-feature "ユーザー認証を追加"
 ```
 
 実行内容:
@@ -154,5 +154,5 @@ $ARGUMENTS:
 
 1. **複雑な機能は planner から始める**
 2. **マージ前は必ず code-reviewer を含める**
-4. **引き継ぎは簡潔に** - 次の Agent が必要なものに焦点を当てる
-5. **必要に応じて Agent 間で検証を実行**
+3. **引き継ぎは簡潔に** - 次の Agent が必要なものに焦点を当てる
+4. **必要に応じて Agent 間で検証を実行**

@@ -1,3 +1,8 @@
+---
+name: verification-loop
+description: 機能完成後やPR作成前に、ビルド・型チェック・Lint・テスト・セキュリティスキャンを包括的に実行する検証システム。
+---
+
 # Verification Loop Skill
 
 Claude Code セッション用の包括的な検証システム。
@@ -44,18 +49,16 @@ ruff check . 2>&1 | head -30
 
 ### Phase 4: テストスイート
 ```bash
-# カバレッジ付きでテストを実行
-npm run test -- --coverage 2>&1 | tail -50
-
-# カバレッジ閾値を確認
-# 目標: 最低 80%
+# テストを実行
+npm run test 2>&1 | tail -50
 ```
 
 レポート:
 - 総テスト数: X
 - 成功: X
 - 失敗: X
-- カバレッジ: X%
+
+注意: 高カバレッジは目指さない。重要なロジック（ゲームのコア部分など）のみをテスト対象とする。
 
 ### Phase 5: セキュリティスキャン
 ```bash
