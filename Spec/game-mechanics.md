@@ -22,30 +22,41 @@
 - 指定位置のセルを取得する機能
 - 範囲外の座標を指定した場合は `null` を返す
 
-## ブロック形状
+## ミノ形状システム
 
-### 定義済みブロック
+### ミノカテゴリ
 
-現在3種類のブロックが定義されている:
+ミノはセル数によって6つのカテゴリに分類される:
 
-1. **単一ブロック (1x1)**
-   - 1セル分のブロック
+1. **モノミノ**: 1セル - 1種類
+2. **ドミノ**: 2セル - 2種類（横・縦）
+3. **トロミノ**: 3セル - 6種類
+4. **テトロミノ**: 4セル - 19種類
+5. **ペントミノ**: 5セル - 63種類
+6. **ヘキソミノ**: 6セル - 216種類（35基本形 × 回転・反転）
 
-2. **正方形ブロック (2x2)**
-   - 4セルの正方形
+**合計**: 307種類のミノ定義
 
-3. **横長ブロック (3x1)**
-   - 3セルの横並び
+### ミノ定義データ構造
 
-### ブロックデータ構造
+- `MinoDefinition`: ミノの定義
+  - `id`: ミノの識別子（例: `"hex-K20-m90"`）
+  - `category`: カテゴリ（`'monomino'` ~ `'hexomino'`）
+  - `shape`: 2次元配列の真偽値（`true` = ブロックあり）
+  - `cellCount`: セル数
 
-- `PieceShape`: 2次元配列の真偽値（`true` = ブロックあり）
-- 各ブロックには一意の `id` が割り当てられる
+### ASCII形状定義
 
-### ブロック情報取得
+ミノ形状はASCIIアート形式で定義される:
+- `#`: ブロックあり
+- `.`: 空セル
+- 各行の長さが異なる場合、最大幅に合わせて自動パディング
 
-- ブロックのサイズ（幅・高さ）を取得できる
-- ブロック内の有効セル数（`true` のセル数）を取得できる
+### ブロック生成
+
+`Piece` オブジェクトは `MinoDefinition` から生成される:
+- ユニークID: タイムスタンプ + 乱数で生成
+- 形状: ミノ定義から継承
 
 ## ブロック配置
 
@@ -125,13 +136,86 @@
 - プレビューはボード範囲内のセルのみ描画
 - ブロック形状の各 `true` セルに対応する位置に描画
 
+## ミノ生成システム
+
+### カテゴリ重み
+
+各カテゴリには重み（出現確率の比率）が設定されている:
+- 重みに基づいてカテゴリをランダム選択
+- 選択されたカテゴリ内からミノをランダム選択
+- 3個のミノセットを生成
+
+### 乱数生成器
+
+2種類の乱数生成器を提供:
+- `DefaultRandom`: `Math.random()` のラッパー（本番環境用）
+- `SeededRandom`: シード対応（テスト用、Mulberry32アルゴリズム）
+
+### 自動補充
+
+全てのスロットが空になると、新しいミノセット（3個）が自動生成される。
+
+## ライン消去システム
+
+### ライン完成判定
+
+- **行**: すべてのセルが埋まっている行を検出
+- **列**: すべてのセルが埋まっている列を検出
+- 複数ラインの同時検出が可能
+
+### 消去対象セル決定
+
+- 完成した行と列のセルを収集
+- 重複するセル（行と列が交差する位置）は1回のみカウント
+- `Set` を使用して重複を除去
+
+### スコア計算
+
+スコア = 消去されたセル数 × 消去されたライン数
+
+例:
+- 1行のみ消去（6セル） × 1ライン = 6点
+- 1行 + 1列（11セル、交差1セル） × 2ライン = 22点
+
+### ライン消去実行
+
+- 消去対象セルを `filled: false` に設定
+- 新しいボードオブジェクトを返す（immutable）
+
+## 消去アニメーション
+
+### アニメーション効果
+
+- 回転: 0度から180度まで
+- 上昇: セルが上方向に移動
+- 縮小: スケールが1.0から0.0に変化
+- イージング: ease-out cubic
+
+### アニメーション状態
+
+- `isAnimating`: アニメーション中フラグ
+- `cells`: 消去対象セル配列
+- `startTime`: 開始時刻（タイムスタンプ）
+- `duration`: 継続時間
+
+### 描画タイミング
+
+- アニメーション中は `requestAnimationFrame` でループ
+- 進行度に応じてセルを変形・描画
+- 完了時に `END_CLEAR_ANIMATION` アクションで実際の消去を実行
+
 ## 関連ファイル
 
 - `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/boardLogic.ts` - ボード管理ロジック
 - `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/collisionDetection.ts` - 衝突判定
-- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/pieceDefinitions.ts` - ブロック定義
+- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/minoDefinitions.ts` - ミノ定義
+- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/pieceGenerator.ts` - ミノ生成ロジック
+- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/lineLogic.ts` - ライン消去とスコア計算
+- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/random.ts` - 乱数生成器
 - `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/components/renderer/previewRenderer.ts` - プレビュー描画
+- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/components/renderer/clearAnimationRenderer.ts` - 消去アニメーション描画
 
 ## 更新履歴
 
 - 2026-02-01: 初版作成
+- 2026-02-01: ミノシステム、生成ロジック、ライン消去、アニメーションを追加

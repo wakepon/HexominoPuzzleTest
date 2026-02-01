@@ -33,9 +33,11 @@ useGame Hook
 ### 初期ゲーム状態
 
 - 空のボードを生成（すべてのセルが `filled: false`）
-- 初期ブロックセット（3種類）を取得
-- 各ブロックをスロットに配置
+- ミノセット（3個）を生成（重み付きランダム選択）
+- 各ミノをスロットに配置
 - ドラッグ状態を初期化
+- スコアを0に設定
+- 消去アニメーション状態を `null` に設定
 
 ## アクション処理
 
@@ -75,6 +77,11 @@ useGame Hook
 2. ブロックとボード座標が有効で配置可能な場合:
    - ブロックをボードに配置（新しいボードを生成）
    - スロットからブロックを削除（`piece: null`）
+   - ライン完成を判定（`findCompletedLines`）
+   - スロットが全て空なら新しいミノセットを生成
+   - ラインが完成している場合:
+     - 消去アニメーション状態を設定
+     - スコアを加算
    - ドラッグ状態をクリア
 
 3. 配置不可能な場合:
@@ -85,6 +92,9 @@ useGame Hook
 - `canPlacePiece` 関数で衝突判定
 - ボード範囲内かつ既存ブロックと重複しない場合に配置可能
 
+**スコア計算:**
+- 消去されたセル数 × 消去されたライン数
+
 ### PLACE_PIECE
 
 **処理内容:**
@@ -94,6 +104,7 @@ useGame Hook
 4. 配置可能な場合:
    - ブロックをボードに配置
    - スロットからブロックを削除
+   - スロットが全て空なら新しいミノセットを生成
 
 **入力パラメータ:**
 - `slotIndex`: 配置するブロックのスロットインデックス
@@ -101,6 +112,18 @@ useGame Hook
 
 **用途:**
 このアクションは現在の実装では直接使用されていないが、プログラマティックなブロック配置に利用可能。
+
+### END_CLEAR_ANIMATION
+
+**処理内容:**
+1. 消去アニメーション状態が存在しない場合は状態を変更しない
+2. 消去アニメーション状態が存在する場合:
+   - アニメーション対象のセルを実際に消去（`clearLines`）
+   - 消去アニメーション状態を `null` に設定
+
+**タイミング:**
+- 消去アニメーションが完了した時点で呼び出される
+- `clearAnimationRenderer` が進行度100%を検出した時
 
 ### RESET_GAME
 
@@ -120,6 +143,7 @@ useGame Hook
 - `updateDrag(currentPos, boardPos)`: ドラッグ更新
 - `endDrag()`: ドラッグ終了
 - `resetGame()`: ゲームリセット
+- `endClearAnimation()`: 消去アニメーション終了
 
 ### 使用例
 
@@ -152,7 +176,13 @@ actions.endDrag()
   │ END_DRAG
   ↓
 [配置判定]
-  ├─ 配置可能 → ブロック配置 → [待機状態]
+  ├─ 配置可能 → ブロック配置 → [ライン判定]
+  │                              ├─ ライン完成 → [アニメーション中]
+  │                              │                 │
+  │                              │                 │ END_CLEAR_ANIMATION
+  │                              │                 ↓
+  │                              │                 ライン消去 → [待機状態]
+  │                              └─ ライン未完成 → [待機状態]
   └─ 配置不可 → キャンセル → [待機状態]
 
 [任意の状態]
@@ -216,7 +246,10 @@ useReducer(gameReducer, null, createInitialState)
 - `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/types.ts` - アクション型定義
 - `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/boardLogic.ts` - ボード操作関数
 - `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/collisionDetection.ts` - 配置可能性判定
+- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/lineLogic.ts` - ライン消去とスコア計算
+- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/pieceGenerator.ts` - ミノ生成
 
 ## 更新履歴
 
 - 2026-02-01: 初版作成
+- 2026-02-01: ライン消去、スコア、アニメーション、ミノ自動生成を追加

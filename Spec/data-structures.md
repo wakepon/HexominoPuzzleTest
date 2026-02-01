@@ -49,7 +49,7 @@ type Board = Cell[][]
 - 6x6のグリッド
 - `board[y][x]` でアクセス（y が行、x が列）
 
-## ブロック関連
+## ミノ・ブロック関連
 
 ### PieceShape
 
@@ -68,9 +68,47 @@ type PieceShape = boolean[][]
    [true, true]]
   ```
 
+### MinoCategory
+
+ミノのカテゴリ（セル数による分類）。
+
+```typescript
+type MinoCategory = 'monomino' | 'domino' | 'tromino' | 'tetromino' | 'pentomino' | 'hexomino'
+```
+
+### MinoDefinition
+
+ミノの定義。
+
+```typescript
+interface MinoDefinition {
+  id: string
+  category: MinoCategory
+  shape: PieceShape
+  cellCount: number
+}
+```
+
+**プロパティ:**
+- `id`: ミノの識別子（例: `"hex-K20-m90"`）
+- `category`: カテゴリ
+- `shape`: ミノの形状
+- `cellCount`: セル数
+
+### CategoryWeights
+
+カテゴリ別の重み。
+
+```typescript
+type CategoryWeights = Record<MinoCategory, number>
+```
+
+**用途:**
+ミノ生成時の各カテゴリの出現確率を制御する。
+
 ### Piece
 
-ブロックの定義。
+実際にゲーム内で使用されるブロック。
 
 ```typescript
 interface Piece {
@@ -80,8 +118,22 @@ interface Piece {
 ```
 
 **プロパティ:**
-- `id`: ブロックの一意識別子（例: `"piece-1"`）
-- `shape`: ブロックの形状
+- `id`: ブロックの一意識別子（タイムスタンプ + 乱数で生成）
+- `shape`: ブロックの形状（MinoDefinitionから継承）
+
+### RandomGenerator
+
+乱数生成器インターフェース。
+
+```typescript
+interface RandomGenerator {
+  next(): number  // 0以上1未満の乱数を返す
+}
+```
+
+**実装:**
+- `DefaultRandom`: `Math.random()` ベース
+- `SeededRandom`: シード対応（Mulberry32アルゴリズム）
 
 ### PieceSlot
 
@@ -123,6 +175,43 @@ interface DragState {
 - `startPos`: ドラッグ開始位置（スクリーン座標）
 - `boardPos`: ボード上の位置（グリッド座標、ボード外の場合は `null`）
 
+## ライン消去関連
+
+### CompletedLines
+
+完成したラインの情報。
+
+```typescript
+interface CompletedLines {
+  rows: number[]      // 完成した行のインデックス配列
+  columns: number[]   // 完成した列のインデックス配列
+}
+```
+
+### ClearingCell
+
+消去対象のセル座標。
+
+```typescript
+interface ClearingCell {
+  x: number
+  y: number
+}
+```
+
+### ClearingAnimationState
+
+消去アニメーション状態。
+
+```typescript
+interface ClearingAnimationState {
+  isAnimating: boolean
+  cells: ClearingCell[]        // 消去対象セル
+  startTime: number            // アニメーション開始時刻
+  duration: number             // アニメーション継続時間（ms）
+}
+```
+
 ## ゲーム状態
 
 ### GameState
@@ -134,6 +223,8 @@ interface GameState {
   board: Board
   pieceSlots: PieceSlot[]
   dragState: DragState
+  score: number
+  clearingAnimation: ClearingAnimationState | null
 }
 ```
 
@@ -141,6 +232,8 @@ interface GameState {
 - `board`: ゲームボードの状態
 - `pieceSlots`: ブロックスロットの配列（通常3つ）
 - `dragState`: ドラッグ操作の状態
+- `score`: 現在のスコア
+- `clearingAnimation`: 消去アニメーション状態（アニメーション中のみ）
 
 ## レイアウト関連
 
@@ -187,6 +280,7 @@ type GameAction =
   | { type: 'UPDATE_DRAG'; currentPos: Position; boardPos: Position | null }
   | { type: 'END_DRAG' }
   | { type: 'RESET_GAME' }
+  | { type: 'END_CLEAR_ANIMATION' }
 ```
 
 **アクション種類:**
@@ -195,6 +289,7 @@ type GameAction =
 3. `UPDATE_DRAG`: ドラッグ中の位置更新
 4. `END_DRAG`: ドラッグ終了
 5. `RESET_GAME`: ゲームリセット
+6. `END_CLEAR_ANIMATION`: 消去アニメーション終了
 
 ## データフロー
 
@@ -224,8 +319,12 @@ GameState (新しい状態)
 
 - `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/types.ts` - 型定義
 - `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/boardLogic.ts` - ボード操作
+- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/minoDefinitions.ts` - ミノ定義
+- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/pieceGenerator.ts` - ミノ生成
+- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/random.ts` - 乱数生成器
 - `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/hooks/useGame.ts` - 状態管理
 
 ## 更新履歴
 
 - 2026-02-01: 初版作成
+- 2026-02-01: ミノ関連型、ライン消去関連型、スコア、アニメーション状態を追加

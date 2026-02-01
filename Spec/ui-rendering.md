@@ -12,7 +12,9 @@ GameContainer
       ├─ boardRenderer (ボード描画)
       ├─ pieceRenderer (ブロック描画)
       ├─ previewRenderer (プレビュー描画)
-      └─ cellRenderer (セル描画)
+      ├─ cellRenderer (セル描画)
+      ├─ clearAnimationRenderer (消去アニメーション描画)
+      └─ scoreRenderer (スコア描画)
 ```
 
 ## GameContainer
@@ -63,18 +65,26 @@ canvas.style.height = `${layout.canvasHeight}px`
 2. 毎フレーム再描画
 3. ドラッグ終了時にループ停止
 
+**アニメーション中:**
+1. 消去アニメーション状態が存在する場合、`requestAnimationFrame` でループ
+2. アニメーション完了を検出したら `endClearAnimation` を呼び出し
+
 ### 描画順序
 
 ```
 1. 背景塗りつぶし
    ↓
-2. ボード描画
+2. スコア描画
    ↓
-3. 配置プレビュー描画（ドラッグ中のみ）
+3. ボード描画
    ↓
-4. スロットのブロック描画（ドラッグ中のブロックを除く）
+4. 配置プレビュー描画（ドラッグ中のみ）
    ↓
-5. ドラッグ中のブロック描画
+5. スロットのブロック描画（ドラッグ中のブロックを除く）
+   ↓
+6. ドラッグ中のブロック描画
+   ↓
+7. 消去アニメーション描画（アニメーション中のみ）
 ```
 
 ## ユーザー入力処理
@@ -190,6 +200,31 @@ const pos = {
 - セル内にパディングを適用
 - 立体感を表現
 
+### 消去アニメーション描画 (clearAnimationRenderer)
+
+**アニメーション効果:**
+- 回転: 0度から180度まで
+- 上昇: セルが上方向に移動
+- 縮小: スケールが1.0から0.0に変化
+- イージング: ease-out cubic
+
+**描画処理:**
+1. 経過時間から進行度を計算
+2. イージング関数を適用
+3. 各消去対象セルを変形して描画
+4. 進行度100%で完了を返す
+
+### スコア描画 (scoreRenderer)
+
+**描画位置:**
+- Canvas上部中央
+- 固定パディング位置
+
+**スタイル:**
+- テキストシャドウ付き
+- 中央揃え
+- 表示形式: `"Score: {数値}"`
+
 ## スタイル設定
 
 ### 色定義
@@ -212,12 +247,26 @@ const pos = {
 
 - ドラッグ中の不透明度
 - プレビューの不透明度
+- 消去アニメーションの設定:
+  - 継続時間
+  - 最大回転角度
+  - 最大上昇距離
+  - スケール変化範囲
 
 ### セルスタイル
 
 - パディング
 - ハイライト幅
 - シャドウ幅
+
+### スコア表示スタイル
+
+- フォントサイズ
+- フォントファミリー
+- フォント太さ
+- 色
+- シャドウ設定
+- パディング
 
 ## レスポンシブ対応
 
@@ -237,7 +286,7 @@ const pos = {
 
 ### 描画最適化
 
-- ドラッグ中のみアニメーションループを実行
+- ドラッグ中またはアニメーション中のみループを実行
 - `requestAnimationFrame` で60FPSを目標
 - 不要な再描画を防止
 
@@ -259,7 +308,10 @@ const pos = {
 - `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/components/renderer/pieceRenderer.ts` - ブロック描画
 - `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/components/renderer/previewRenderer.ts` - プレビュー描画
 - `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/components/renderer/cellRenderer.ts` - セル描画
+- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/components/renderer/clearAnimationRenderer.ts` - 消去アニメーション描画
+- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/components/renderer/scoreRenderer.ts` - スコア描画
 
 ## 更新履歴
 
 - 2026-02-01: 初版作成
+- 2026-02-01: 消去アニメーション描画、スコア描画を追加
