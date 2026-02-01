@@ -27,6 +27,7 @@ export function GameContainer() {
         onDragStart={actions.startDrag}
         onDragMove={actions.updateDrag}
         onDragEnd={actions.endDrag}
+        onClearAnimationEnd={actions.endClearAnimation}
       />
     </div>
   )

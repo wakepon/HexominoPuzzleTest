@@ -1,14 +1,24 @@
-import { Board, CanvasLayout } from '../../lib/game/types'
+import { Board, CanvasLayout, ClearingCell } from '../../lib/game/types'
 import { COLORS, LAYOUT, GRID_SIZE } from '../../lib/game/constants'
 import { drawWoodenCell } from './cellRenderer'
 
 /**
+ * 消去中のセルかどうかをチェック
+ */
+function isClearingCell(x: number, y: number, clearingCells: ClearingCell[] | null): boolean {
+  if (!clearingCells) return false
+  return clearingCells.some(cell => cell.x === x && cell.y === y)
+}
+
+/**
  * ボードを描画
+ * @param clearingCells 消去アニメーション中のセル（これらのセルは空として描画）
  */
 export function renderBoard(
   ctx: CanvasRenderingContext2D,
   board: Board,
-  layout: CanvasLayout
+  layout: CanvasLayout,
+  clearingCells: ClearingCell[] | null = null
 ): void {
   const { boardOffsetX, boardOffsetY, cellSize } = layout
   const boardSize = GRID_SIZE * cellSize
@@ -29,9 +39,12 @@ export function renderBoard(
       const cellY = boardOffsetY + y * cellSize
       const cell = board[y][x]
 
+      // 消去アニメーション中のセルは空として描画（アニメーションで別途描画される）
+      const isClearing = isClearingCell(x, y, clearingCells)
+
       // セル背景
-      if (cell.filled) {
-        // 配置済みブロック
+      if (cell.filled && !isClearing) {
+        // 配置済みブロック（消去中でない場合のみ）
         drawWoodenCell(ctx, cellX, cellY, cellSize)
       } else {
         // 空のセル

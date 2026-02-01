@@ -3,6 +3,8 @@ import { GameState, GameAction, PieceSlot, DragState, Position } from '../lib/ga
 import { createEmptyBoard, placePieceOnBoard } from '../lib/game/boardLogic'
 import { getInitialPieces } from '../lib/game/pieceDefinitions'
 import { canPlacePiece } from '../lib/game/collisionDetection'
+import { findCompletedLines, calculateScore, getCellsToRemove, clearLines } from '../lib/game/lineLogic'
+import { CLEAR_ANIMATION } from '../lib/game/constants'
 
 /**
  * 初期ドラッグ状態
@@ -30,6 +32,8 @@ function createInitialState(): GameState {
     board: createEmptyBoard(),
     pieceSlots,
     dragState: initialDragState,
+    score: 0,
+    clearingAnimation: null,
   }
 }
 
@@ -90,6 +94,29 @@ function gameReducer(state: GameState, action: GameAction): GameState {
           i === slotIndex ? { ...s, piece: null } : s
         )
 
+        // ライン消去判定
+        const completedLines = findCompletedLines(newBoard)
+        const totalLines = completedLines.rows.length + completedLines.columns.length
+
+        if (totalLines > 0) {
+          const cells = getCellsToRemove(completedLines)
+          const scoreGain = calculateScore(completedLines)
+
+          return {
+            ...state,
+            board: newBoard,
+            pieceSlots: newSlots,
+            dragState: initialDragState,
+            clearingAnimation: {
+              isAnimating: true,
+              cells,
+              startTime: Date.now(),
+              duration: CLEAR_ANIMATION.duration,
+            },
+            score: state.score + scoreGain,
+          }
+        }
+
         return {
           ...state,
           board: newBoard,
@@ -129,6 +156,18 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       return createInitialState()
     }
 
+    case 'END_CLEAR_ANIMATION': {
+      if (!state.clearingAnimation) return state
+
+      const clearedBoard = clearLines(state.board, state.clearingAnimation.cells)
+
+      return {
+        ...state,
+        board: clearedBoard,
+        clearingAnimation: null,
+      }
+    }
+
     default:
       return state
   }
@@ -156,6 +195,10 @@ export function useGame() {
     dispatch({ type: 'RESET_GAME' })
   }, [])
 
+  const endClearAnimation = useCallback(() => {
+    dispatch({ type: 'END_CLEAR_ANIMATION' })
+  }, [])
+
   return {
     state,
     actions: {
@@ -163,6 +206,7 @@ export function useGame() {
       updateDrag,
       endDrag,
       resetGame,
+      endClearAnimation,
     },
   }
 }

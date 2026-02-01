@@ -4,6 +4,8 @@ import { COLORS, LAYOUT } from '../lib/game/constants'
 import { renderBoard } from './renderer/boardRenderer'
 import { renderPieceSlots, renderDraggingPiece } from './renderer/pieceRenderer'
 import { renderPlacementPreview } from './renderer/previewRenderer'
+import { renderClearAnimation } from './renderer/clearAnimationRenderer'
+import { renderScore } from './renderer/scoreRenderer'
 import { screenToBoardPosition } from '../lib/game/collisionDetection'
 import { getPieceSize } from '../lib/game/pieceDefinitions'
 
@@ -13,6 +15,7 @@ interface GameCanvasProps {
   onDragStart: (slotIndex: number, startPos: { x: number; y: number }) => void
   onDragMove: (currentPos: { x: number; y: number }, boardPos: { x: number; y: number } | null) => void
   onDragEnd: () => void
+  onClearAnimationEnd: () => void
 }
 
 export function GameCanvas({
@@ -21,6 +24,7 @@ export function GameCanvas({
   onDragStart,
   onDragMove,
   onDragEnd,
+  onClearAnimationEnd,
 }: GameCanvasProps) {
   const [canvas, setCanvas] = useState<HTMLCanvasElement | null>(null)
   const dprRef = useRef(window.devicePixelRatio || 1)
@@ -46,11 +50,27 @@ export function GameCanvas({
     ctx.fillStyle = COLORS.boardBackground
     ctx.fillRect(0, 0, layout.canvasWidth, layout.canvasHeight)
 
-    renderBoard(ctx, state.board, layout)
+    // スコア描画
+    renderScore(ctx, state.score, layout)
+
+    // ボード描画（消去アニメーション中のセルは除外）
+    const clearingCells = state.clearingAnimation?.isAnimating
+      ? state.clearingAnimation.cells
+      : null
+    renderBoard(ctx, state.board, layout, clearingCells)
+
     renderPlacementPreview(ctx, state.board, state.pieceSlots, state.dragState, layout)
     renderPieceSlots(ctx, state.pieceSlots, layout, state.dragState)
     renderDraggingPiece(ctx, state.pieceSlots, state.dragState, layout)
-  }, [canvas, state, layout])
+
+    // 消去アニメーション描画（ボードから除外されたセルをアニメーションとして描画）
+    if (state.clearingAnimation?.isAnimating) {
+      const isComplete = renderClearAnimation(ctx, state.clearingAnimation, layout)
+      if (isComplete) {
+        onClearAnimationEnd()
+      }
+    }
+  }, [canvas, state, layout, onClearAnimationEnd])
 
   // Canvasサイズの設定
   useEffect(() => {
@@ -87,6 +107,24 @@ export function GameCanvas({
       cancelAnimationFrame(animationId)
     }
   }, [state.dragState.isDragging, render])
+
+  // 消去アニメーションのループ
+  useEffect(() => {
+    if (!state.clearingAnimation?.isAnimating) return
+
+    let animationId: number
+
+    const animate = () => {
+      render()
+      animationId = requestAnimationFrame(animate)
+    }
+
+    animationId = requestAnimationFrame(animate)
+
+    return () => {
+      cancelAnimationFrame(animationId)
+    }
+  }, [state.clearingAnimation?.isAnimating, render])
 
   // ドラッグ&ドロップイベントリスナー
   useEffect(() => {
@@ -144,6 +182,9 @@ export function GameCanvas({
     }
 
     const handleMouseDown = (e: MouseEvent) => {
+      // アニメーション中は操作をブロック
+      if (state.clearingAnimation?.isAnimating) return
+
       e.preventDefault()
       const pos = getCanvasPosition(e)
       const slotIndex = findSlotAtPosition(pos)
@@ -174,6 +215,9 @@ export function GameCanvas({
     }
 
     const handleTouchStart = (e: TouchEvent) => {
+      // アニメーション中は操作をブロック
+      if (state.clearingAnimation?.isAnimating) return
+
       e.preventDefault()
       const pos = getCanvasPosition(e.touches[0])
       const slotIndex = findSlotAtPosition(pos)
@@ -222,7 +266,7 @@ export function GameCanvas({
       window.removeEventListener('touchend', handleTouchEnd)
       window.removeEventListener('touchcancel', handleTouchEnd)
     }
-  }, [canvas, layout, state.pieceSlots, onDragStart, onDragMove, onDragEnd])
+  }, [canvas, layout, state.pieceSlots, state.clearingAnimation, onDragStart, onDragMove, onDragEnd])
 
   return (
     <canvas

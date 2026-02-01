@@ -54,3 +54,23 @@ export const CELL_STYLE = {
   highlightWidth: 3,             // ハイライト幅
   shadowWidth: 3,                // シャドウ幅
 }
+
+// 消去アニメーション設定
+export const CLEAR_ANIMATION = {
+  duration: 500,                 // アニメーション時間（ms）
+  maxRotation: Math.PI,          // 最大回転角度（180度）
+  maxRise: 30,                   // 最大上昇距離（px）
+  initialScale: 1.0,             // 初期スケール
+  finalScale: 0,                 // 最終スケール
+}
+
+// スコア表示設定
+export const SCORE_STYLE = {
+  fontSize: 24,
+  fontFamily: 'Arial, sans-serif',
+  fontWeight: 'bold',
+  color: '#FFFFFF',
+  shadowColor: '#000000',
+  shadowBlur: 4,
+  paddingTop: 15,
+}
