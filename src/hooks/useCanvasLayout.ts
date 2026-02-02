@@ -50,9 +50,10 @@ export function useCanvasLayout(pieceSlots: PieceSlot[]): CanvasLayout | null {
     const canvasWidth = Math.max(boardSize + LAYOUT.boardPadding * 2, availableWidth)
     const canvasHeight = availableHeight
 
-    // ボードの位置（中央上部）
+    // ボードの位置（中央上部、スコアとラウンド情報の下）
     const boardOffsetX = (canvasWidth - boardSize) / 2
-    const boardOffsetY = verticalPadding
+    const headerHeight = 70  // スコア + ラウンド情報のスペース
+    const boardOffsetY = headerHeight
 
     // スロットエリアの位置
     const slotAreaY = boardOffsetY + boardSize + LAYOUT.slotAreaPadding * 2

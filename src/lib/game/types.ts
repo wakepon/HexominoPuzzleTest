@@ -23,7 +23,7 @@ export type PieceShape = boolean[][]
 export type MinoCategory = 'monomino' | 'domino' | 'tromino' | 'tetromino' | 'pentomino' | 'hexomino'
 
 // ゲームフェーズ
-export type GamePhase = 'playing' | 'finished'
+export type GamePhase = 'playing' | 'round_clear' | 'game_over' | 'game_clear'
 
 // デッキの状態
 export interface DeckState {
@@ -94,10 +94,13 @@ export interface GameState {
   board: Board
   pieceSlots: PieceSlot[]
   dragState: DragState
-  score: number
+  score: number                               // 現在ラウンドのスコア
   clearingAnimation: ClearingAnimationState | null
   deck: DeckState
   phase: GamePhase
+  round: number                               // 現在のラウンド（1-24）
+  gold: number                                // 所持ゴールド
+  targetScore: number                         // 現在ラウンドの目標スコア
 }
 
 // ゲームアクション
@@ -108,6 +111,7 @@ export type GameAction =
   | { type: 'END_DRAG' }
   | { type: 'RESET_GAME' }
   | { type: 'END_CLEAR_ANIMATION' }
+  | { type: 'ADVANCE_ROUND' }
 
 // Canvas描画に必要なレイアウト情報
 export interface CanvasLayout {

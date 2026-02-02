@@ -3,9 +3,10 @@ import { GameState, GameAction, PieceSlot, DragState, Position, DeckState, GameP
 import { createEmptyBoard, placePieceOnBoard } from '../lib/game/boardLogic'
 import { canPlacePiece } from '../lib/game/collisionDetection'
 import { findCompletedLines, calculateScore, getCellsToRemove, clearLines } from '../lib/game/lineLogic'
-import { CLEAR_ANIMATION } from '../lib/game/constants'
+import { CLEAR_ANIMATION, ROUND_CONFIG } from '../lib/game/constants'
 import { DefaultRandom } from '../lib/game/random'
 import { createInitialDeckState, drawPiecesFromDeck, decrementRemainingHands } from '../lib/game/deckLogic'
+import { calculateTargetScore, isRoundCleared, isFinalRound, calculateGoldReward } from '../lib/game/roundLogic'
 
 /**
  * 初期ドラッグ状態
@@ -42,19 +43,18 @@ function areAllSlotsEmpty(slots: PieceSlot[]): boolean {
 /**
  * 配置後のデッキとスロットの状態を計算
  * END_DRAGとPLACE_PIECEで共通のロジックを抽出
+ * ラウンドクリア/ゲームオーバーの判定はスコア計算後に別途行う
  */
 function handlePlacement(
   slots: PieceSlot[],
   deck: DeckState
-): { finalSlots: PieceSlot[]; finalDeck: DeckState; phase: GamePhase } {
+): { finalSlots: PieceSlot[]; finalDeck: DeckState } {
   const updatedDeck = decrementRemainingHands(deck)
-  const isGameOver = updatedDeck.remainingHands === 0
 
-  if (!areAllSlotsEmpty(slots) || isGameOver) {
+  if (!areAllSlotsEmpty(slots) || updatedDeck.remainingHands === 0) {
     return {
       finalSlots: slots,
       finalDeck: updatedDeck,
-      phase: isGameOver ? 'finished' : 'playing',
     }
   }
 
@@ -62,8 +62,24 @@ function handlePlacement(
   return {
     finalSlots: result.slots,
     finalDeck: result.newDeck,
-    phase: 'playing',
   }
+}
+
+/**
+ * スコアに基づいてフェーズを判定
+ */
+function determinePhase(
+  score: number,
+  targetScore: number,
+  remainingHands: number
+): GamePhase {
+  if (isRoundCleared(score, targetScore)) {
+    return 'round_clear'
+  }
+  if (remainingHands === 0) {
+    return 'game_over'
+  }
+  return 'playing'
 }
 
 /**
@@ -73,6 +89,7 @@ function createInitialState(): GameState {
   const rng = new DefaultRandom()
   const initialDeck = createInitialDeckState(rng)
   const { slots, newDeck } = generateNewPieceSlotsFromDeck(initialDeck)
+  const initialRound = 1
 
   return {
     board: createEmptyBoard(),
@@ -82,6 +99,33 @@ function createInitialState(): GameState {
     clearingAnimation: null,
     deck: newDeck,
     phase: 'playing',
+    round: initialRound,
+    gold: ROUND_CONFIG.initialGold,
+    targetScore: calculateTargetScore(initialRound),
+  }
+}
+
+/**
+ * 次のラウンドの状態を作成（スコア・フィールド・ストックをリセット）
+ */
+function createNextRoundState(currentState: GameState): GameState {
+  const rng = new DefaultRandom()
+  const initialDeck = createInitialDeckState(rng)
+  const { slots, newDeck } = generateNewPieceSlotsFromDeck(initialDeck)
+  const nextRound = currentState.round + 1
+  const goldReward = calculateGoldReward(currentState.deck.remainingHands)
+
+  return {
+    board: createEmptyBoard(),
+    pieceSlots: slots,
+    dragState: initialDragState,
+    score: 0,
+    clearingAnimation: null,
+    deck: newDeck,
+    phase: 'playing',
+    round: nextRound,
+    gold: currentState.gold + goldReward,
+    targetScore: calculateTargetScore(nextRound),
   }
 }
 
@@ -129,7 +173,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       }
 
       // ゲーム終了状態では配置不可
-      if (state.phase === 'finished') {
+      if (state.phase !== 'playing') {
         return {
           ...state,
           dragState: initialDragState,
@@ -151,7 +195,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         )
 
         // 配置後の状態を計算
-        const { finalSlots, finalDeck, phase: newPhase } = handlePlacement(newSlots, state.deck)
+        const { finalSlots, finalDeck } = handlePlacement(newSlots, state.deck)
 
         // ライン消去判定
         const completedLines = findCompletedLines(newBoard)
@@ -160,6 +204,8 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         if (totalLines > 0) {
           const cells = getCellsToRemove(completedLines)
           const scoreGain = calculateScore(completedLines)
+          const newScore = state.score + scoreGain
+          const newPhase = determinePhase(newScore, state.targetScore, finalDeck.remainingHands)
 
           return {
             ...state,
@@ -172,11 +218,14 @@ function gameReducer(state: GameState, action: GameAction): GameState {
               startTime: Date.now(),
               duration: CLEAR_ANIMATION.duration,
             },
-            score: state.score + scoreGain,
+            score: newScore,
             deck: finalDeck,
             phase: newPhase,
           }
         }
+
+        // ライン消去なしでもフェーズ判定
+        const newPhase = determinePhase(state.score, state.targetScore, finalDeck.remainingHands)
 
         return {
           ...state,
@@ -200,7 +249,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       if (!slot?.piece) return state
 
       // ゲーム終了状態では配置不可
-      if (state.phase === 'finished') return state
+      if (state.phase !== 'playing') return state
 
       if (!canPlacePiece(state.board, slot.piece.shape, action.position)) {
         return state
@@ -212,7 +261,8 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       )
 
       // 配置後の状態を計算
-      const { finalSlots, finalDeck, phase: newPhase } = handlePlacement(newSlots, state.deck)
+      const { finalSlots, finalDeck } = handlePlacement(newSlots, state.deck)
+      const newPhase = determinePhase(state.score, state.targetScore, finalDeck.remainingHands)
 
       return {
         ...state,
@@ -237,6 +287,23 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         board: clearedBoard,
         clearingAnimation: null,
       }
+    }
+
+    case 'ADVANCE_ROUND': {
+      // round_clear状態でのみ次のラウンドに進める
+      if (state.phase !== 'round_clear') return state
+
+      // 最終ラウンドならゲームクリア
+      if (isFinalRound(state.round)) {
+        const goldReward = calculateGoldReward(state.deck.remainingHands)
+        return {
+          ...state,
+          phase: 'game_clear',
+          gold: state.gold + goldReward,
+        }
+      }
+
+      return createNextRoundState(state)
     }
 
     default:
@@ -270,6 +337,10 @@ export function useGame() {
     dispatch({ type: 'END_CLEAR_ANIMATION' })
   }, [])
 
+  const advanceRound = useCallback(() => {
+    dispatch({ type: 'ADVANCE_ROUND' })
+  }, [])
+
   return {
     state,
     actions: {
@@ -278,6 +349,7 @@ export function useGame() {
       endDrag,
       resetGame,
       endClearAnimation,
+      advanceRound,
     },
   }
 }

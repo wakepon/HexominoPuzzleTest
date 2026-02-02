@@ -104,3 +104,81 @@ export const HANDS_STYLE = {
   paddingRight: 20,
   paddingTop: 15,
 }
+
+// ラウンド設定
+export const ROUND_CONFIG = {
+  initialGold: 5,              // 初期ゴールド
+  maxRound: 24,                // 最終ラウンド
+  initialTargetScore: 20,      // 初期目標スコア
+  targetScoreIncrement: 10,    // ラウンドごとの目標スコア増加量
+}
+
+// ゴールド表示スタイル
+export const GOLD_STYLE = {
+  fontSize: 20,
+  fontFamily: 'Arial, sans-serif',
+  fontWeight: 'bold',
+  color: '#FFD700',            // ゴールド色
+  shadowColor: '#000000',
+  shadowBlur: 4,
+  paddingLeft: 20,
+  paddingTop: 15,
+}
+
+// ラウンド表示スタイル
+export const ROUND_STYLE = {
+  fontSize: 18,
+  fontFamily: 'Arial, sans-serif',
+  fontWeight: 'bold',
+  color: '#FFFFFF',
+  shadowColor: '#000000',
+  shadowBlur: 4,
+  paddingTop: 45,
+}
+
+// ラウンドクリア演出
+export const ROUND_CLEAR_STYLE = {
+  duration: 1500,              // 1.5秒表示
+  fontSize: 36,
+  subFontSize: 24,
+  color: '#FFFFFF',
+  goldColor: '#FFD700',
+  backgroundColor: 'rgba(0, 0, 0, 0.7)',
+  titleOffsetY: -30,
+  goldTextOffsetY: 20,
+}
+
+// ゲームオーバー表示
+export const GAME_OVER_STYLE = {
+  titleFontSize: 36,
+  subtextFontSize: 20,
+  color: '#FFFFFF',
+  backgroundColor: 'rgba(0, 0, 0, 0.85)',
+  buttonWidth: 160,
+  buttonHeight: 50,
+  buttonColor: '#4CAF50',
+  buttonTextColor: '#FFFFFF',
+  buttonFontSize: 20,
+  titleOffsetY: -80,
+  line1OffsetY: -30,
+  line2OffsetY: 5,
+  line3OffsetY: 40,
+  buttonOffsetY: 80,
+}
+
+// ゲームクリア表示
+export const GAME_CLEAR_STYLE = {
+  titleFontSize: 40,
+  subtextFontSize: 24,
+  color: '#FFD700',
+  backgroundColor: 'rgba(0, 0, 0, 0.85)',
+  buttonWidth: 160,
+  buttonHeight: 50,
+  buttonColor: '#4CAF50',
+  buttonTextColor: '#FFFFFF',
+  buttonFontSize: 20,
+  titleOffsetY: -60,
+  line1OffsetY: -10,
+  line2OffsetY: 30,
+  buttonOffsetY: 80,
+}

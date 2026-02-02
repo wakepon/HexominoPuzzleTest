@@ -1,12 +1,14 @@
 import { useRef, useEffect, useCallback, useState } from 'react'
 import { GameState, CanvasLayout, Position } from '../lib/game/types'
-import { COLORS, LAYOUT } from '../lib/game/constants'
+import { COLORS, LAYOUT, ROUND_CLEAR_STYLE } from '../lib/game/constants'
 import { renderBoard } from './renderer/boardRenderer'
 import { renderPieceSlots, renderDraggingPiece } from './renderer/pieceRenderer'
 import { renderPlacementPreview } from './renderer/previewRenderer'
 import { renderClearAnimation } from './renderer/clearAnimationRenderer'
 import { renderScore } from './renderer/scoreRenderer'
-import { renderRemainingHands } from './renderer/uiRenderer'
+import { renderRemainingHands, renderGold } from './renderer/uiRenderer'
+import { renderRoundInfo } from './renderer/roundRenderer'
+import { renderRoundClear, renderGameOver, renderGameClear } from './renderer/overlayRenderer'
 import { screenToBoardPosition } from '../lib/game/collisionDetection'
 import { getPieceSize } from '../lib/game/pieceDefinitions'
 
@@ -17,6 +19,8 @@ interface GameCanvasProps {
   onDragMove: (currentPos: { x: number; y: number }, boardPos: { x: number; y: number } | null) => void
   onDragEnd: () => void
   onClearAnimationEnd: () => void
+  onAdvanceRound: () => void
+  onReset: () => void
 }
 
 export function GameCanvas({
@@ -26,11 +30,15 @@ export function GameCanvas({
   onDragMove,
   onDragEnd,
   onClearAnimationEnd,
+  onAdvanceRound,
+  onReset,
 }: GameCanvasProps) {
   const [canvas, setCanvas] = useState<HTMLCanvasElement | null>(null)
   const dprRef = useRef(window.devicePixelRatio || 1)
   const isDraggingRef = useRef(false)
   const activeSlotRef = useRef<number | null>(null)
+  const buttonAreaRef = useRef<{ x: number; y: number; width: number; height: number } | null>(null)
+  const roundClearTimeRef = useRef<number | null>(null)
 
   // callback ref でcanvasを取得
   const canvasRefCallback = useCallback((node: HTMLCanvasElement | null) => {
@@ -51,11 +59,17 @@ export function GameCanvas({
     ctx.fillStyle = COLORS.boardBackground
     ctx.fillRect(0, 0, layout.canvasWidth, layout.canvasHeight)
 
+    // ゴールド描画
+    renderGold(ctx, state.gold)
+
     // スコア描画
     renderScore(ctx, state.score, layout)
 
-    // 残りハンド描画
-    renderRemainingHands(ctx, state.deck.remainingHands, layout)
+    // 残りハンド・目標描画（中央）
+    renderRemainingHands(ctx, state.deck.remainingHands, state.targetScore, layout)
+
+    // ラウンド情報描画（右上）
+    renderRoundInfo(ctx, state.round, layout)
 
     // ボード描画（消去アニメーション中のセルは除外）
     const clearingCells = state.clearingAnimation?.isAnimating
@@ -73,6 +87,19 @@ export function GameCanvas({
       if (isComplete) {
         onClearAnimationEnd()
       }
+    }
+
+    // オーバーレイ描画
+    if (state.phase === 'round_clear') {
+      const goldReward = state.deck.remainingHands
+      renderRoundClear(ctx, state.round, goldReward, layout)
+      buttonAreaRef.current = null
+    } else if (state.phase === 'game_over') {
+      buttonAreaRef.current = renderGameOver(ctx, state.round, state.score, state.gold, layout)
+    } else if (state.phase === 'game_clear') {
+      buttonAreaRef.current = renderGameClear(ctx, state.gold, layout)
+    } else {
+      buttonAreaRef.current = null
     }
   }, [canvas, state, layout, onClearAnimationEnd])
 
@@ -130,6 +157,27 @@ export function GameCanvas({
     }
   }, [state.clearingAnimation?.isAnimating, render])
 
+  // ラウンドクリア演出のタイマー
+  useEffect(() => {
+    if (state.phase !== 'round_clear') {
+      roundClearTimeRef.current = null
+      return
+    }
+
+    // 演出開始時刻を記録
+    if (roundClearTimeRef.current === null) {
+      roundClearTimeRef.current = Date.now()
+    }
+
+    const timer = setTimeout(() => {
+      onAdvanceRound()
+    }, ROUND_CLEAR_STYLE.duration)
+
+    return () => {
+      clearTimeout(timer)
+    }
+  }, [state.phase, onAdvanceRound])
+
   // ドラッグ&ドロップイベントリスナー
   useEffect(() => {
     if (!canvas) return
@@ -185,12 +233,32 @@ export function GameCanvas({
       )
     }
 
-    const handleMouseDown = (e: MouseEvent) => {
-      // アニメーション中またはゲーム終了時は操作をブロック
-      if (state.clearingAnimation?.isAnimating || state.phase === 'finished') return
+    const isPointInButton = (pos: Position): boolean => {
+      const btn = buttonAreaRef.current
+      if (!btn) return false
+      return (
+        pos.x >= btn.x &&
+        pos.x <= btn.x + btn.width &&
+        pos.y >= btn.y &&
+        pos.y <= btn.y + btn.height
+      )
+    }
 
+    const handleMouseDown = (e: MouseEvent) => {
       e.preventDefault()
       const pos = getCanvasPosition(e)
+
+      // ゲームオーバー/クリア時はボタンクリックのみ許可
+      if (state.phase === 'game_over' || state.phase === 'game_clear') {
+        if (isPointInButton(pos)) {
+          onReset()
+        }
+        return
+      }
+
+      // アニメーション中またはラウンドクリア中は操作をブロック
+      if (state.clearingAnimation?.isAnimating || state.phase === 'round_clear') return
+
       const slotIndex = findSlotAtPosition(pos)
 
       if (slotIndex === null) return
@@ -219,11 +287,20 @@ export function GameCanvas({
     }
 
     const handleTouchStart = (e: TouchEvent) => {
-      // アニメーション中またはゲーム終了時は操作をブロック
-      if (state.clearingAnimation?.isAnimating || state.phase === 'finished') return
-
       e.preventDefault()
       const pos = getCanvasPosition(e.touches[0])
+
+      // ゲームオーバー/クリア時はボタンクリックのみ許可
+      if (state.phase === 'game_over' || state.phase === 'game_clear') {
+        if (isPointInButton(pos)) {
+          onReset()
+        }
+        return
+      }
+
+      // アニメーション中またはラウンドクリア中は操作をブロック
+      if (state.clearingAnimation?.isAnimating || state.phase === 'round_clear') return
+
       const slotIndex = findSlotAtPosition(pos)
 
       if (slotIndex === null) return
@@ -270,7 +347,7 @@ export function GameCanvas({
       window.removeEventListener('touchend', handleTouchEnd)
       window.removeEventListener('touchcancel', handleTouchEnd)
     }
-  }, [canvas, layout, state.pieceSlots, state.clearingAnimation, state.phase, onDragStart, onDragMove, onDragEnd])
+  }, [canvas, layout, state.pieceSlots, state.clearingAnimation, state.phase, onDragStart, onDragMove, onDragEnd, onReset])
 
   return (
     <canvas

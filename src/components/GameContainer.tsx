@@ -28,6 +28,8 @@ export function GameContainer() {
         onDragMove={actions.updateDrag}
         onDragEnd={actions.endDrag}
         onClearAnimationEnd={actions.endClearAnimation}
+        onAdvanceRound={actions.advanceRound}
+        onReset={actions.resetGame}
       />
     </div>
   )
