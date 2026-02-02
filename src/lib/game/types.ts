@@ -23,7 +23,19 @@ export type PieceShape = boolean[][]
 export type MinoCategory = 'monomino' | 'domino' | 'tromino' | 'tetromino' | 'pentomino' | 'hexomino'
 
 // ゲームフェーズ
-export type GamePhase = 'playing' | 'round_clear' | 'game_over' | 'game_clear'
+export type GamePhase = 'playing' | 'round_clear' | 'shopping' | 'game_over' | 'game_clear'
+
+// ショップアイテム
+export interface ShopItem {
+  minoId: string         // ミノのID
+  price: number          // 価格（セル数と同じ）
+  purchased: boolean     // 購入済みフラグ
+}
+
+// ショップ状態
+export interface ShopState {
+  items: ShopItem[]      // ショップに並んでいるアイテム（3つ）
+}
 
 // デッキの状態
 export interface DeckState {
@@ -101,6 +113,7 @@ export interface GameState {
   round: number                               // 現在のラウンド（1-24）
   gold: number                                // 所持ゴールド
   targetScore: number                         // 現在ラウンドの目標スコア
+  shopState: ShopState | null                 // ショップ状態（shoppingフェーズでのみ非null）
 }
 
 // ゲームアクション
@@ -112,6 +125,8 @@ export type GameAction =
   | { type: 'RESET_GAME' }
   | { type: 'END_CLEAR_ANIMATION' }
   | { type: 'ADVANCE_ROUND' }
+  | { type: 'BUY_ITEM'; itemIndex: number }
+  | { type: 'LEAVE_SHOP' }
 
 // Canvas描画に必要なレイアウト情報
 export interface CanvasLayout {

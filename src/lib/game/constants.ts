@@ -182,3 +182,32 @@ export const GAME_CLEAR_STYLE = {
   line2OffsetY: 30,
   buttonOffsetY: 80,
 }
+
+// ショップ表示スタイル
+export const SHOP_STYLE = {
+  backgroundColor: 'rgba(0, 0, 0, 0.85)',
+  titleFontSize: 28,
+  titleColor: '#FFFFFF',
+  priceFontSize: 18,
+  priceColor: '#FFD700',
+  priceDisabledColor: '#888888',
+  itemBoxPadding: 15,
+  itemBoxGap: 20,
+  itemBorderColor: '#8B7355',
+  itemBorderWidth: 3,
+  itemBackgroundColor: 'rgba(210, 180, 140, 0.3)',
+  itemSelectedColor: 'rgba(76, 175, 80, 0.3)',
+  itemPurchasedColor: 'rgba(100, 100, 100, 0.5)',
+  leaveButtonWidth: 160,
+  leaveButtonHeight: 50,
+  leaveButtonColor: '#8B7355',
+  leaveButtonTextColor: '#FFFFFF',
+  leaveButtonFontSize: 20,
+  titleOffsetY: -180,
+  itemsOffsetY: -50,
+  leaveButtonOffsetY: 180,
+  goldDisplayOffsetY: -220,
+  cellSizeRatio: 0.6,
+  shapeVerticalOffset: 15,      // ミノ形状の垂直オフセット
+  priceVerticalOffset: 20,      // 価格表示の下からのオフセット
+}

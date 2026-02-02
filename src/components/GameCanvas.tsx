@@ -9,8 +9,10 @@ import { renderScore } from './renderer/scoreRenderer'
 import { renderRemainingHands, renderGold } from './renderer/uiRenderer'
 import { renderRoundInfo } from './renderer/roundRenderer'
 import { renderRoundClear, renderGameOver, renderGameClear } from './renderer/overlayRenderer'
+import { renderShop, ShopRenderResult } from './renderer/shopRenderer'
 import { screenToBoardPosition } from '../lib/game/collisionDetection'
 import { getPieceSize } from '../lib/game/pieceDefinitions'
+import { canAfford } from '../lib/game/shopLogic'
 
 interface GameCanvasProps {
   state: GameState
@@ -21,6 +23,8 @@ interface GameCanvasProps {
   onClearAnimationEnd: () => void
   onAdvanceRound: () => void
   onReset: () => void
+  onBuyItem: (itemIndex: number) => void
+  onLeaveShop: () => void
 }
 
 export function GameCanvas({
@@ -32,6 +36,8 @@ export function GameCanvas({
   onClearAnimationEnd,
   onAdvanceRound,
   onReset,
+  onBuyItem,
+  onLeaveShop,
 }: GameCanvasProps) {
   const [canvas, setCanvas] = useState<HTMLCanvasElement | null>(null)
   const dprRef = useRef(window.devicePixelRatio || 1)
@@ -39,6 +45,7 @@ export function GameCanvas({
   const activeSlotRef = useRef<number | null>(null)
   const buttonAreaRef = useRef<{ x: number; y: number; width: number; height: number } | null>(null)
   const roundClearTimeRef = useRef<number | null>(null)
+  const shopRenderResultRef = useRef<ShopRenderResult | null>(null)
 
   // callback ref でcanvasを取得
   const canvasRefCallback = useCallback((node: HTMLCanvasElement | null) => {
@@ -94,12 +101,19 @@ export function GameCanvas({
       const goldReward = state.deck.remainingHands
       renderRoundClear(ctx, state.round, goldReward, layout)
       buttonAreaRef.current = null
+      shopRenderResultRef.current = null
+    } else if (state.phase === 'shopping' && state.shopState) {
+      shopRenderResultRef.current = renderShop(ctx, state.shopState, state.gold, layout)
+      buttonAreaRef.current = null
     } else if (state.phase === 'game_over') {
       buttonAreaRef.current = renderGameOver(ctx, state.round, state.score, state.gold, layout)
+      shopRenderResultRef.current = null
     } else if (state.phase === 'game_clear') {
       buttonAreaRef.current = renderGameClear(ctx, state.gold, layout)
+      shopRenderResultRef.current = null
     } else {
       buttonAreaRef.current = null
+      shopRenderResultRef.current = null
     }
   }, [canvas, state, layout, onClearAnimationEnd])
 
@@ -244,9 +258,49 @@ export function GameCanvas({
       )
     }
 
+    const isPointInArea = (pos: Position, area: { x: number; y: number; width: number; height: number }): boolean => {
+      return (
+        pos.x >= area.x &&
+        pos.x <= area.x + area.width &&
+        pos.y >= area.y &&
+        pos.y <= area.y + area.height
+      )
+    }
+
+    const handleShopClick = (pos: Position): boolean => {
+      const shopResult = shopRenderResultRef.current
+      if (!shopResult || !state.shopState) return false
+
+      // 店を出るボタンのクリック
+      if (isPointInArea(pos, shopResult.leaveButtonArea)) {
+        onLeaveShop()
+        return true
+      }
+
+      // アイテムのクリック
+      for (const itemArea of shopResult.itemAreas) {
+        if (isPointInArea(pos, itemArea)) {
+          const item = state.shopState.items[itemArea.itemIndex]
+          // 購入済みでなく、ゴールドが足りている場合のみ購入
+          if (!item.purchased && canAfford(state.gold, item.price)) {
+            onBuyItem(itemArea.itemIndex)
+          }
+          return true
+        }
+      }
+
+      return false
+    }
+
     const handleMouseDown = (e: MouseEvent) => {
       e.preventDefault()
       const pos = getCanvasPosition(e)
+
+      // ショッピングフェーズ
+      if (state.phase === 'shopping') {
+        handleShopClick(pos)
+        return
+      }
 
       // ゲームオーバー/クリア時はボタンクリックのみ許可
       if (state.phase === 'game_over' || state.phase === 'game_clear') {
@@ -289,6 +343,12 @@ export function GameCanvas({
     const handleTouchStart = (e: TouchEvent) => {
       e.preventDefault()
       const pos = getCanvasPosition(e.touches[0])
+
+      // ショッピングフェーズ
+      if (state.phase === 'shopping') {
+        handleShopClick(pos)
+        return
+      }
 
       // ゲームオーバー/クリア時はボタンクリックのみ許可
       if (state.phase === 'game_over' || state.phase === 'game_clear') {
@@ -347,7 +407,7 @@ export function GameCanvas({
       window.removeEventListener('touchend', handleTouchEnd)
       window.removeEventListener('touchcancel', handleTouchEnd)
     }
-  }, [canvas, layout, state.pieceSlots, state.clearingAnimation, state.phase, onDragStart, onDragMove, onDragEnd, onReset])
+  }, [canvas, layout, state.pieceSlots, state.clearingAnimation, state.phase, state.shopState, state.gold, onDragStart, onDragMove, onDragEnd, onReset, onBuyItem, onLeaveShop])
 
   return (
     <canvas

@@ -3,10 +3,11 @@ import { GameState, GameAction, PieceSlot, DragState, Position, DeckState, GameP
 import { createEmptyBoard, placePieceOnBoard } from '../lib/game/boardLogic'
 import { canPlacePiece } from '../lib/game/collisionDetection'
 import { findCompletedLines, calculateScore, getCellsToRemove, clearLines } from '../lib/game/lineLogic'
-import { CLEAR_ANIMATION, ROUND_CONFIG } from '../lib/game/constants'
+import { CLEAR_ANIMATION, ROUND_CONFIG, DECK_CONFIG } from '../lib/game/constants'
 import { DefaultRandom } from '../lib/game/random'
 import { createInitialDeckState, drawPiecesFromDeck, decrementRemainingHands } from '../lib/game/deckLogic'
 import { calculateTargetScore, isRoundCleared, isFinalRound, calculateGoldReward } from '../lib/game/roundLogic'
+import { createShopState, canAfford, addToDeck, markItemAsPurchased, shuffleCurrentDeck } from '../lib/game/shopLogic'
 
 /**
  * 初期ドラッグ状態
@@ -102,18 +103,29 @@ function createInitialState(): GameState {
     round: initialRound,
     gold: ROUND_CONFIG.initialGold,
     targetScore: calculateTargetScore(initialRound),
+    shopState: null,
   }
 }
 
 /**
  * 次のラウンドの状態を作成（スコア・フィールド・ストックをリセット）
+ * shopState内のデッキを使用してゲームを再開
  */
 function createNextRoundState(currentState: GameState): GameState {
   const rng = new DefaultRandom()
-  const initialDeck = createInitialDeckState(rng)
-  const { slots, newDeck } = generateNewPieceSlotsFromDeck(initialDeck)
+  // ショップで追加されたカードを含むデッキをシャッフルして使用
+  const shuffledDeck = currentState.shopState
+    ? shuffleCurrentDeck(currentState.deck, rng)
+    : createInitialDeckState(rng)
+
+  // ハンド数を12にリセット
+  const deckWithResetHands: DeckState = {
+    ...shuffledDeck,
+    remainingHands: DECK_CONFIG.totalHands,
+  }
+
+  const { slots, newDeck } = generateNewPieceSlotsFromDeck(deckWithResetHands)
   const nextRound = currentState.round + 1
-  const goldReward = calculateGoldReward(currentState.deck.remainingHands)
 
   return {
     board: createEmptyBoard(),
@@ -124,8 +136,9 @@ function createNextRoundState(currentState: GameState): GameState {
     deck: newDeck,
     phase: 'playing',
     round: nextRound,
-    gold: currentState.gold + goldReward,
+    gold: currentState.gold,  // ゴールドはOPEN_SHOPで加算済み
     targetScore: calculateTargetScore(nextRound),
+    shopState: null,
   }
 }
 
@@ -290,18 +303,60 @@ function gameReducer(state: GameState, action: GameAction): GameState {
     }
 
     case 'ADVANCE_ROUND': {
-      // round_clear状態でのみ次のラウンドに進める
+      // round_clear状態でのみショップに進める
       if (state.phase !== 'round_clear') return state
 
-      // 最終ラウンドならゲームクリア
+      // 最終ラウンドならゲームクリア（ショップをスキップ）
       if (isFinalRound(state.round)) {
         const goldReward = calculateGoldReward(state.deck.remainingHands)
         return {
           ...state,
           phase: 'game_clear',
           gold: state.gold + goldReward,
+          shopState: null,
         }
       }
+
+      // ショップへ遷移
+      const rng = new DefaultRandom()
+      const goldReward = calculateGoldReward(state.deck.remainingHands)
+      return {
+        ...state,
+        phase: 'shopping',
+        gold: state.gold + goldReward,
+        shopState: createShopState(rng),
+      }
+    }
+
+    case 'BUY_ITEM': {
+      // shopping状態でのみ購入可能
+      if (state.phase !== 'shopping' || !state.shopState) return state
+
+      const { itemIndex } = action
+
+      // 配列境界チェック
+      if (itemIndex < 0 || itemIndex >= state.shopState.items.length) return state
+
+      const item = state.shopState.items[itemIndex]
+
+      // 既に購入済み、またはゴールド不足の場合は何もしない
+      if (item.purchased || !canAfford(state.gold, item.price)) return state
+
+      // アイテムを購入済みにし、デッキに追加
+      const newShopState = markItemAsPurchased(state.shopState, itemIndex)
+      const newDeck = addToDeck(state.deck, item.minoId)
+
+      return {
+        ...state,
+        gold: state.gold - item.price,
+        deck: newDeck,
+        shopState: newShopState,
+      }
+    }
+
+    case 'LEAVE_SHOP': {
+      // shopping状態でのみ店を出られる
+      if (state.phase !== 'shopping') return state
 
       return createNextRoundState(state)
     }
@@ -341,6 +396,14 @@ export function useGame() {
     dispatch({ type: 'ADVANCE_ROUND' })
   }, [])
 
+  const buyItem = useCallback((itemIndex: number) => {
+    dispatch({ type: 'BUY_ITEM', itemIndex })
+  }, [])
+
+  const leaveShop = useCallback(() => {
+    dispatch({ type: 'LEAVE_SHOP' })
+  }, [])
+
   return {
     state,
     actions: {
@@ -350,6 +413,8 @@ export function useGame() {
       resetGame,
       endClearAnimation,
       advanceRound,
+      buyItem,
+      leaveShop,
     },
   }
 }

@@ -30,6 +30,8 @@ export function GameContainer() {
         onClearAnimationEnd={actions.endClearAnimation}
         onAdvanceRound={actions.advanceRound}
         onReset={actions.resetGame}
+        onBuyItem={actions.buyItem}
+        onLeaveShop={actions.leaveShop}
       />
     </div>
   )
