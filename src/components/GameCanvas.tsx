@@ -10,6 +10,7 @@ import { renderRemainingHands, renderGold } from './renderer/uiRenderer'
 import { renderRoundInfo } from './renderer/roundRenderer'
 import { renderRoundClear, renderGameOver, renderGameClear } from './renderer/overlayRenderer'
 import { renderShop, ShopRenderResult } from './renderer/shopRenderer'
+import { renderDebugWindow } from './renderer/debugRenderer'
 import { screenToBoardPosition } from '../lib/game/collisionDetection'
 import { getPieceSize } from '../lib/game/pieceDefinitions'
 import { canAfford } from '../lib/game/shopLogic'
@@ -40,6 +41,7 @@ export function GameCanvas({
   onLeaveShop,
 }: GameCanvasProps) {
   const [canvas, setCanvas] = useState<HTMLCanvasElement | null>(null)
+  const [showDebugWindow, setShowDebugWindow] = useState(false)
   const dprRef = useRef(window.devicePixelRatio || 1)
   const isDraggingRef = useRef(false)
   const activeSlotRef = useRef<number | null>(null)
@@ -115,7 +117,12 @@ export function GameCanvas({
       buttonAreaRef.current = null
       shopRenderResultRef.current = null
     }
-  }, [canvas, state, layout, onClearAnimationEnd])
+
+    // デバッグウィンドウ描画
+    if (showDebugWindow) {
+      renderDebugWindow(ctx, state.deck)
+    }
+  }, [canvas, state, layout, onClearAnimationEnd, showDebugWindow])
 
   // Canvasサイズの設定
   useEffect(() => {
@@ -191,6 +198,21 @@ export function GameCanvas({
       clearTimeout(timer)
     }
   }, [state.phase, onAdvanceRound])
+
+  // キーボードイベントリスナー（Shift + 1 でデバッグウィンドウのトグル）
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Shift + 1 でデバッグウィンドウをトグル
+      if (e.shiftKey && e.key === '!') {
+        setShowDebugWindow(prev => !prev)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [])
 
   // ドラッグ&ドロップイベントリスナー
   useEffect(() => {

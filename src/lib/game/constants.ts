@@ -211,3 +211,22 @@ export const SHOP_STYLE = {
   shapeVerticalOffset: 15,      // ミノ形状の垂直オフセット
   priceVerticalOffset: 20,      // 価格表示の下からのオフセット
 }
+
+// デバッグウィンドウ表示スタイル
+export const DEBUG_WINDOW_STYLE = {
+  backgroundColor: 'rgba(0, 0, 0, 0.85)',
+  titleFontSize: 14,
+  titleColor: '#00FF00',
+  infoFontSize: 11,
+  infoColor: '#FFFFFF',
+  highlightBgColor: 'rgba(255, 215, 0, 0.3)',  // 次のミノのハイライト背景
+  fontFamily: 'Consolas, Monaco, monospace',
+  padding: 10,
+  itemPadding: 4,          // ミノアイテム間のパディング
+  cellSize: 7,             // ミノセルサイズ（小さい 6-8px）
+  maxItems: 20,            // 表示する最大アイテム数
+  numberColumnWidth: 25,   // 番号表示用の幅
+  minWindowWidth: 90,      // 最小ウィンドウ幅
+  offsetX: 10,             // 左端からのオフセット
+  offsetY: 80,             // 上端からのオフセット
+}
