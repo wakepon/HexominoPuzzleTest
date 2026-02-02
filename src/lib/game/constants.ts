@@ -74,3 +74,33 @@ export const SCORE_STYLE = {
   shadowBlur: 4,
   paddingTop: 15,
 }
+
+// デッキ設定
+export const DECK_CONFIG = {
+  totalHands: 12,    // 配置可能回数
+  drawCount: 3,      // 一度に引く枚数
+  // デッキに含めるミノのID（モノミノ1 + ドミノ2 + トロミノ6 = 9）
+  minoIds: [
+    'mono-1',
+    'dom-h',
+    'dom-v',
+    'tro-i-h',
+    'tro-i-v',
+    'tro-l-0',
+    'tro-l-90',
+    'tro-l-180',
+    'tro-l-270',
+  ] as const,
+}
+
+// 残りハンド表示設定
+export const HANDS_STYLE = {
+  fontSize: 20,
+  fontFamily: 'Arial, sans-serif',
+  fontWeight: 'bold',
+  color: '#FFFFFF',
+  shadowColor: '#000000',
+  shadowBlur: 4,
+  paddingRight: 20,
+  paddingTop: 15,
+}

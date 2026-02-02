@@ -6,6 +6,7 @@ import { renderPieceSlots, renderDraggingPiece } from './renderer/pieceRenderer'
 import { renderPlacementPreview } from './renderer/previewRenderer'
 import { renderClearAnimation } from './renderer/clearAnimationRenderer'
 import { renderScore } from './renderer/scoreRenderer'
+import { renderRemainingHands } from './renderer/uiRenderer'
 import { screenToBoardPosition } from '../lib/game/collisionDetection'
 import { getPieceSize } from '../lib/game/pieceDefinitions'
 
@@ -52,6 +53,9 @@ export function GameCanvas({
 
     // スコア描画
     renderScore(ctx, state.score, layout)
+
+    // 残りハンド描画
+    renderRemainingHands(ctx, state.deck.remainingHands, layout)
 
     // ボード描画（消去アニメーション中のセルは除外）
     const clearingCells = state.clearingAnimation?.isAnimating
@@ -182,8 +186,8 @@ export function GameCanvas({
     }
 
     const handleMouseDown = (e: MouseEvent) => {
-      // アニメーション中は操作をブロック
-      if (state.clearingAnimation?.isAnimating) return
+      // アニメーション中またはゲーム終了時は操作をブロック
+      if (state.clearingAnimation?.isAnimating || state.phase === 'finished') return
 
       e.preventDefault()
       const pos = getCanvasPosition(e)
@@ -215,8 +219,8 @@ export function GameCanvas({
     }
 
     const handleTouchStart = (e: TouchEvent) => {
-      // アニメーション中は操作をブロック
-      if (state.clearingAnimation?.isAnimating) return
+      // アニメーション中またはゲーム終了時は操作をブロック
+      if (state.clearingAnimation?.isAnimating || state.phase === 'finished') return
 
       e.preventDefault()
       const pos = getCanvasPosition(e.touches[0])
@@ -266,7 +270,7 @@ export function GameCanvas({
       window.removeEventListener('touchend', handleTouchEnd)
       window.removeEventListener('touchcancel', handleTouchEnd)
     }
-  }, [canvas, layout, state.pieceSlots, state.clearingAnimation, onDragStart, onDragMove, onDragEnd])
+  }, [canvas, layout, state.pieceSlots, state.clearingAnimation, state.phase, onDragStart, onDragMove, onDragEnd])
 
   return (
     <canvas

@@ -877,3 +877,15 @@ export const MINO_COUNTS: Record<MinoCategory, number> = {
   pentomino: PENTOMINOS.length,
   hexomino: HEXOMINOS.length,
 }
+
+// IDをキーとするMapを作成してO(1)検索を実現
+const MINO_BY_ID_MAP = new Map<string, MinoDefinition>(
+  ALL_MINOS.map(mino => [mino.id, mino])
+)
+
+/**
+ * IDでミノ定義を取得する
+ */
+export function getMinoById(id: string): MinoDefinition | undefined {
+  return MINO_BY_ID_MAP.get(id)
+}

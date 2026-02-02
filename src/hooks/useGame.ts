@@ -1,11 +1,11 @@
 import { useReducer, useCallback } from 'react'
-import { GameState, GameAction, PieceSlot, DragState, Position } from '../lib/game/types'
+import { GameState, GameAction, PieceSlot, DragState, Position, DeckState, GamePhase } from '../lib/game/types'
 import { createEmptyBoard, placePieceOnBoard } from '../lib/game/boardLogic'
 import { canPlacePiece } from '../lib/game/collisionDetection'
 import { findCompletedLines, calculateScore, getCellsToRemove, clearLines } from '../lib/game/lineLogic'
 import { CLEAR_ANIMATION } from '../lib/game/constants'
-import { generatePieceSet, DEFAULT_WEIGHTS } from '../lib/game/pieceGenerator'
 import { DefaultRandom } from '../lib/game/random'
+import { createInitialDeckState, drawPiecesFromDeck, decrementRemainingHands } from '../lib/game/deckLogic'
 
 /**
  * 初期ドラッグ状態
@@ -20,16 +20,16 @@ const initialDragState: DragState = {
 }
 
 /**
- * 新しいピースセットを生成してスロットに配置
- * 毎回新しいRNGインスタンスを使用（immutable）
+ * デッキから新しいピースセットを生成してスロットに配置
  */
-function generateNewPieceSlots(): PieceSlot[] {
+function generateNewPieceSlotsFromDeck(deck: DeckState): { slots: PieceSlot[]; newDeck: DeckState } {
   const rng = new DefaultRandom()
-  const pieces = generatePieceSet(DEFAULT_WEIGHTS, rng)
-  return pieces.map((piece) => ({
+  const { pieces, newDeck } = drawPiecesFromDeck(deck, rng)
+  const slots = pieces.map((piece) => ({
     piece,
     position: { x: 0, y: 0 },  // レイアウト計算後に更新
   }))
+  return { slots, newDeck }
 }
 
 /**
@@ -40,17 +40,48 @@ function areAllSlotsEmpty(slots: PieceSlot[]): boolean {
 }
 
 /**
+ * 配置後のデッキとスロットの状態を計算
+ * END_DRAGとPLACE_PIECEで共通のロジックを抽出
+ */
+function handlePlacement(
+  slots: PieceSlot[],
+  deck: DeckState
+): { finalSlots: PieceSlot[]; finalDeck: DeckState; phase: GamePhase } {
+  const updatedDeck = decrementRemainingHands(deck)
+  const isGameOver = updatedDeck.remainingHands === 0
+
+  if (!areAllSlotsEmpty(slots) || isGameOver) {
+    return {
+      finalSlots: slots,
+      finalDeck: updatedDeck,
+      phase: isGameOver ? 'finished' : 'playing',
+    }
+  }
+
+  const result = generateNewPieceSlotsFromDeck(updatedDeck)
+  return {
+    finalSlots: result.slots,
+    finalDeck: result.newDeck,
+    phase: 'playing',
+  }
+}
+
+/**
  * 初期ゲーム状態を作成
  */
 function createInitialState(): GameState {
-  const pieceSlots = generateNewPieceSlots()
+  const rng = new DefaultRandom()
+  const initialDeck = createInitialDeckState(rng)
+  const { slots, newDeck } = generateNewPieceSlotsFromDeck(initialDeck)
 
   return {
     board: createEmptyBoard(),
-    pieceSlots,
+    pieceSlots: slots,
     dragState: initialDragState,
     score: 0,
     clearingAnimation: null,
+    deck: newDeck,
+    phase: 'playing',
   }
 }
 
@@ -97,6 +128,14 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         }
       }
 
+      // ゲーム終了状態では配置不可
+      if (state.phase === 'finished') {
+        return {
+          ...state,
+          dragState: initialDragState,
+        }
+      }
+
       const slotIndex = state.dragState.slotIndex
       const slot = state.pieceSlots[slotIndex]
       const boardPos = state.dragState.boardPos
@@ -111,12 +150,12 @@ function gameReducer(state: GameState, action: GameAction): GameState {
           i === slotIndex ? { ...s, piece: null } : s
         )
 
+        // 配置後の状態を計算
+        const { finalSlots, finalDeck, phase: newPhase } = handlePlacement(newSlots, state.deck)
+
         // ライン消去判定
         const completedLines = findCompletedLines(newBoard)
         const totalLines = completedLines.rows.length + completedLines.columns.length
-
-        // 全スロットが空になったら新しいピースを生成
-        const finalSlots = areAllSlotsEmpty(newSlots) ? generateNewPieceSlots() : newSlots
 
         if (totalLines > 0) {
           const cells = getCellsToRemove(completedLines)
@@ -134,6 +173,8 @@ function gameReducer(state: GameState, action: GameAction): GameState {
               duration: CLEAR_ANIMATION.duration,
             },
             score: state.score + scoreGain,
+            deck: finalDeck,
+            phase: newPhase,
           }
         }
 
@@ -142,6 +183,8 @@ function gameReducer(state: GameState, action: GameAction): GameState {
           board: newBoard,
           pieceSlots: finalSlots,
           dragState: initialDragState,
+          deck: finalDeck,
+          phase: newPhase,
         }
       }
 
@@ -156,6 +199,9 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       const slot = state.pieceSlots[action.slotIndex]
       if (!slot?.piece) return state
 
+      // ゲーム終了状態では配置不可
+      if (state.phase === 'finished') return state
+
       if (!canPlacePiece(state.board, slot.piece.shape, action.position)) {
         return state
       }
@@ -165,13 +211,15 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         i === action.slotIndex ? { ...s, piece: null } : s
       )
 
-      // 全スロットが空になったら新しいピースを生成
-      const finalSlots = areAllSlotsEmpty(newSlots) ? generateNewPieceSlots() : newSlots
+      // 配置後の状態を計算
+      const { finalSlots, finalDeck, phase: newPhase } = handlePlacement(newSlots, state.deck)
 
       return {
         ...state,
         board: newBoard,
         pieceSlots: finalSlots,
+        deck: finalDeck,
+        phase: newPhase,
       }
     }
 

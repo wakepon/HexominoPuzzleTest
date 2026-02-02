@@ -22,6 +22,15 @@ export type PieceShape = boolean[][]
 // ミノのカテゴリ（セル数による分類）
 export type MinoCategory = 'monomino' | 'domino' | 'tromino' | 'tetromino' | 'pentomino' | 'hexomino'
 
+// ゲームフェーズ
+export type GamePhase = 'playing' | 'finished'
+
+// デッキの状態
+export interface DeckState {
+  cards: string[]         // デッキに残っているミノIDの配列
+  remainingHands: number  // 残りの配置可能回数
+}
+
 // カテゴリ別の重み
 export type CategoryWeights = Record<MinoCategory, number>
 
@@ -87,6 +96,8 @@ export interface GameState {
   dragState: DragState
   score: number
   clearingAnimation: ClearingAnimationState | null
+  deck: DeckState
+  phase: GamePhase
 }
 
 // ゲームアクション
