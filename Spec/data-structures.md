@@ -104,7 +104,7 @@ type CategoryWeights = Record<MinoCategory, number>
 ```
 
 **用途:**
-ミノ生成時の各カテゴリの出現確率を制御する。
+ミノ生成時の各カテゴリの出現確率を制御する（現在はデッキベースに移行）。
 
 ### Piece
 
@@ -149,6 +149,55 @@ interface PieceSlot {
 **プロパティ:**
 - `piece`: スロットに配置されているブロック（配置済みの場合は `null`）
 - `position`: スロットの画面上の位置（レイアウト計算で設定）
+
+## デッキ関連
+
+### DeckState
+
+デッキの状態。
+
+```typescript
+interface DeckState {
+  cards: string[]         // デッキに残っているミノIDの配列
+  remainingHands: number  // 残りの配置可能回数
+}
+```
+
+**プロパティ:**
+- `cards`: デッキ内のミノIDリスト（シャッフル済み）
+- `remainingHands`: 残りの配置可能回数（ラウンド開始時にリセット）
+
+## ショップ関連
+
+### ShopItem
+
+ショップで販売されるアイテム。
+
+```typescript
+interface ShopItem {
+  minoId: string         // ミノのID
+  price: number          // 価格（セル数と同じ）
+  purchased: boolean     // 購入済みフラグ
+}
+```
+
+**プロパティ:**
+- `minoId`: 販売されるミノのID
+- `price`: 購入価格（ミノのセル数と同じ）
+- `purchased`: 購入済みかどうか
+
+### ShopState
+
+ショップ状態。
+
+```typescript
+interface ShopState {
+  items: ShopItem[]      // ショップに並んでいるアイテム（3つ）
+}
+```
+
+**プロパティ:**
+- `items`: 販売中のアイテムリスト（常に3つ）
 
 ## ドラッグ関連
 
@@ -214,6 +263,21 @@ interface ClearingAnimationState {
 
 ## ゲーム状態
 
+### GamePhase
+
+ゲームフェーズ。
+
+```typescript
+type GamePhase = 'playing' | 'round_clear' | 'shopping' | 'game_over' | 'game_clear'
+```
+
+**フェーズ種類:**
+- `playing`: 通常のゲームプレイ中
+- `round_clear`: ラウンドクリア演出中
+- `shopping`: ショップフェーズ
+- `game_over`: ゲームオーバー
+- `game_clear`: ゲームクリア（最終ラウンドクリア）
+
 ### GameState
 
 ゲーム全体の状態。
@@ -223,8 +287,14 @@ interface GameState {
   board: Board
   pieceSlots: PieceSlot[]
   dragState: DragState
-  score: number
+  score: number                               // 現在ラウンドのスコア
   clearingAnimation: ClearingAnimationState | null
+  deck: DeckState
+  phase: GamePhase
+  round: number                               // 現在のラウンド（1-24）
+  gold: number                                // 所持ゴールド
+  targetScore: number                         // 現在ラウンドの目標スコア
+  shopState: ShopState | null                 // ショップ状態（shoppingフェーズでのみ非null）
 }
 ```
 
@@ -232,8 +302,14 @@ interface GameState {
 - `board`: ゲームボードの状態
 - `pieceSlots`: ブロックスロットの配列（通常3つ）
 - `dragState`: ドラッグ操作の状態
-- `score`: 現在のスコア
+- `score`: 現在ラウンドのスコア（ラウンド開始時にリセット）
 - `clearingAnimation`: 消去アニメーション状態（アニメーション中のみ）
+- `deck`: デッキ状態
+- `phase`: 現在のゲームフェーズ
+- `round`: 現在のラウンド番号（1から24）
+- `gold`: 所持ゴールド（ラウンド間で持ち越し）
+- `targetScore`: 現在ラウンドの目標スコア
+- `shopState`: ショップ状態（shoppingフェーズでのみ非null）
 
 ## レイアウト関連
 
@@ -281,6 +357,9 @@ type GameAction =
   | { type: 'END_DRAG' }
   | { type: 'RESET_GAME' }
   | { type: 'END_CLEAR_ANIMATION' }
+  | { type: 'ADVANCE_ROUND' }
+  | { type: 'BUY_ITEM'; itemIndex: number }
+  | { type: 'LEAVE_SHOP' }
 ```
 
 **アクション種類:**
@@ -290,6 +369,9 @@ type GameAction =
 4. `END_DRAG`: ドラッグ終了
 5. `RESET_GAME`: ゲームリセット
 6. `END_CLEAR_ANIMATION`: 消去アニメーション終了
+7. `ADVANCE_ROUND`: ラウンド進行（round_clearフェーズから次フェーズへ）
+8. `BUY_ITEM`: ショップアイテム購入
+9. `LEAVE_SHOP`: ショップ退出（次のラウンドへ）
 
 ## データフロー
 
@@ -313,6 +395,7 @@ GameState (新しい状態)
 
 - `Board` 更新時は全セルをコピー
 - `PieceSlot` 配列更新時は `map` で新配列を生成
+- `DeckState` 更新時はスプレッド演算子で新オブジェクト生成
 - `GameState` 更新時はスプレッド演算子で新オブジェクト生成
 
 ## 関連ファイル
@@ -320,7 +403,9 @@ GameState (新しい状態)
 - `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/types.ts` - 型定義
 - `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/boardLogic.ts` - ボード操作
 - `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/minoDefinitions.ts` - ミノ定義
-- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/pieceGenerator.ts` - ミノ生成
+- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/deckLogic.ts` - デッキ管理
+- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/roundLogic.ts` - ラウンド・ゴールド計算
+- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/shopLogic.ts` - ショップロジック
 - `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/random.ts` - 乱数生成器
 - `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/hooks/useGame.ts` - 状態管理
 
@@ -328,3 +413,4 @@ GameState (新しい状態)
 
 - 2026-02-01: 初版作成
 - 2026-02-01: ミノ関連型、ライン消去関連型、スコア、アニメーション状態を追加
+- 2026-02-02: DeckState、GamePhase、ShopItem、ShopState、新アクション型を追加
