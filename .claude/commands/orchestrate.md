@@ -23,7 +23,7 @@ planner -> tdd-guide -> code-reviewer
 ### bugfix
 バグ調査・修正ワークフロー:
 ```
-Explorer -> code-reviewer
+planner -> code-reviewer
 ```
 
 ### refactor
