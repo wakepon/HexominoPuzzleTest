@@ -73,12 +73,13 @@ export function canAfford(gold: number, price: number): boolean {
 }
 
 /**
- * デッキにミノIDを追加
+ * デッキにミノIDを追加（cardsとallMinosの両方に追加）
  */
 export function addToDeck(deck: DeckState, minoId: string): DeckState {
   return {
     ...deck,
     cards: [...deck.cards, minoId],
+    allMinos: [...deck.allMinos, minoId],
   }
 }
 
@@ -96,10 +97,11 @@ export function markItemAsPurchased(shopState: ShopState, itemIndex: number): Sh
 
 /**
  * デッキをシャッフルして新しい状態を返す
+ * allMinosを使って完全にシャッフルした新しいcardsを生成
  */
 export function shuffleCurrentDeck(deck: DeckState, rng: RandomGenerator): DeckState {
   return {
     ...deck,
-    cards: shuffleDeck(deck.cards, rng),
+    cards: shuffleDeck([...deck.allMinos], rng),
   }
 }

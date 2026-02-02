@@ -29,29 +29,48 @@ export function shuffleDeck(cards: string[], rng: RandomGenerator): string[] {
 
 /**
  * デッキからカードを引く
- * デッキが足りない場合は再シャッフルして引く
+ * デッキが足りない場合は、残りを全て引いてから再シャッフルして補充
  */
 export function drawFromDeck(
   deck: DeckState,
   count: number,
   rng: RandomGenerator
 ): { drawn: string[]; newDeck: DeckState } {
-  let cards = [...deck.cards]
+  const cards = [...deck.cards]
+  const allMinos = deck.allMinos
 
-  // デッキが足りない場合は再シャッフル
-  if (cards.length < count) {
-    const newCards = getDeckMinoIds()
-    cards = shuffleDeck(newCards, rng)
+  // デッキが十分にある場合はそのまま引く
+  if (cards.length >= count) {
+    const drawn = cards.slice(0, count)
+    const remaining = cards.slice(count)
+    return {
+      drawn,
+      newDeck: {
+        ...deck,
+        cards: remaining,
+        allMinos,
+      },
+    }
   }
 
-  const drawn = cards.slice(0, count)
-  const remaining = cards.slice(count)
+  // デッキが足りない場合:
+  // 1. まず残りのカードを全て引く
+  const drawnFromCurrent = [...cards]
+  const stillNeeded = count - drawnFromCurrent.length
+
+  // 2. allMinosをシャッフルして新しいデッキを作成
+  const newCards = shuffleDeck([...allMinos], rng)
+
+  // 3. 新しいデッキから不足分を引く
+  const drawnFromNew = newCards.slice(0, stillNeeded)
+  const remaining = newCards.slice(stillNeeded)
 
   return {
-    drawn,
+    drawn: [...drawnFromCurrent, ...drawnFromNew],
     newDeck: {
       ...deck,
       cards: remaining,
+      allMinos,
     },
   }
 }
@@ -80,6 +99,7 @@ export function createInitialDeckState(rng: RandomGenerator): DeckState {
   return {
     cards: shuffled,
     remainingHands: DECK_CONFIG.totalHands,
+    allMinos: [...cards],
   }
 }
 

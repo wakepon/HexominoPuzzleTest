@@ -41,6 +41,7 @@ export interface ShopState {
 export interface DeckState {
   cards: string[]         // デッキに残っているミノIDの配列
   remainingHands: number  // 残りの配置可能回数
+  allMinos: string[]      // デッキの全ミノID（初期＋購入済み、再シャッフル用）
 }
 
 // カテゴリ別の重み

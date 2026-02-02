@@ -110,21 +110,26 @@ function createInitialState(): GameState {
 /**
  * 次のラウンドの状態を作成（スコア・フィールド・ストックをリセット）
  * shopState内のデッキを使用してゲームを再開
+ *
+ * 処理順序:
+ * 1. 購入済みブロックを含むallMinosを使ってデッキをシャッフル
+ * 2. シャッフル済みデッキから最初の3枚を引いてストックに表示
  */
 function createNextRoundState(currentState: GameState): GameState {
   const rng = new DefaultRandom()
-  // ショップで追加されたカードを含むデッキをシャッフルして使用
-  const shuffledDeck = currentState.shopState
-    ? shuffleCurrentDeck(currentState.deck, rng)
+
+  // Step 1: allMinos（初期デッキ + 購入済みブロック）を使って新しいデッキを作成
+  const baseDeck = currentState.shopState
+    ? {
+        // 購入済みブロックを含むallMinosをシャッフルしてcardsにセット
+        cards: shuffleCurrentDeck(currentState.deck, rng).cards,
+        allMinos: currentState.deck.allMinos,
+        remainingHands: DECK_CONFIG.totalHands,
+      }
     : createInitialDeckState(rng)
 
-  // ハンド数を12にリセット
-  const deckWithResetHands: DeckState = {
-    ...shuffledDeck,
-    remainingHands: DECK_CONFIG.totalHands,
-  }
-
-  const { slots, newDeck } = generateNewPieceSlotsFromDeck(deckWithResetHands)
+  // Step 2: シャッフル済みデッキから最初の3枚を引く
+  const { slots, newDeck } = generateNewPieceSlotsFromDeck(baseDeck)
   const nextRound = currentState.round + 1
 
   return {
