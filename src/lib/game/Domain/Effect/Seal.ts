@@ -69,3 +69,8 @@ export const SEAL_DEFINITIONS: Record<SealType, SealDefinition> = {
 export const getSealDefinition = (sealId: SealId): SealDefinition | undefined => {
   return SEAL_DEFINITIONS[sealId as SealType]
 }
+
+/**
+ * ショップで購入可能なシールタイプ（ネガティブ効果のstoneは除外）
+ */
+export const SHOP_AVAILABLE_SEALS: SealType[] = ['gold', 'score', 'multi']

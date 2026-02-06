@@ -273,3 +273,20 @@ export const PATTERN_SYMBOL_STYLE = {
   shadowColor: '#000000',
   shadowBlur: 2,
 }
+
+// シール別カラー定義
+export const SEAL_COLORS: Record<string, string> = {
+  gold: '#FFD700',   // ゴールド
+  score: '#00FF00',  // グリーン
+  multi: '#FF69B4',  // ピンク
+  stone: '#808080',  // グレー
+}
+
+// シール記号のスタイル設定
+export const SEAL_SYMBOL_STYLE = {
+  fontSize: 10,
+  fontFamily: 'Arial, sans-serif',
+  backgroundColor: 'rgba(0, 0, 0, 0.6)',
+  borderRadius: 2,
+  padding: 1,
+}

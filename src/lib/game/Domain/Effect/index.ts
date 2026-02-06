@@ -15,7 +15,7 @@ export {
 
 // シール
 export type { SealType, SealDefinition } from './Seal'
-export { SEAL_DEFINITIONS, getSealDefinition } from './Seal'
+export { SEAL_DEFINITIONS, getSealDefinition, SHOP_AVAILABLE_SEALS } from './Seal'
 
 // レリック
 export type { RelicRarity, RelicType, RelicDefinition } from './Relic'

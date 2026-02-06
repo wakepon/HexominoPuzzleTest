@@ -61,7 +61,7 @@ export function renderDraggingPiece(
 }
 
 /**
- * Pieceを描画（パターン対応版）
+ * Pieceを描画（パターン・シール対応版）
  */
 export function renderPiece(
   ctx: CanvasRenderingContext2D,
@@ -84,11 +84,12 @@ export function renderPiece(
         const cellX = startX + x * cellSize
         const cellY = startY + y * cellSize
 
-        // BlockDataからパターンを取得
+        // BlockDataからパターンとシールを取得
         const blockData = BlockDataMapUtils.get(blocks, y, x)
         const pattern = blockData?.pattern ?? null
+        const seal = blockData?.seal ?? null
 
-        drawWoodenCellWithBorder(ctx, cellX, cellY, cellSize, pattern)
+        drawWoodenCellWithBorder(ctx, cellX, cellY, cellSize, pattern, seal)
       }
     }
   } finally {

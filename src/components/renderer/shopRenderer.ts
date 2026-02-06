@@ -4,10 +4,11 @@
 
 import type { CanvasLayout, Piece } from '../../lib/game/types'
 import type { ShopState, BlockShopItem } from '../../lib/game/Domain/Shop/ShopTypes'
-import { SHOP_STYLE, COLORS, CELL_STYLE, PATTERN_COLORS, PATTERN_SYMBOL_STYLE } from '../../lib/game/constants'
+import { SHOP_STYLE, COLORS, CELL_STYLE, PATTERN_COLORS, PATTERN_SYMBOL_STYLE, SEAL_COLORS, SEAL_SYMBOL_STYLE } from '../../lib/game/constants'
 import { canAfford } from '../../lib/game/Services/ShopService'
 import { isBlockShopItem } from '../../lib/game/Domain/Shop/ShopTypes'
 import { getPatternDefinition } from '../../lib/game/Domain/Effect/Pattern'
+import { getSealDefinition } from '../../lib/game/Domain/Effect/Seal'
 import { BlockDataMapUtils } from '../../lib/game/Domain/Piece/BlockData'
 import { ButtonArea } from './overlayRenderer'
 
@@ -27,7 +28,7 @@ export interface ShopRenderResult {
 }
 
 /**
- * Pieceの形状を描画（パターン対応版）
+ * Pieceの形状を描画（パターン・シール対応版）
  */
 function renderPieceShape(
   ctx: CanvasRenderingContext2D,
@@ -54,9 +55,10 @@ function renderPieceShape(
       const y = startY + row * cellSize
       const size = cellSize
 
-      // BlockDataからパターンを取得
+      // BlockDataからパターンとシールを取得
       const blockData = BlockDataMapUtils.get(blocks, row, col)
       const pattern = blockData?.pattern ?? null
+      const seal = blockData?.seal ?? null
 
       // パターン別の色を取得
       const colors =
@@ -97,7 +99,7 @@ function renderPieceShape(
         size - padding * 2
       )
 
-      // パターン記号を描画
+      // パターン記号を描画（中央）
       if (pattern) {
         const patternDef = getPatternDefinition(pattern)
         if (patternDef) {
@@ -110,6 +112,41 @@ function renderPieceShape(
           ctx.shadowBlur = PATTERN_SYMBOL_STYLE.shadowBlur
           ctx.fillStyle = PATTERN_SYMBOL_STYLE.color
           ctx.fillText(patternDef.symbol, x + size / 2, y + size / 2)
+          ctx.restore()
+        }
+      }
+
+      // シール記号を描画（右下）
+      if (seal) {
+        const sealDef = getSealDefinition(seal)
+        if (sealDef) {
+          const smallFontSize = Math.max(6, Math.floor(size * 0.3))
+          const sealColor = SEAL_COLORS[seal] ?? '#FFFFFF'
+          const { backgroundColor, borderRadius } = SEAL_SYMBOL_STYLE
+
+          ctx.save()
+          ctx.font = `bold ${smallFontSize}px Arial, sans-serif`
+          const metrics = ctx.measureText(sealDef.symbol)
+          const textWidth = metrics.width
+          const textHeight = smallFontSize
+          const bgPadding = 1
+
+          const bgWidth = textWidth + bgPadding * 4
+          const bgHeight = textHeight + bgPadding * 2
+          const bgX = x + size - bgWidth - 2
+          const bgY = y + size - bgHeight - 2
+
+          // 背景
+          ctx.fillStyle = backgroundColor
+          ctx.beginPath()
+          ctx.roundRect(bgX, bgY, bgWidth, bgHeight, borderRadius)
+          ctx.fill()
+
+          // 記号
+          ctx.fillStyle = sealColor
+          ctx.textAlign = 'center'
+          ctx.textBaseline = 'middle'
+          ctx.fillText(sealDef.symbol, bgX + bgWidth / 2, bgY + bgHeight / 2)
           ctx.restore()
         }
       }
@@ -149,16 +186,37 @@ function renderBlockShopItem(
   const shapeCenterY = boxY + boxHeight / 2 - SHOP_STYLE.shapeVerticalOffset
   renderPieceShape(ctx, piece, shapeCenterX, shapeCenterY, cellSize)
 
-  // パターン名を表示（パターンがある場合）
-  const firstBlockData = piece.blocks.values().next().value
-  if (firstBlockData?.pattern) {
-    const patternDef = getPatternDefinition(firstBlockData.pattern)
-    if (patternDef) {
-      ctx.font = `bold 12px Arial, sans-serif`
-      ctx.textAlign = 'center'
-      ctx.fillStyle = '#FFD700'
-      ctx.fillText(patternDef.name, boxX + boxWidth / 2, boxY + 20)
+  // パターン名・シール名を表示
+  const effectLabels: string[] = []
+
+  // パターン名を収集
+  for (const blockData of piece.blocks.values()) {
+    if (blockData.pattern) {
+      const patternDef = getPatternDefinition(blockData.pattern)
+      if (patternDef) {
+        effectLabels.push(patternDef.name)
+      }
+      break // パターンは全ブロック共通なので1つ見つければOK
     }
+  }
+
+  // シール名を収集
+  for (const blockData of piece.blocks.values()) {
+    if (blockData.seal) {
+      const sealDef = getSealDefinition(blockData.seal)
+      if (sealDef) {
+        effectLabels.push(sealDef.name)
+      }
+      break // シールは1つだけなので1つ見つければOK
+    }
+  }
+
+  // 効果名を表示（パターン名 / シール名）
+  if (effectLabels.length > 0) {
+    ctx.font = `bold 11px Arial, sans-serif`
+    ctx.textAlign = 'center'
+    ctx.fillStyle = '#FFD700'
+    ctx.fillText(effectLabels.join(' / '), boxX + boxWidth / 2, boxY + 20)
   }
 
   // 価格表示

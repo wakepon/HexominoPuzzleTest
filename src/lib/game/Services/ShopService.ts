@@ -3,12 +3,18 @@
  */
 
 import type { ShopItem, ShopState, DeckState, MinoCategory, Piece } from '../Domain'
-import type { PatternId } from '../Domain/Core/Id'
+import type { PatternId, SealId } from '../Domain/Core/Id'
 import type { RandomGenerator } from '../Utils/Random'
 import { MINOS_BY_CATEGORY } from '../Data/MinoDefinitions'
 import { shuffleDeck } from './DeckService'
-import { createPiece, createPieceWithPattern } from './PieceService'
+import {
+  createPiece,
+  createPieceWithPattern,
+  createPieceWithSeal,
+  createPieceWithPatternAndSeal,
+} from './PieceService'
 import { SHOP_AVAILABLE_PATTERNS } from '../Domain/Effect/Pattern'
+import { SHOP_AVAILABLE_SEALS } from '../Domain/Effect/Seal'
 
 /**
  * カテゴリごとのミノIDリスト
@@ -29,6 +35,15 @@ const PATTERN_PROBABILITY: Record<ShopItemSize, number> = {
   small: 0, // 0%
   medium: 0.3, // 30%
   large: 0.5, // 50%
+}
+
+/**
+ * サイズ別のシール付与確率（パターンとは独立）
+ */
+const SEAL_PROBABILITY: Record<ShopItemSize, number> = {
+  small: 0, // 0%
+  medium: 0.2, // 20%
+  large: 0.3, // 30%
 }
 
 /**
@@ -53,13 +68,25 @@ function pickRandomPattern(rng: RandomGenerator): PatternId {
   return SHOP_AVAILABLE_PATTERNS[index] as PatternId
 }
 
+/**
+ * ランダムにシールを選択
+ */
+function pickRandomSeal(rng: RandomGenerator): SealId {
+  const index = Math.floor(rng.next() * SHOP_AVAILABLE_SEALS.length)
+  return SHOP_AVAILABLE_SEALS[index] as SealId
+}
+
 /** パターン付きの追加価格 */
 const PATTERN_PRICE_BONUS = 3
+
+/** シール付きの追加価格 */
+const SEAL_PRICE_BONUS = 2
 
 /**
  * Pieceの価格を計算
  * - 基本価格: セル数
  * - パターン付きの場合: +PATTERN_PRICE_BONUS
+ * - シール付きの場合: +SEAL_PRICE_BONUS
  */
 function calculatePiecePrice(piece: Piece): number {
   const cellCount = piece.shape.reduce(
@@ -67,20 +94,24 @@ function calculatePiecePrice(piece: Piece): number {
     0
   )
 
-  // パターンがあるかチェック（早期終了で効率化）
+  // パターンとシールの有無をチェック
   let hasPattern = false
+  let hasSeal = false
   for (const blockData of piece.blocks.values()) {
-    if (blockData.pattern) {
-      hasPattern = true
-      break
-    }
+    if (blockData.pattern) hasPattern = true
+    if (blockData.seal) hasSeal = true
+    if (hasPattern && hasSeal) break
   }
 
-  return cellCount + (hasPattern ? PATTERN_PRICE_BONUS : 0)
+  return (
+    cellCount +
+    (hasPattern ? PATTERN_PRICE_BONUS : 0) +
+    (hasSeal ? SEAL_PRICE_BONUS : 0)
+  )
 }
 
 /**
- * ショップ用のPieceを生成（パターン付与判定含む）
+ * ショップ用のPieceを生成（パターン・シール付与判定含む）
  */
 function createShopPiece(
   categories: MinoCategory[],
@@ -88,11 +119,29 @@ function createShopPiece(
   rng: RandomGenerator
 ): Piece {
   const mino = pickRandomMinoFromCategories(categories, rng)
-  const probability = PATTERN_PROBABILITY[size]
 
-  if (probability > 0 && rng.next() < probability) {
+  // パターンとシールの付与判定（独立）
+  const patternProb = PATTERN_PROBABILITY[size]
+  const sealProb = SEAL_PROBABILITY[size]
+
+  const addPattern = patternProb > 0 && rng.next() < patternProb
+  const addSeal = sealProb > 0 && rng.next() < sealProb
+
+  // 4パターンで分岐
+  if (addPattern && addSeal) {
+    const pattern = pickRandomPattern(rng)
+    const seal = pickRandomSeal(rng)
+    return createPieceWithPatternAndSeal(mino, pattern, seal, rng)
+  }
+
+  if (addPattern) {
     const pattern = pickRandomPattern(rng)
     return createPieceWithPattern(mino, pattern)
+  }
+
+  if (addSeal) {
+    const seal = pickRandomSeal(rng)
+    return createPieceWithSeal(mino, seal, rng)
   }
 
   return createPiece(mino)

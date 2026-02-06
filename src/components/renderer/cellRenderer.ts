@@ -1,6 +1,7 @@
-import { COLORS, CELL_STYLE, PATTERN_COLORS, PATTERN_SYMBOL_STYLE } from '../../lib/game/constants'
-import type { PatternId } from '../../lib/game/Domain/Core/Id'
+import { COLORS, CELL_STYLE, PATTERN_COLORS, PATTERN_SYMBOL_STYLE, SEAL_COLORS, SEAL_SYMBOL_STYLE } from '../../lib/game/constants'
+import type { PatternId, SealId } from '../../lib/game/Domain/Core/Id'
 import { getPatternDefinition } from '../../lib/game/Domain/Effect/Pattern'
+import { getSealDefinition } from '../../lib/game/Domain/Effect/Seal'
 
 /**
  * パターン用のカラーセットを取得
@@ -19,7 +20,7 @@ function getPatternColors(
 }
 
 /**
- * パターン記号を描画
+ * パターン記号を描画（セル中央）
  */
 function drawPatternSymbol(
   ctx: CanvasRenderingContext2D,
@@ -44,14 +45,62 @@ function drawPatternSymbol(
 }
 
 /**
- * 木目調のセルを描画する共通関数（パターン対応版）
+ * シール記号を描画（セル右下）
+ */
+export function drawSealSymbol(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  size: number,
+  seal: SealId,
+  fontSize?: number
+): void {
+  const sealDef = getSealDefinition(seal)
+  if (!sealDef) return
+
+  const { fontFamily, backgroundColor, borderRadius, padding } = SEAL_SYMBOL_STYLE
+  const actualFontSize = fontSize ?? SEAL_SYMBOL_STYLE.fontSize
+  const sealColor = SEAL_COLORS[seal] ?? '#FFFFFF'
+
+  ctx.save()
+
+  // テキストサイズを計算
+  ctx.font = `bold ${actualFontSize}px ${fontFamily}`
+  const metrics = ctx.measureText(sealDef.symbol)
+  const textWidth = metrics.width
+  const textHeight = actualFontSize
+
+  // 右下に配置
+  const bgWidth = textWidth + padding * 4
+  const bgHeight = textHeight + padding * 2
+  const bgX = x + size - bgWidth - 2
+  const bgY = y + size - bgHeight - 2
+
+  // 背景
+  ctx.fillStyle = backgroundColor
+  ctx.beginPath()
+  ctx.roundRect(bgX, bgY, bgWidth, bgHeight, borderRadius)
+  ctx.fill()
+
+  // 記号
+  ctx.fillStyle = sealColor
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(sealDef.symbol, bgX + bgWidth / 2, bgY + bgHeight / 2)
+
+  ctx.restore()
+}
+
+/**
+ * 木目調のセルを描画する共通関数（パターン・シール対応版）
  */
 export function drawWoodenCell(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
   size: number,
-  pattern: PatternId | null = null
+  pattern: PatternId | null = null,
+  seal: SealId | null = null
 ): void {
   const { padding, highlightWidth, shadowWidth } = CELL_STYLE
   const colors = getPatternColors(pattern)
@@ -80,12 +129,17 @@ export function drawWoodenCell(
     size - padding * 2
   )
 
-  // パターン記号を描画
+  // パターン記号を描画（中央）
   if (pattern) {
     const patternDef = getPatternDefinition(pattern)
     if (patternDef) {
       drawPatternSymbol(ctx, x, y, size, patternDef.symbol)
     }
+  }
+
+  // シール記号を描画（右下）
+  if (seal) {
+    drawSealSymbol(ctx, x, y, size, seal)
   }
 }
 
@@ -97,11 +151,12 @@ export function drawWoodenCellWithBorder(
   x: number,
   y: number,
   size: number,
-  pattern: PatternId | null = null
+  pattern: PatternId | null = null,
+  seal: SealId | null = null
 ): void {
   const { padding } = CELL_STYLE
 
-  drawWoodenCell(ctx, x, y, size, pattern)
+  drawWoodenCell(ctx, x, y, size, pattern, seal)
 
   // 枠線
   ctx.strokeStyle = COLORS.cellBorder
@@ -115,14 +170,15 @@ export function drawWoodenCellWithBorder(
 }
 
 /**
- * 小さいセル用のパターン付き描画（shopRenderer等で使用）
+ * 小さいセル用のパターン・シール付き描画（shopRenderer等で使用）
  */
 export function drawWoodenCellSmall(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
   size: number,
-  pattern: PatternId | null = null
+  pattern: PatternId | null = null,
+  seal: SealId | null = null
 ): void {
   const { padding, highlightWidth, shadowWidth } = CELL_STYLE
   const colors = getPatternColors(pattern)
@@ -158,5 +214,11 @@ export function drawWoodenCellSmall(
       const smallFontSize = Math.max(8, Math.floor(size * 0.4))
       drawPatternSymbol(ctx, x, y, size, patternDef.symbol, smallFontSize)
     }
+  }
+
+  // シール記号を描画（小さいフォント）
+  if (seal) {
+    const smallFontSize = Math.max(6, Math.floor(size * 0.3))
+    drawSealSymbol(ctx, x, y, size, seal, smallFontSize)
   }
 }

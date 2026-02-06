@@ -3,7 +3,7 @@
  */
 
 import type { MinoCategory, MinoDefinition, Piece, PieceShape } from '../Domain'
-import type { PatternId } from '../Domain/Core/Id'
+import type { PatternId, SealId } from '../Domain/Core/Id'
 import type { RandomGenerator } from '../Utils/Random'
 import { MINOS_BY_CATEGORY } from '../Data/MinoDefinitions'
 import { createPieceId, createBlockSetId } from '../Domain/Core/Id'
@@ -107,6 +107,76 @@ export function createPieceWithPattern(
     shape: mino.shape,
     blockSetId: createBlockSetId(),
     blocks: BlockDataMapUtils.createWithPattern(mino.shape, pattern),
+  }
+}
+
+/**
+ * 形状内の有効ブロック位置をリストアップ
+ */
+function getFilledPositions(shape: PieceShape): Array<{ row: number; col: number }> {
+  const positions: Array<{ row: number; col: number }> = []
+  shape.forEach((rowData, row) => {
+    rowData.forEach((filled, col) => {
+      if (filled) {
+        positions.push({ row, col })
+      }
+    })
+  })
+  return positions
+}
+
+/**
+ * シール付きPieceを生成する（パターンなし）
+ */
+export function createPieceWithSeal(
+  mino: MinoDefinition,
+  seal: SealId,
+  rng: RandomGenerator
+): Piece {
+  const shape = mino.shape
+  let blocks = BlockDataMapUtils.createFromShape(shape)
+
+  // ランダムな位置にシールを付与
+  const positions = getFilledPositions(shape)
+  if (positions.length > 0) {
+    const idx = Math.floor(rng.next() * positions.length)
+    const pos = positions[idx]
+    blocks = BlockDataMapUtils.setSeal(blocks, pos.row, pos.col, seal)
+  }
+
+  return {
+    id: createPieceId(mino.id),
+    shape,
+    blockSetId: createBlockSetId(),
+    blocks,
+  }
+}
+
+/**
+ * パターン+シール付きPieceを生成する
+ */
+export function createPieceWithPatternAndSeal(
+  mino: MinoDefinition,
+  pattern: PatternId,
+  seal: SealId,
+  rng: RandomGenerator
+): Piece {
+  const shape = mino.shape
+  let blocks = BlockDataMapUtils.createWithPattern(shape, pattern)
+
+  // ランダムな位置にシールを付与
+  const positions = getFilledPositions(shape)
+  if (positions.length > 0) {
+    const idx = Math.floor(rng.next() * positions.length)
+    const pos = positions[idx]
+    blocks = BlockDataMapUtils.setSeal(blocks, pos.row, pos.col, seal)
+  }
+
+  return {
+    id: createPieceId(mino.id),
+    shape,
+    blockSetId: createBlockSetId(),
+    blocks,
   }
 }
 
