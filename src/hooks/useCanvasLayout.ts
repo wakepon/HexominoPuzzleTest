@@ -1,13 +1,13 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { CanvasLayout, Position, PieceSlot } from '../lib/game/types'
-import { GRID_SIZE, LAYOUT } from '../lib/game/constants'
-import { getPieceSize } from '../lib/game/pieceDefinitions'
+import type { CanvasLayout, Position, PieceSlot } from '../lib/game/Domain'
+import { GRID_SIZE, LAYOUT } from '../lib/game/Data/Constants'
+import { getPieceSize } from '../lib/game/Services/PieceService'
 
 /**
  * Canvasレイアウト計算フック
  * @param pieceSlots 現在のピーススロット（動的にスロット位置を計算するため）
  */
-export function useCanvasLayout(pieceSlots: PieceSlot[]): CanvasLayout | null {
+export function useCanvasLayout(pieceSlots: readonly PieceSlot[]): CanvasLayout | null {
   const [layout, setLayout] = useState<CanvasLayout | null>(null)
 
   // pieceSlots の参照が変わるたびに再計算されないよう、形状のみを比較するキーを生成
@@ -103,7 +103,7 @@ function calculateSlotPositions(
   canvasWidth: number,
   slotAreaY: number,
   cellSize: number,
-  pieceSlots: PieceSlot[]
+  pieceSlots: readonly PieceSlot[]
 ): Position[] {
   const slotCellSize = cellSize * LAYOUT.slotCellSizeRatio
   const positions: Position[] = []
