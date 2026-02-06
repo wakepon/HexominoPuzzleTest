@@ -5,7 +5,7 @@ import { drawWoodenCell } from './cellRenderer'
 /**
  * 消去中のセルかどうかをチェック
  */
-function isClearingCell(x: number, y: number, clearingCells: ClearingCell[] | null): boolean {
+function isClearingCell(x: number, y: number, clearingCells: readonly ClearingCell[] | null): boolean {
   if (!clearingCells) return false
   return clearingCells.some(cell => cell.x === x && cell.y === y)
 }
@@ -18,7 +18,7 @@ export function renderBoard(
   ctx: CanvasRenderingContext2D,
   board: Board,
   layout: CanvasLayout,
-  clearingCells: ClearingCell[] | null = null
+  clearingCells: readonly ClearingCell[] | null = null
 ): void {
   const { boardOffsetX, boardOffsetY, cellSize } = layout
   const boardSize = GRID_SIZE * cellSize

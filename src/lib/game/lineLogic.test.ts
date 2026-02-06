@@ -6,13 +6,18 @@ import {
   clearLines
 } from './lineLogic'
 import { createEmptyBoard } from './boardLogic'
-import { Board, CompletedLines } from './types'
+import { Board, CompletedLines, Cell } from './types'
+
+// テスト用ヘルパー関数: 埋まったセルを作成
+function createFilledCell(): Cell {
+  return { filled: true, blockSetId: null, pattern: null, seal: null }
+}
 
 // テスト用ヘルパー関数: 指定した行を埋めたボードを作成（immutable）
 function createBoardWithFilledRows(rowIndices: number[]): Board {
   return createEmptyBoard().map((row, y) =>
     rowIndices.includes(y)
-      ? row.map(() => ({ filled: true }))
+      ? row.map(() => createFilledCell())
       : row
   )
 }
@@ -21,7 +26,7 @@ function createBoardWithFilledRows(rowIndices: number[]): Board {
 function createBoardWithFilledColumns(columnIndices: number[]): Board {
   return createEmptyBoard().map(row =>
     row.map((cell, x) =>
-      columnIndices.includes(x) ? { filled: true } : cell
+      columnIndices.includes(x) ? createFilledCell() : cell
     )
   )
 }
@@ -31,7 +36,7 @@ function createBoardWithFilledRowsAndColumns(rowIndices: number[], columnIndices
   return createEmptyBoard().map((row, y) =>
     row.map((cell, x) =>
       rowIndices.includes(y) || columnIndices.includes(x)
-        ? { filled: true }
+        ? createFilledCell()
         : cell
     )
   )
@@ -41,7 +46,7 @@ function createBoardWithFilledRowsAndColumns(rowIndices: number[], columnIndices
 function createBoardWithPartialRow(rowIndex: number, filledCount: number): Board {
   return createEmptyBoard().map((row, y) =>
     y === rowIndex
-      ? row.map((cell, x) => (x < filledCount ? { filled: true } : cell))
+      ? row.map((cell, x) => (x < filledCount ? createFilledCell() : cell))
       : row
   )
 }
@@ -145,8 +150,8 @@ describe('getCellsToRemove', () => {
     const cells = getCellsToRemove(completedLines)
 
     expect(cells).toHaveLength(6)
-    expect(cells).toContainEqual({ x: 0, y: 0 })
-    expect(cells).toContainEqual({ x: 5, y: 0 })
+    expect(cells).toContainEqual({ x: 0, y: 0, row: 0, col: 0 })
+    expect(cells).toContainEqual({ x: 5, y: 0, row: 0, col: 5 })
   })
 
   it('1列消去時の対象セル', () => {
@@ -154,8 +159,8 @@ describe('getCellsToRemove', () => {
     const cells = getCellsToRemove(completedLines)
 
     expect(cells).toHaveLength(6)
-    expect(cells).toContainEqual({ x: 0, y: 0 })
-    expect(cells).toContainEqual({ x: 0, y: 5 })
+    expect(cells).toContainEqual({ x: 0, y: 0, row: 0, col: 0 })
+    expect(cells).toContainEqual({ x: 0, y: 5, row: 5, col: 0 })
   })
 
   it('行と列の交差で重複しないこと', () => {
@@ -172,8 +177,8 @@ describe('clearLines', () => {
     const board = createBoardWithFilledRows([0])
 
     const cellsToClear = [
-      { x: 0, y: 0 }, { x: 1, y: 0 }, { x: 2, y: 0 },
-      { x: 3, y: 0 }, { x: 4, y: 0 }, { x: 5, y: 0 }
+      { x: 0, y: 0, row: 0, col: 0 }, { x: 1, y: 0, row: 0, col: 1 }, { x: 2, y: 0, row: 0, col: 2 },
+      { x: 3, y: 0, row: 0, col: 3 }, { x: 4, y: 0, row: 0, col: 4 }, { x: 5, y: 0, row: 0, col: 5 }
     ]
 
     const newBoard = clearLines(board, cellsToClear)
@@ -192,8 +197,8 @@ describe('clearLines', () => {
 
     // row 0 のみクリア
     const cellsToClear = [
-      { x: 0, y: 0 }, { x: 1, y: 0 }, { x: 2, y: 0 },
-      { x: 3, y: 0 }, { x: 4, y: 0 }, { x: 5, y: 0 }
+      { x: 0, y: 0, row: 0, col: 0 }, { x: 1, y: 0, row: 0, col: 1 }, { x: 2, y: 0, row: 0, col: 2 },
+      { x: 3, y: 0, row: 0, col: 3 }, { x: 4, y: 0, row: 0, col: 4 }, { x: 5, y: 0, row: 0, col: 5 }
     ]
 
     const newBoard = clearLines(board, cellsToClear)

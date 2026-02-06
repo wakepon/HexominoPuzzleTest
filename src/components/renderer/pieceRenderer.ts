@@ -7,7 +7,7 @@ import { drawWoodenCellWithBorder } from './cellRenderer'
  */
 export function renderPieceSlots(
   ctx: CanvasRenderingContext2D,
-  pieceSlots: PieceSlot[],
+  pieceSlots: readonly PieceSlot[],
   layout: CanvasLayout,
   dragState: DragState
 ): void {
@@ -32,7 +32,7 @@ export function renderPieceSlots(
  */
 export function renderDraggingPiece(
   ctx: CanvasRenderingContext2D,
-  pieceSlots: PieceSlot[],
+  pieceSlots: readonly PieceSlot[],
   dragState: DragState,
   layout: CanvasLayout
 ): void {

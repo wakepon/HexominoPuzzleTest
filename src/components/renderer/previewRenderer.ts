@@ -8,7 +8,7 @@ import { canPlacePiece } from '../../lib/game/collisionDetection'
 export function renderPlacementPreview(
   ctx: CanvasRenderingContext2D,
   board: Board,
-  pieceSlots: PieceSlot[],
+  pieceSlots: readonly PieceSlot[],
   dragState: DragState,
   layout: CanvasLayout
 ): void {
