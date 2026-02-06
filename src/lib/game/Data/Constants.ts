@@ -314,3 +314,22 @@ export const DEBUG_PROBABILITY_SETTINGS = {
   MAX: 100,
   STEP: 10,
 } as const
+
+// ツールチップスタイル設定
+export const TOOLTIP_STYLE = {
+  backgroundColor: 'rgba(0, 0, 0, 0.9)',
+  borderColor: '#8B7355',
+  borderWidth: 2,
+  borderRadius: 6,
+  padding: 10,
+  maxWidth: 180,
+  nameFontSize: 13,
+  descFontSize: 11,
+  fontFamily: 'Arial, sans-serif',
+  nameColor: '#FFD700',
+  descColor: '#FFFFFF',
+  lineHeight: 1.4,
+  offsetX: 15,
+  offsetY: 15,
+  effectGap: 8,
+}

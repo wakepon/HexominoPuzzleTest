@@ -11,7 +11,11 @@ import { renderRoundInfo } from './renderer/roundRenderer'
 import { renderRoundClear, renderGameOver, renderGameClear } from './renderer/overlayRenderer'
 import { renderShop, ShopRenderResult } from './renderer/shopRenderer'
 import { renderDebugWindow, DebugWindowRenderResult } from './renderer/debugRenderer'
+import { renderTooltip } from './renderer/tooltipRenderer'
 import type { DebugSettings } from '../lib/game/Domain/Debug'
+import type { TooltipState } from '../lib/game/Domain/Tooltip'
+import { INITIAL_TOOLTIP_STATE } from '../lib/game/Domain/Tooltip'
+import { calculateTooltipState } from '../lib/game/Services/TooltipService'
 import { screenToBoardPosition } from '../lib/game/collisionDetection'
 import { getPieceSize } from '../lib/game/pieceDefinitions'
 import { canAfford } from '../lib/game/shopLogic'
@@ -47,6 +51,7 @@ export function GameCanvas({
 }: GameCanvasProps) {
   const [canvas, setCanvas] = useState<HTMLCanvasElement | null>(null)
   const [showDebugWindow, setShowDebugWindow] = useState(false)
+  const [tooltipState, setTooltipState] = useState<TooltipState>(INITIAL_TOOLTIP_STATE)
   const dprRef = useRef(window.devicePixelRatio || 1)
   const isDraggingRef = useRef(false)
   const activeSlotRef = useRef<number | null>(null)
@@ -130,7 +135,20 @@ export function GameCanvas({
     } else {
       debugWindowResultRef.current = null
     }
-  }, [canvas, state, layout, onClearAnimationEnd, showDebugWindow, debugSettings])
+
+    // ツールチップ描画（オーバーレイ表示中やドラッグ中は非表示）
+    const showTooltip =
+      tooltipState.visible &&
+      !state.dragState.isDragging &&
+      !state.clearingAnimation?.isAnimating &&
+      state.phase !== 'round_clear' &&
+      state.phase !== 'game_over' &&
+      state.phase !== 'game_clear'
+
+    if (showTooltip) {
+      renderTooltip(ctx, tooltipState, layout.canvasWidth, layout.canvasHeight)
+    }
+  }, [canvas, state, layout, onClearAnimationEnd, showDebugWindow, debugSettings, tooltipState])
 
   // Canvasサイズの設定
   useEffect(() => {
@@ -474,7 +492,39 @@ export function GameCanvas({
       onDragEnd()
     }
 
+    // ツールチップ用のマウス移動ハンドラー
+    const handleCanvasMouseMove = (e: MouseEvent) => {
+      // ドラッグ中はツールチップを更新しない
+      if (isDraggingRef.current) {
+        setTooltipState((prev) => (prev.visible ? INITIAL_TOOLTIP_STATE : prev))
+        return
+      }
+
+      const pos = getCanvasPosition(e)
+      const newTooltipState = calculateTooltipState(pos, state, layout)
+
+      // 変化がある場合のみ更新（不要な再レンダリングを防ぐ）
+      setTooltipState((prev) => {
+        if (
+          prev.visible === newTooltipState.visible &&
+          prev.x === newTooltipState.x &&
+          prev.y === newTooltipState.y &&
+          prev.effects.length === newTooltipState.effects.length
+        ) {
+          return prev
+        }
+        return newTooltipState
+      })
+    }
+
+    // マウスがCanvas外に出た時のハンドラー
+    const handleCanvasMouseLeave = () => {
+      setTooltipState((prev) => (prev.visible ? INITIAL_TOOLTIP_STATE : prev))
+    }
+
     canvas.addEventListener('mousedown', handleMouseDown)
+    canvas.addEventListener('mousemove', handleCanvasMouseMove)
+    canvas.addEventListener('mouseleave', handleCanvasMouseLeave)
     window.addEventListener('mousemove', handleMouseMove)
     window.addEventListener('mouseup', handleMouseUp)
 
@@ -485,6 +535,8 @@ export function GameCanvas({
 
     return () => {
       canvas.removeEventListener('mousedown', handleMouseDown)
+      canvas.removeEventListener('mousemove', handleCanvasMouseMove)
+      canvas.removeEventListener('mouseleave', handleCanvasMouseLeave)
       window.removeEventListener('mousemove', handleMouseMove)
       window.removeEventListener('mouseup', handleMouseUp)
 
@@ -493,7 +545,7 @@ export function GameCanvas({
       window.removeEventListener('touchend', handleTouchEnd)
       window.removeEventListener('touchcancel', handleTouchEnd)
     }
-  }, [canvas, layout, state.pieceSlots, state.clearingAnimation, state.phase, state.shopState, state.gold, onDragStart, onDragMove, onDragEnd, onReset, onBuyItem, onLeaveShop, showDebugWindow, debugSettings, onUpdateDebugSettings])
+  }, [canvas, layout, state.pieceSlots, state.clearingAnimation, state.phase, state.shopState, state.gold, state.board, state.dragState, onDragStart, onDragMove, onDragEnd, onReset, onBuyItem, onLeaveShop, showDebugWindow, debugSettings, onUpdateDebugSettings])
 
   return (
     <canvas

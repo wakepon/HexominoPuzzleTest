@@ -30,4 +30,5 @@ export {
   SEAL_COLORS,
   SEAL_SYMBOL_STYLE,
   DEBUG_PROBABILITY_SETTINGS,
+  TOOLTIP_STYLE,
 } from './Data/Constants'
