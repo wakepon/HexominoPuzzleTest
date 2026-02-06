@@ -31,11 +31,17 @@ interface Position {
 ```typescript
 interface Cell {
   filled: boolean
+  pattern?: string | null   // パターンID
+  seal?: string | null      // シールID
+  blockSetId?: number | null // ブロックセットID（オーラ効果判定用）
 }
 ```
 
 **プロパティ:**
 - `filled`: セルが埋まっているかどうか
+- `pattern`: パターンID（オーラ、苔、おじゃまブロック等）
+- `seal`: シールID（ゴールド、スコア、石等）
+- `blockSetId`: 配置されたブロックセットの識別子（オーラ効果判定に使用）
 
 ### Board
 
@@ -174,17 +180,51 @@ interface DeckState {
 ショップで販売されるアイテム。
 
 ```typescript
-interface ShopItem {
+// 通常ブロック
+interface BlockShopItem {
+  type: 'block'
   minoId: string         // ミノのID
-  price: number          // 価格（セル数と同じ）
+  price: number          // 価格
   purchased: boolean     // 購入済みフラグ
 }
+
+// パターン付きブロック
+interface PatternBlockShopItem {
+  type: 'pattern'
+  shape: PieceShape      // ブロック形状
+  pattern: PatternDefinition  // パターン情報
+  price: number          // 価格
+  purchased: boolean     // 購入済みフラグ
+  name: string           // 商品名
+}
+
+// シール付きブロック
+interface SealBlockShopItem {
+  type: 'seal'
+  shape: PieceShape      // ブロック形状
+  seal: SealDefinition   // シール情報
+  sealPosition: Position // シール位置
+  price: number          // 価格
+  purchased: boolean     // 購入済みフラグ
+  name: string           // 商品名
+}
+
+// レリック
+interface RelicShopItem {
+  type: 'relic'
+  relic: RelicDefinition // レリック情報
+  price: number          // 価格
+  purchased: boolean     // 購入済みフラグ
+}
+
+type ShopItem = BlockShopItem | PatternBlockShopItem | SealBlockShopItem | RelicShopItem
 ```
 
 **プロパティ:**
-- `minoId`: 販売されるミノのID
-- `price`: 購入価格（ミノのセル数と同じ）
+- `type`: アイテムの種類（'block', 'pattern', 'seal', 'relic'）
+- `price`: 購入価格
 - `purchased`: 購入済みかどうか
+- その他: アイテム種類に応じた固有プロパティ
 
 ### ShopState
 
@@ -192,12 +232,167 @@ interface ShopItem {
 
 ```typescript
 interface ShopState {
-  items: ShopItem[]      // ショップに並んでいるアイテム（3つ）
+  items: ShopItem[]      // ショップに並んでいるアイテム
 }
 ```
 
 **プロパティ:**
-- `items`: 販売中のアイテムリスト（常に3つ）
+- `items`: 販売中のアイテムリスト（ブロックセット + レリック）
+
+## パターン・シール関連
+
+### PatternDefinition
+
+パターンの定義。
+
+```typescript
+interface PatternDefinition {
+  id: string             // パターンID（例: 'enhanced', 'aura', 'moss'）
+  name: string           // 表示名
+  description: string    // 効果説明
+}
+```
+
+**プロパティ:**
+- `id`: パターンの識別子
+- `name`: パターンの表示名
+- `description`: パターン効果の説明
+
+### SealDefinition
+
+シールの定義。
+
+```typescript
+interface SealDefinition {
+  id: string             // シールID（例: 'gold', 'score', 'stone'）
+  name: string           // 表示名
+  description: string    // 効果説明
+}
+```
+
+**プロパティ:**
+- `id`: シールの識別子
+- `name`: シールの表示名
+- `description`: シール効果の説明
+
+### BlockSetData
+
+拡張形式のブロックデータ。
+
+```typescript
+interface BlockSetData {
+  shape: PieceShape         // ブロック形状
+  pattern?: string | null   // パターンID（nullable）
+  seals?: (string | null)[][] // シール配列（形状と同サイズ）
+}
+```
+
+**プロパティ:**
+- `shape`: ブロックの形状
+- `pattern`: ブロックセット全体に適用されるパターン
+- `seals`: 各セルに適用されるシール（nullはシールなし）
+
+## レリック関連
+
+### RelicDefinition
+
+レリックの定義。
+
+```typescript
+interface RelicDefinition {
+  id: string             // レリックID
+  name: string           // 表示名
+  description: string    // 効果説明
+  rarity: RelicRarity    // レアリティ
+  price: number          // 購入価格
+}
+```
+
+**プロパティ:**
+- `id`: レリックの識別子
+- `name`: レリックの表示名
+- `description`: レリック効果の説明
+- `rarity`: レアリティ（common, rare, epic）
+- `price`: ショップでの購入価格
+
+### RelicRarity
+
+レリックのレアリティ。
+
+```typescript
+type RelicRarity = 'common' | 'rare' | 'epic'
+```
+
+### RelicState
+
+レリック状態。
+
+```typescript
+interface RelicState {
+  ownedRelics: string[]  // 所持レリックIDのリスト
+}
+```
+
+**プロパティ:**
+- `ownedRelics`: 現在所持しているレリックのIDリスト
+
+### RelicEffects
+
+レリック効果の発動状態。
+
+```typescript
+interface RelicEffects {
+  chainMasterActive: boolean   // 連鎖の達人が発動
+  smallLuckActive: boolean     // 小さな幸運が発動
+  fullClearActive: boolean     // 全消しボーナスが発動
+}
+```
+
+## ラウンド関連
+
+### RoundType
+
+ラウンドのタイプ。
+
+```typescript
+type RoundType = 'normal' | 'elite' | 'boss'
+```
+
+**タイプ:**
+- `normal`: 雑魚ラウンド
+- `elite`: エリートラウンド
+- `boss`: ボスラウンド
+
+### BossCondition
+
+ボスラウンドの特殊条件。
+
+```typescript
+interface BossCondition {
+  id: string             // 条件ID
+  name: string           // 表示名
+  description: string    // 条件説明
+}
+```
+
+**条件ID:**
+- `obstacle`: おじゃまブロック
+- `energy_save`: 省エネ（配置数減少）
+- `two_cards`: 手札2枚
+
+### RoundInfo
+
+ラウンド情報。
+
+```typescript
+interface RoundInfo {
+  round: number          // ラウンド番号（1-24）
+  setNumber: number      // セット番号
+  positionInSet: number  // セット内の位置（0, 1, 2）
+  roundType: RoundType   // ラウンドタイプ
+  bossCondition?: BossCondition  // ボス条件（ボスラウンドのみ）
+}
+```
 
 ## ドラッグ関連
 
@@ -268,13 +463,14 @@ interface ClearingAnimationState {
 ゲームフェーズ。
 
 ```typescript
-type GamePhase = 'playing' | 'round_clear' | 'shopping' | 'game_over' | 'game_clear'
+type GamePhase = 'playing' | 'round_clear' | 'shopping' | 'round_progress' | 'game_over' | 'game_clear'
 ```
 
 **フェーズ種類:**
 - `playing`: 通常のゲームプレイ中
 - `round_clear`: ラウンドクリア演出中
 - `shopping`: ショップフェーズ
+- `round_progress`: ラウンド進行画面（次のラウンド情報表示）
 - `game_over`: ゲームオーバー
 - `game_clear`: ゲームクリア（最終ラウンドクリア）
 
@@ -295,12 +491,15 @@ interface GameState {
   gold: number                                // 所持ゴールド
   targetScore: number                         // 現在ラウンドの目標スコア
   shopState: ShopState | null                 // ショップ状態（shoppingフェーズでのみ非null）
+  relicState: RelicState                      // レリック状態
+  roundInfo: RoundInfo                        // ラウンド詳細情報
+  bossCondition: BossCondition | null         // 現在セットのボス条件
 }
 ```
 
 **プロパティ:**
 - `board`: ゲームボードの状態
-- `pieceSlots`: ブロックスロットの配列（通常3つ）
+- `pieceSlots`: ブロックスロットの配列（通常3つ、ボス条件で2つの場合あり）
 - `dragState`: ドラッグ操作の状態
 - `score`: 現在ラウンドのスコア（ラウンド開始時にリセット）
 - `clearingAnimation`: 消去アニメーション状態（アニメーション中のみ）
@@ -310,6 +509,9 @@ interface GameState {
 - `gold`: 所持ゴールド（ラウンド間で持ち越し）
 - `targetScore`: 現在ラウンドの目標スコア
 - `shopState`: ショップ状態（shoppingフェーズでのみ非null）
+- `relicState`: レリック状態（所持レリックのリスト）
+- `roundInfo`: ラウンド詳細情報（タイプ、セット番号等）
+- `bossCondition`: 現在セットのボス条件（ボスラウンドで適用）
 
 ## レイアウト関連
 
@@ -360,6 +562,9 @@ type GameAction =
   | { type: 'ADVANCE_ROUND' }
   | { type: 'BUY_ITEM'; itemIndex: number }
   | { type: 'LEAVE_SHOP' }
+  | { type: 'START_ROUND' }
+  | { type: 'ADD_RELIC'; relicId: string }
+  | { type: 'CANNOT_PLACE' }
 ```
 
 **アクション種類:**
@@ -371,7 +576,10 @@ type GameAction =
 6. `END_CLEAR_ANIMATION`: 消去アニメーション終了
 7. `ADVANCE_ROUND`: ラウンド進行（round_clearフェーズから次フェーズへ）
 8. `BUY_ITEM`: ショップアイテム購入
-9. `LEAVE_SHOP`: ショップ退出（次のラウンドへ）
+9. `LEAVE_SHOP`: ショップ退出（ラウンド進行画面へ）
+10. `START_ROUND`: ラウンド開始（ラウンド進行画面から）
+11. `ADD_RELIC`: レリック追加
+12. `CANNOT_PLACE`: 配置不可処理
 
 ## データフロー
 
@@ -414,3 +622,4 @@ GameState (新しい状態)
 - 2026-02-01: 初版作成
 - 2026-02-01: ミノ関連型、ライン消去関連型、スコア、アニメーション状態を追加
 - 2026-02-02: DeckState、GamePhase、ShopItem、ShopState、新アクション型を追加
+- 2026-02-06: ローグライト要素追加（Cell拡張、パターン・シール型、レリック型、ラウンド型、ShopItem拡張、GameState拡張、新アクション）
