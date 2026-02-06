@@ -2,8 +2,9 @@
  * ゲームReducer
  */
 
-import type { GameState, PieceSlot, DeckState } from '../../Domain'
+import type { GameState, PieceSlot, DeckState, Piece } from '../../Domain'
 import type { GameAction } from '../Actions/GameActions'
+import { isBlockShopItem } from '../../Domain/Shop/ShopTypes'
 import {
   initialDragState,
   createInitialState,
@@ -28,7 +29,6 @@ import {
 import {
   createShopState,
   canAfford,
-  addToDeck,
   markItemAsPurchased,
   shuffleCurrentDeck,
 } from '../../Services/ShopService'
@@ -55,6 +55,25 @@ function handlePlacement(
   return {
     finalSlots: result.slots,
     finalDeck: result.newDeck,
+  }
+}
+
+/**
+ * 購入したPieceをデッキに追加（minoIdをallMinosに追加）
+ * 注: 現在のデッキシステムはMinoIdベースなので、PieceのミノIDを抽出して追加
+ * 将来的にはPiece自体を保持する方式に移行予定
+ */
+function addPieceToDeck(deck: DeckState, piece: Piece): DeckState {
+  // PieceのIDからミノIDを抽出
+  // ID形式: "minoId-timestamp-random"（PieceService.createPieceIdで生成）
+  // 例: "tetromino-t-1234567890-abc123" → "tetromino-t"
+  // 注意: この形式に依存しているため、createPieceIdを変更する際は要確認
+  const minoId = piece.id.replace(/-\d+-[a-z0-9]+$/, '')
+
+  return {
+    ...deck,
+    cards: [...deck.cards, minoId],
+    allMinos: [...deck.allMinos, minoId],
   }
 }
 
@@ -151,9 +170,13 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const boardPos = state.dragState.boardPos
 
       // 配置可能かチェック
-      if (slot?.piece && boardPos && canPlacePiece(state.board, slot.piece.shape, boardPos)) {
-        // ブロックを配置
-        const newBoard = placePieceOnBoard(state.board, slot.piece.shape, boardPos)
+      if (
+        slot?.piece &&
+        boardPos &&
+        canPlacePiece(state.board, slot.piece.shape, boardPos)
+      ) {
+        // ブロックを配置（Piece全体を渡す）
+        const newBoard = placePieceOnBoard(state.board, slot.piece, boardPos)
 
         // スロットからブロックを削除
         const newSlots = state.pieceSlots.map((s, i) =>
@@ -165,13 +188,18 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
         // ライン消去判定
         const completedLines = findCompletedLines(newBoard)
-        const totalLines = completedLines.rows.length + completedLines.columns.length
+        const totalLines =
+          completedLines.rows.length + completedLines.columns.length
 
         if (totalLines > 0) {
           const cells = getCellsToRemove(completedLines)
           const scoreGain = calculateScore(completedLines)
           const newScore = state.score + scoreGain
-          const newPhase = determinePhase(newScore, state.targetScore, finalDeck.remainingHands)
+          const newPhase = determinePhase(
+            newScore,
+            state.targetScore,
+            finalDeck.remainingHands
+          )
 
           return {
             ...state,
@@ -191,7 +219,11 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         }
 
         // ライン消去なしでもフェーズ判定
-        const newPhase = determinePhase(state.score, state.targetScore, finalDeck.remainingHands)
+        const newPhase = determinePhase(
+          state.score,
+          state.targetScore,
+          finalDeck.remainingHands
+        )
 
         return {
           ...state,
@@ -221,14 +253,19 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         return state
       }
 
-      const newBoard = placePieceOnBoard(state.board, slot.piece.shape, action.position)
+      // Piece全体を渡す
+      const newBoard = placePieceOnBoard(state.board, slot.piece, action.position)
       const newSlots = state.pieceSlots.map((s, i) =>
         i === action.slotIndex ? { ...s, piece: null } : s
       )
 
       // 配置後の状態を計算
       const { finalSlots, finalDeck } = handlePlacement(newSlots, state.deck)
-      const newPhase = determinePhase(state.score, state.targetScore, finalDeck.remainingHands)
+      const newPhase = determinePhase(
+        state.score,
+        state.targetScore,
+        finalDeck.remainingHands
+      )
 
       return {
         ...state,
@@ -295,9 +332,15 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       // 既に購入済み、またはゴールド不足の場合は何もしない
       if (item.purchased || !canAfford(state.gold, item.price)) return state
 
-      // アイテムを購入済みにし、デッキに追加
+      // アイテムを購入済みにする
       const newShopState = markItemAsPurchased(state.shopState, itemIndex)
-      const newDeck = addToDeck(state.deck, item.minoId)
+
+      // BlockShopItemの場合はPieceをデッキに追加
+      let newDeck = state.deck
+      if (isBlockShopItem(item)) {
+        newDeck = addPieceToDeck(state.deck, item.piece)
+      }
+      // RelicShopItemの場合はスライス5で対応
 
       return {
         ...state,

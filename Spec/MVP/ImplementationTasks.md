@@ -30,17 +30,17 @@
 
 | # | タスク | 説明 | ステータス |
 |---|--------|------|:----------:|
-| 1.1 | Effect型定義 | `src/lib/game/Domain/Effect/` にPatternId, SealId, RelicId, PatternDefinition, SealDefinition, RelicDefinition を作成 | ⬜ 未着手 |
-| 1.2 | BlockData拡張 | `BlockData` と `BlockDataMap` の実装（Piece.blocksで使用） | ⬜ 未着手 |
-| 1.3 | Piece型拡張 | `Piece.blocks` と `Piece.blockSetId` を必須化、関連ファクトリ関数を更新 | ⬜ 未着手 |
-| 1.4 | Cell型拡張 | `Cell` に pattern, seal, blockSetId フィールドを追加 | ⬜ 未着手 |
-| 1.5 | PieceService拡張 | パターン付きPiece生成関数 `createPieceWithPattern()` を追加 | ⬜ 未着手 |
-| 1.6 | ショップ型拡張 | `ShopItem` を `BlockShopItem | RelicShopItem` に変更、Piece直接保持 | ⬜ 未着手 |
-| 1.7 | ショップロジック拡張 | パターン付きブロックを生成してショップに追加 | ⬜ 未着手 |
-| 1.8 | BoardService拡張 | `placePieceOnBoard()` でBlockData（パターン）をCellに反映 | ⬜ 未着手 |
-| 1.9 | cellRenderer拡張 | パターン別の色/スタイルでセルを描画 | ⬜ 未着手 |
-| 1.10 | shopRenderer拡張 | パターン付きブロックの表示（パターン名、視覚効果） | ⬜ 未着手 |
-| 1.11 | ビルド確認 | `npx tsc --noEmit` でエラーがないことを確認 | ⬜ 未着手 |
+| 1.1 | Effect型定義 | `src/lib/game/Domain/Effect/` にPatternId, SealId, RelicId, PatternDefinition, SealDefinition, RelicDefinition を作成 | ✅ 完了 |
+| 1.2 | BlockData拡張 | `BlockData` と `BlockDataMap` の実装（Piece.blocksで使用） | ✅ 完了 |
+| 1.3 | Piece型拡張 | `Piece.blocks` と `Piece.blockSetId` を必須化、関連ファクトリ関数を更新 | ✅ 完了 |
+| 1.4 | Cell型拡張 | `Cell` に pattern, seal, blockSetId フィールドを追加 | ✅ 完了 |
+| 1.5 | PieceService拡張 | パターン付きPiece生成関数 `createPieceWithPattern()` を追加 | ✅ 完了 |
+| 1.6 | ショップ型拡張 | `ShopItem` を `BlockShopItem | RelicShopItem` に変更、Piece直接保持 | ✅ 完了 |
+| 1.7 | ショップロジック拡張 | パターン付きブロックを生成してショップに追加 | ✅ 完了 |
+| 1.8 | BoardService拡張 | `placePieceOnBoard()` でBlockData（パターン）をCellに反映 | ✅ 完了 |
+| 1.9 | cellRenderer拡張 | パターン別の色/スタイルでセルを描画 | ✅ 完了 |
+| 1.10 | shopRenderer拡張 | パターン付きブロックの表示（パターン名、視覚効果） | ✅ 完了 |
+| 1.11 | ビルド確認 | `npx tsc --noEmit` でエラーがないことを確認 | ✅ 完了 |
 
 ---
 
@@ -167,7 +167,7 @@
 
 | スライス | 完了タスク | 総タスク | 進捗 |
 |---------|-----------|---------|------|
-| 1: Effect基盤 + パターン表示 | 0 | 11 | 0% |
+| 1: Effect基盤 + パターン表示 | 11 | 11 | 100% |
 | 2: シールシステム | 0 | 6 | 0% |
 | 3: パターン効果計算 | 0 | 5 | 0% |
 | 4: シール効果計算 | 0 | 5 | 0% |
@@ -177,7 +177,7 @@
 | 8: ショップ価格計算 + UI改善 | 0 | 4 | 0% |
 | 9: イベントシステム（オプション） | 0 | 5 | 0% |
 | 10: ゲームリセット + 永続化 | 0 | 3 | 0% |
-| **合計** | **0** | **58** | **0%** |
+| **合計** | **11** | **58** | **19%** |
 
 ---
 

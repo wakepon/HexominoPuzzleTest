@@ -3,8 +3,11 @@
  */
 
 import type { MinoCategory, MinoDefinition, Piece, PieceShape } from '../Domain'
+import type { PatternId } from '../Domain/Core/Id'
 import type { RandomGenerator } from '../Utils/Random'
 import { MINOS_BY_CATEGORY } from '../Data/MinoDefinitions'
+import { createPieceId, createBlockSetId } from '../Domain/Core/Id'
+import { BlockDataMapUtils } from '../Domain/Piece/BlockData'
 
 /**
  * カテゴリ別の重み
@@ -39,7 +42,10 @@ const CATEGORY_ORDER: MinoCategory[] = [
 /**
  * 重みに従ってカテゴリを選択する
  */
-export function selectCategory(weights: CategoryWeights, rng: RandomGenerator): MinoCategory {
+export function selectCategory(
+  weights: CategoryWeights,
+  rng: RandomGenerator
+): MinoCategory {
   const totalWeight = CATEGORY_ORDER.reduce((sum, cat) => sum + weights[cat], 0)
 
   if (totalWeight === 0) {
@@ -63,7 +69,10 @@ export function selectCategory(weights: CategoryWeights, rng: RandomGenerator): 
 /**
  * 指定カテゴリからランダムにミノを選択する
  */
-export function selectMinoFromCategory(category: MinoCategory, rng: RandomGenerator): MinoDefinition {
+export function selectMinoFromCategory(
+  category: MinoCategory,
+  rng: RandomGenerator
+): MinoDefinition {
   const minos = MINOS_BY_CATEGORY[category]
 
   if (minos.length === 0) {
@@ -75,27 +84,57 @@ export function selectMinoFromCategory(category: MinoCategory, rng: RandomGenera
 }
 
 /**
- * ミノ定義からPieceを生成する
- * ユニークIDはタイムスタンプ + 乱数で生成（純粋関数ではないがimmutable）
+ * ミノ定義からPieceを生成する（パターンなし）
  */
-function minoToPiece(mino: MinoDefinition): Piece {
-  const uniqueSuffix = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+export function createPiece(mino: MinoDefinition): Piece {
   return {
-    id: `${mino.id}-${uniqueSuffix}`,
+    id: createPieceId(mino.id),
     shape: mino.shape,
+    blockSetId: createBlockSetId(),
+    blocks: BlockDataMapUtils.createFromShape(mino.shape),
+  }
+}
+
+/**
+ * パターン付きPieceを生成する
+ */
+export function createPieceWithPattern(
+  mino: MinoDefinition,
+  pattern: PatternId
+): Piece {
+  return {
+    id: createPieceId(mino.id),
+    shape: mino.shape,
+    blockSetId: createBlockSetId(),
+    blocks: BlockDataMapUtils.createWithPattern(mino.shape, pattern),
+  }
+}
+
+/**
+ * 形状から直接Pieceを生成する（パターンなし）
+ */
+export function createPieceFromShape(idPrefix: string, shape: PieceShape): Piece {
+  return {
+    id: createPieceId(idPrefix),
+    shape,
+    blockSetId: createBlockSetId(),
+    blocks: BlockDataMapUtils.createFromShape(shape),
   }
 }
 
 /**
  * 3つのピースセットを生成する
  */
-export function generatePieceSet(weights: CategoryWeights, rng: RandomGenerator): Piece[] {
+export function generatePieceSet(
+  weights: CategoryWeights,
+  rng: RandomGenerator
+): Piece[] {
   const pieces: Piece[] = []
 
   for (let i = 0; i < 3; i++) {
     const category = selectCategory(weights, rng)
     const mino = selectMinoFromCategory(category, rng)
-    const piece = minoToPiece(mino)
+    const piece = createPiece(mino)
     pieces.push(piece)
   }
 
@@ -112,9 +151,7 @@ export function generatePieceSet(weights: CategoryWeights, rng: RandomGenerator)
  */
 
 // 1x1 ブロック
-const SHAPE_SINGLE: PieceShape = [
-  [true],
-]
+const SHAPE_SINGLE: PieceShape = [[true]]
 
 // 2x2 ブロック
 const SHAPE_SQUARE: PieceShape = [
@@ -123,18 +160,16 @@ const SHAPE_SQUARE: PieceShape = [
 ]
 
 // 3x1 ブロック（横長）
-const SHAPE_LINE_3: PieceShape = [
-  [true, true, true],
-]
+const SHAPE_LINE_3: PieceShape = [[true, true, true]]
 
 /**
  * 初期ブロックセットを取得
  */
 export function getInitialPieces(): Piece[] {
   return [
-    { id: 'piece-1', shape: SHAPE_SINGLE },
-    { id: 'piece-2', shape: SHAPE_SQUARE },
-    { id: 'piece-3', shape: SHAPE_LINE_3 },
+    createPieceFromShape('piece-1', SHAPE_SINGLE),
+    createPieceFromShape('piece-2', SHAPE_SQUARE),
+    createPieceFromShape('piece-3', SHAPE_LINE_3),
   ]
 }
 

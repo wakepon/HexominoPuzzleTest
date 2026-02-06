@@ -1,6 +1,7 @@
-import { PieceSlot, DragState, CanvasLayout, PieceShape } from '../../lib/game/types'
+import type { PieceSlot, DragState, CanvasLayout, PieceShape, Piece } from '../../lib/game/types'
 import { ANIMATION, LAYOUT } from '../../lib/game/constants'
 import { drawWoodenCellWithBorder } from './cellRenderer'
+import { BlockDataMapUtils } from '../../lib/game/Domain/Piece/BlockData'
 
 /**
  * スロットエリアのブロックを描画
@@ -12,13 +13,13 @@ export function renderPieceSlots(
   dragState: DragState
 ): void {
   pieceSlots.forEach((slot, index) => {
-    if (!slot.piece) return  // 配置済みでスロットが空
-    if (dragState.isDragging && dragState.slotIndex === index) return  // ドラッグ中のブロックは別で描画
+    if (!slot.piece) return // 配置済みでスロットが空
+    if (dragState.isDragging && dragState.slotIndex === index) return // ドラッグ中のブロックは別で描画
 
     const slotPos = layout.slotPositions[index]
-    renderPieceShape(
+    renderPiece(
       ctx,
-      slot.piece.shape,
+      slot.piece,
       slotPos.x,
       slotPos.y,
       layout.cellSize * LAYOUT.slotCellSizeRatio,
@@ -36,14 +37,19 @@ export function renderDraggingPiece(
   dragState: DragState,
   layout: CanvasLayout
 ): void {
-  if (!dragState.isDragging || dragState.slotIndex === null || !dragState.currentPos) {
+  if (
+    !dragState.isDragging ||
+    dragState.slotIndex === null ||
+    !dragState.currentPos
+  ) {
     return
   }
 
   const slot = pieceSlots[dragState.slotIndex]
   if (!slot?.piece) return
 
-  const shape = slot.piece.shape
+  const piece = slot.piece
+  const shape = piece.shape
 
   // ブロックの中心をドラッグ位置に合わせる
   const pieceWidth = shape[0].length * layout.cellSize
@@ -51,18 +57,48 @@ export function renderDraggingPiece(
   const drawX = dragState.currentPos.x - pieceWidth / 2
   const drawY = dragState.currentPos.y - pieceHeight / 2
 
-  renderPieceShape(
-    ctx,
-    shape,
-    drawX,
-    drawY,
-    layout.cellSize,
-    ANIMATION.dragOpacity
-  )
+  renderPiece(ctx, piece, drawX, drawY, layout.cellSize, ANIMATION.dragOpacity)
 }
 
 /**
- * ブロック形状を描画
+ * Pieceを描画（パターン対応版）
+ */
+export function renderPiece(
+  ctx: CanvasRenderingContext2D,
+  piece: Piece,
+  startX: number,
+  startY: number,
+  cellSize: number,
+  opacity: number
+): void {
+  const originalAlpha = ctx.globalAlpha
+  const { shape, blocks } = piece
+
+  try {
+    ctx.globalAlpha = opacity
+
+    for (let y = 0; y < shape.length; y++) {
+      for (let x = 0; x < shape[y].length; x++) {
+        if (!shape[y][x]) continue
+
+        const cellX = startX + x * cellSize
+        const cellY = startY + y * cellSize
+
+        // BlockDataからパターンを取得
+        const blockData = BlockDataMapUtils.get(blocks, y, x)
+        const pattern = blockData?.pattern ?? null
+
+        drawWoodenCellWithBorder(ctx, cellX, cellY, cellSize, pattern)
+      }
+    }
+  } finally {
+    ctx.globalAlpha = originalAlpha
+  }
+}
+
+/**
+ * ブロック形状を描画（後方互換用、パターンなし）
+ * @deprecated renderPiece を使用してください
  */
 export function renderPieceShape(
   ctx: CanvasRenderingContext2D,
@@ -84,7 +120,7 @@ export function renderPieceShape(
         const cellX = startX + x * cellSize
         const cellY = startY + y * cellSize
 
-        drawWoodenCellWithBorder(ctx, cellX, cellY, cellSize)
+        drawWoodenCellWithBorder(ctx, cellX, cellY, cellSize, null)
       }
     }
   } finally {

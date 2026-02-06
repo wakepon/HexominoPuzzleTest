@@ -230,3 +230,46 @@ export const DEBUG_WINDOW_STYLE = {
   offsetX: 10,             // 左端からのオフセット
   offsetY: 80,             // 上端からのオフセット
 }
+
+// パターン別カラー定義
+export const PATTERN_COLORS: Record<string, { base: string; highlight: string; shadow: string }> = {
+  enhanced: {
+    base: '#DAA520',      // ゴールデンロッド
+    highlight: '#FFD700', // ゴールド
+    shadow: '#B8860B',    // ダークゴールデンロッド
+  },
+  lucky: {
+    base: '#228B22',      // フォレストグリーン
+    highlight: '#32CD32', // ライムグリーン
+    shadow: '#006400',    // ダークグリーン
+  },
+  combo: {
+    base: '#8B008B',      // ダークマゼンタ
+    highlight: '#BA55D3', // ミディアムオーキッド
+    shadow: '#4B0082',    // インディゴ
+  },
+  aura: {
+    base: '#00CED1',      // ダークターコイズ
+    highlight: '#40E0D0', // ターコイズ
+    shadow: '#008B8B',    // ダークシアン
+  },
+  moss: {
+    base: '#2E8B57',      // シーグリーン
+    highlight: '#3CB371', // ミディアムシーグリーン
+    shadow: '#006400',    // ダークグリーン
+  },
+  obstacle: {
+    base: '#696969',      // ディムグレー
+    highlight: '#808080', // グレー
+    shadow: '#2F4F4F',    // ダークスレートグレー
+  },
+}
+
+// パターン記号のフォント設定
+export const PATTERN_SYMBOL_STYLE = {
+  fontSize: 12,
+  fontFamily: 'Arial, sans-serif',
+  color: '#FFFFFF',
+  shadowColor: '#000000',
+  shadowBlur: 2,
+}

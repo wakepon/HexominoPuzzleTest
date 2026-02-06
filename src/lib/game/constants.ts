@@ -25,4 +25,6 @@ export {
   GAME_CLEAR_STYLE,
   SHOP_STYLE,
   DEBUG_WINDOW_STYLE,
+  PATTERN_COLORS,
+  PATTERN_SYMBOL_STYLE,
 } from './Data/Constants'

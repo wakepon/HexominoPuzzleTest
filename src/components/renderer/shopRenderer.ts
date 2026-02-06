@@ -2,10 +2,13 @@
  * ショップ画面の描画
  */
 
-import { CanvasLayout, ShopState, PieceShape } from '../../lib/game/types'
-import { SHOP_STYLE, COLORS, CELL_STYLE } from '../../lib/game/constants'
-import { getMinoById } from '../../lib/game/minoDefinitions'
-import { canAfford } from '../../lib/game/shopLogic'
+import type { CanvasLayout, Piece } from '../../lib/game/types'
+import type { ShopState, BlockShopItem } from '../../lib/game/Domain/Shop/ShopTypes'
+import { SHOP_STYLE, COLORS, CELL_STYLE, PATTERN_COLORS, PATTERN_SYMBOL_STYLE } from '../../lib/game/constants'
+import { canAfford } from '../../lib/game/Services/ShopService'
+import { isBlockShopItem } from '../../lib/game/Domain/Shop/ShopTypes'
+import { getPatternDefinition } from '../../lib/game/Domain/Effect/Pattern'
+import { BlockDataMapUtils } from '../../lib/game/Domain/Piece/BlockData'
 import { ButtonArea } from './overlayRenderer'
 
 /**
@@ -24,15 +27,16 @@ export interface ShopRenderResult {
 }
 
 /**
- * ミノの形状を描画
+ * Pieceの形状を描画（パターン対応版）
  */
-function renderMinoShape(
+function renderPieceShape(
   ctx: CanvasRenderingContext2D,
-  shape: PieceShape,
+  piece: Piece,
   centerX: number,
   centerY: number,
   cellSize: number
 ): void {
+  const { shape, blocks } = piece
   const rows = shape.length
   const cols = shape[0].length
   const totalWidth = cols * cellSize
@@ -50,31 +54,75 @@ function renderMinoShape(
       const y = startY + row * cellSize
       const size = cellSize
 
+      // BlockDataからパターンを取得
+      const blockData = BlockDataMapUtils.get(blocks, row, col)
+      const pattern = blockData?.pattern ?? null
+
+      // パターン別の色を取得
+      const colors =
+        pattern && PATTERN_COLORS[pattern]
+          ? PATTERN_COLORS[pattern]
+          : {
+              base: COLORS.piece,
+              highlight: COLORS.pieceHighlight,
+              shadow: COLORS.pieceShadow,
+            }
+
       // ベース色
-      ctx.fillStyle = COLORS.piece
-      ctx.fillRect(x + padding, y + padding, size - padding * 2, size - padding * 2)
+      ctx.fillStyle = colors.base
+      ctx.fillRect(
+        x + padding,
+        y + padding,
+        size - padding * 2,
+        size - padding * 2
+      )
 
       // ハイライト（上端と左端）
-      ctx.fillStyle = COLORS.pieceHighlight
+      ctx.fillStyle = colors.highlight
       ctx.fillRect(x + padding, y + padding, size - padding * 2, highlightWidth)
       ctx.fillRect(x + padding, y + padding, highlightWidth, size - padding * 2)
 
       // シャドウ（下端と右端）
-      ctx.fillStyle = COLORS.pieceShadow
-      ctx.fillRect(x + padding, y + size - padding - shadowWidth, size - padding * 2, shadowWidth)
-      ctx.fillRect(x + size - padding - shadowWidth, y + padding, shadowWidth, size - padding * 2)
+      ctx.fillStyle = colors.shadow
+      ctx.fillRect(
+        x + padding,
+        y + size - padding - shadowWidth,
+        size - padding * 2,
+        shadowWidth
+      )
+      ctx.fillRect(
+        x + size - padding - shadowWidth,
+        y + padding,
+        shadowWidth,
+        size - padding * 2
+      )
+
+      // パターン記号を描画
+      if (pattern) {
+        const patternDef = getPatternDefinition(pattern)
+        if (patternDef) {
+          const smallFontSize = Math.max(8, Math.floor(size * 0.4))
+          ctx.save()
+          ctx.font = `bold ${smallFontSize}px ${PATTERN_SYMBOL_STYLE.fontFamily}`
+          ctx.textAlign = 'center'
+          ctx.textBaseline = 'middle'
+          ctx.shadowColor = PATTERN_SYMBOL_STYLE.shadowColor
+          ctx.shadowBlur = PATTERN_SYMBOL_STYLE.shadowBlur
+          ctx.fillStyle = PATTERN_SYMBOL_STYLE.color
+          ctx.fillText(patternDef.symbol, x + size / 2, y + size / 2)
+          ctx.restore()
+        }
+      }
     }
   }
 }
 
 /**
- * ショップアイテムボックスを描画
+ * ショップアイテムボックスを描画（BlockShopItem対応版）
  */
-function renderShopItem(
+function renderBlockShopItem(
   ctx: CanvasRenderingContext2D,
-  minoId: string,
-  price: number,
-  purchased: boolean,
+  item: BlockShopItem,
   gold: number,
   boxX: number,
   boxY: number,
@@ -82,9 +130,7 @@ function renderShopItem(
   boxHeight: number,
   cellSize: number
 ): void {
-  const mino = getMinoById(minoId)
-  if (!mino) return
-
+  const { piece, price, purchased } = item
   const affordable = canAfford(gold, price)
 
   // ボックス背景
@@ -98,10 +144,22 @@ function renderShopItem(
   ctx.lineWidth = SHOP_STYLE.itemBorderWidth
   ctx.strokeRect(boxX, boxY, boxWidth, boxHeight)
 
-  // ミノの形状を描画
+  // ピースの形状を描画
   const shapeCenterX = boxX + boxWidth / 2
   const shapeCenterY = boxY + boxHeight / 2 - SHOP_STYLE.shapeVerticalOffset
-  renderMinoShape(ctx, mino.shape, shapeCenterX, shapeCenterY, cellSize)
+  renderPieceShape(ctx, piece, shapeCenterX, shapeCenterY, cellSize)
+
+  // パターン名を表示（パターンがある場合）
+  const firstBlockData = piece.blocks.values().next().value
+  if (firstBlockData?.pattern) {
+    const patternDef = getPatternDefinition(firstBlockData.pattern)
+    if (patternDef) {
+      ctx.font = `bold 12px Arial, sans-serif`
+      ctx.textAlign = 'center'
+      ctx.fillStyle = '#FFD700'
+      ctx.fillText(patternDef.name, boxX + boxWidth / 2, boxY + 20)
+    }
+  }
 
   // 価格表示
   ctx.font = `bold ${SHOP_STYLE.priceFontSize}px Arial, sans-serif`
@@ -132,10 +190,21 @@ export function renderShop(
   layout: CanvasLayout
 ): ShopRenderResult {
   const {
-    backgroundColor, titleFontSize, titleColor,
-    itemBoxPadding, itemBoxGap,
-    leaveButtonWidth, leaveButtonHeight, leaveButtonColor, leaveButtonTextColor, leaveButtonFontSize,
-    titleOffsetY, itemsOffsetY, leaveButtonOffsetY, goldDisplayOffsetY, cellSizeRatio,
+    backgroundColor,
+    titleFontSize,
+    titleColor,
+    itemBoxPadding,
+    itemBoxGap,
+    leaveButtonWidth,
+    leaveButtonHeight,
+    leaveButtonColor,
+    leaveButtonTextColor,
+    leaveButtonFontSize,
+    titleOffsetY,
+    itemsOffsetY,
+    leaveButtonOffsetY,
+    goldDisplayOffsetY,
+    cellSizeRatio,
   } = SHOP_STYLE
 
   ctx.save()
@@ -160,8 +229,8 @@ export function renderShop(
 
   // アイテムボックスのサイズ計算
   const cellSize = layout.cellSize * cellSizeRatio
-  const boxWidth = 7 * cellSize + itemBoxPadding * 2  // ヘキソミノ(最大6x6)が収まるサイズ
-  const boxHeight = 7 * cellSize + itemBoxPadding * 2 + 30  // 価格表示分の余裕
+  const boxWidth = 7 * cellSize + itemBoxPadding * 2 // ヘキソミノ(最大6x6)が収まるサイズ
+  const boxHeight = 7 * cellSize + itemBoxPadding * 2 + 30 // 価格表示分の余裕
 
   // 3つのアイテムの配置（小さい順 = 左から）
   const totalWidth = boxWidth * 3 + itemBoxGap * 2
@@ -173,18 +242,19 @@ export function renderShop(
   shopState.items.forEach((item, index) => {
     const boxX = startX + index * (boxWidth + itemBoxGap)
 
-    renderShopItem(
-      ctx,
-      item.minoId,
-      item.price,
-      item.purchased,
-      gold,
-      boxX,
-      boxY,
-      boxWidth,
-      boxHeight,
-      cellSize
-    )
+    if (isBlockShopItem(item)) {
+      renderBlockShopItem(
+        ctx,
+        item,
+        gold,
+        boxX,
+        boxY,
+        boxWidth,
+        boxHeight,
+        cellSize
+      )
+    }
+    // RelicShopItem の描画はスライス5で追加
 
     itemAreas.push({
       itemIndex: index,
@@ -214,6 +284,11 @@ export function renderShop(
 
   return {
     itemAreas,
-    leaveButtonArea: { x: buttonX, y: buttonY, width: leaveButtonWidth, height: leaveButtonHeight },
+    leaveButtonArea: {
+      x: buttonX,
+      y: buttonY,
+      width: leaveButtonWidth,
+      height: leaveButtonHeight,
+    },
   }
 }

@@ -44,8 +44,8 @@ export function renderBoard(
 
       // セル背景
       if (cell.filled && !isClearing) {
-        // 配置済みブロック（消去中でない場合のみ）
-        drawWoodenCell(ctx, cellX, cellY, cellSize)
+        // 配置済みブロック（消去中でない場合のみ）- パターンを渡す
+        drawWoodenCell(ctx, cellX, cellY, cellSize, cell.pattern)
       } else {
         // 空のセル
         drawEmptyCell(ctx, cellX, cellY, cellSize)

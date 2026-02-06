@@ -6,6 +6,7 @@ import type { DeckState, Piece } from '../Domain'
 import type { RandomGenerator } from '../Utils/Random'
 import { DECK_CONFIG } from '../Data/Constants'
 import { getMinoById } from '../Data/MinoDefinitions'
+import { createPiece } from './PieceService'
 
 /**
  * デッキのミノIDリストを取得
@@ -83,11 +84,7 @@ export function minoIdToPiece(minoId: string): Piece | null {
   const mino = getMinoById(minoId)
   if (!mino) return null
 
-  const uniqueSuffix = `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`
-  return {
-    id: `${mino.id}-${uniqueSuffix}`,
-    shape: mino.shape,
-  }
+  return createPiece(mino)
 }
 
 /**
