@@ -9,6 +9,8 @@ export interface DeckState {
   readonly cards: readonly MinoId[]         // 山札（残りカード）
   readonly allMinos: readonly MinoId[]      // 全カード（再シャッフル用）
   readonly remainingHands: number           // 残り配置回数
+  /** 購入したPieceの情報（minoId -> Piece）。パターン/シールを復元するために使用 */
+  readonly purchasedPieces: ReadonlyMap<MinoId, Piece>
 }
 
 /**

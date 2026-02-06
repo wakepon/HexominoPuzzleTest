@@ -59,21 +59,32 @@ function handlePlacement(
 }
 
 /**
- * 購入したPieceをデッキに追加（minoIdをallMinosに追加）
- * 注: 現在のデッキシステムはMinoIdベースなので、PieceのミノIDを抽出して追加
- * 将来的にはPiece自体を保持する方式に移行予定
+ * 購入したPieceをデッキに追加
+ * minoIdをallMinosに追加し、パターン/シール情報をpurchasedPiecesに保存
  */
 function addPieceToDeck(deck: DeckState, piece: Piece): DeckState {
   // PieceのIDからミノIDを抽出
   // ID形式: "minoId-timestamp-random"（PieceService.createPieceIdで生成）
   // 例: "tetromino-t-1234567890-abc123" → "tetromino-t"
-  // 注意: この形式に依存しているため、createPieceIdを変更する際は要確認
   const minoId = piece.id.replace(/-\d+-[a-z0-9]+$/, '')
+
+  // パターンまたはシールがある場合はpurchasedPiecesに保存
+  const hasEffect = Array.from(piece.blocks.values()).some(
+    (block) => block.pattern || block.seal
+  )
+
+  let newPurchasedPieces: ReadonlyMap<string, Piece> = deck.purchasedPieces
+  if (hasEffect) {
+    const mutableMap = new Map(deck.purchasedPieces)
+    mutableMap.set(minoId, piece)
+    newPurchasedPieces = mutableMap
+  }
 
   return {
     ...deck,
     cards: [...deck.cards, minoId],
     allMinos: [...deck.allMinos, minoId],
+    purchasedPieces: newPurchasedPieces,
   }
 }
 
@@ -84,17 +95,13 @@ function createNextRoundState(currentState: GameState): GameState {
   const rng = new DefaultRandom()
 
   // allMinos（初期デッキ + 購入済みブロック）を使って新しいデッキを作成
-  const baseDeck = currentState.shopState
-    ? {
-        cards: shuffleCurrentDeck(currentState.deck, rng).cards,
-        allMinos: currentState.deck.allMinos,
-        remainingHands: DECK_CONFIG.totalHands,
-      }
-    : {
-        cards: shuffleCurrentDeck(currentState.deck, rng).cards,
-        allMinos: currentState.deck.allMinos,
-        remainingHands: DECK_CONFIG.totalHands,
-      }
+  // purchasedPiecesも引き継ぐ（パターン/シール情報を維持するため）
+  const baseDeck: DeckState = {
+    cards: shuffleCurrentDeck(currentState.deck, rng).cards,
+    allMinos: currentState.deck.allMinos,
+    remainingHands: DECK_CONFIG.totalHands,
+    purchasedPieces: currentState.deck.purchasedPieces,
+  }
 
   const { slots, newDeck } = generateNewPieceSlotsFromDeck(baseDeck)
   const nextRound = currentState.round + 1

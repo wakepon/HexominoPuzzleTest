@@ -3,10 +3,12 @@
  */
 
 import type { DeckState, Piece } from '../Domain'
+import type { MinoId } from '../Domain/Core/Id'
 import type { RandomGenerator } from '../Utils/Random'
 import { DECK_CONFIG } from '../Data/Constants'
 import { getMinoById } from '../Data/MinoDefinitions'
 import { createPiece } from './PieceService'
+import { createPieceId, createBlockSetId } from '../Domain/Core/Id'
 
 /**
  * デッキのミノIDリストを取得
@@ -51,6 +53,7 @@ export function drawFromDeck(
         ...deck,
         cards: remaining,
         allMinos,
+        purchasedPieces: deck.purchasedPieces,
       },
     }
   }
@@ -73,14 +76,30 @@ export function drawFromDeck(
       ...deck,
       cards: remaining,
       allMinos,
+      purchasedPieces: deck.purchasedPieces,
     },
   }
 }
 
 /**
  * ミノIDからPieceを生成
+ * 購入済みPieceがある場合はそのパターン/シール情報を使用
  */
-export function minoIdToPiece(minoId: string): Piece | null {
+export function minoIdToPiece(
+  minoId: string,
+  purchasedPieces?: ReadonlyMap<MinoId, Piece>
+): Piece | null {
+  // 購入済みPieceがあればそれを使用（新しいIDで複製）
+  if (purchasedPieces?.has(minoId)) {
+    const purchased = purchasedPieces.get(minoId)!
+    return {
+      ...purchased,
+      id: createPieceId(minoId),
+      blockSetId: createBlockSetId(),
+    }
+  }
+
+  // 通常のミノ定義から生成
   const mino = getMinoById(minoId)
   if (!mino) return null
 
@@ -98,6 +117,7 @@ export function createInitialDeckState(rng: RandomGenerator): DeckState {
     cards: shuffled,
     remainingHands: DECK_CONFIG.totalHands,
     allMinos: [...cards],
+    purchasedPieces: new Map(),
   }
 }
 
@@ -112,7 +132,7 @@ export function drawPiecesFromDeck(
 
   const pieces: Piece[] = []
   for (const minoId of drawn) {
-    const piece = minoIdToPiece(minoId)
+    const piece = minoIdToPiece(minoId, newDeck.purchasedPieces)
     if (piece) {
       pieces.push(piece)
     }
