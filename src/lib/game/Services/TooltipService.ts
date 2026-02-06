@@ -119,10 +119,12 @@ function hitTestSlots(
 ): EffectInfo[] {
   const slotCellSize = layout.cellSize * LAYOUT.slotCellSizeRatio
 
-  for (const slot of slots) {
+  for (let i = 0; i < slots.length; i++) {
+    const slot = slots[i]
     if (!slot.piece) continue
 
-    const slotPos = slot.position
+    // layout.slotPositionsから実際の描画位置を取得
+    const slotPos = layout.slotPositions[i]
     const shape = slot.piece.shape
 
     // ピースの各セルをチェック
