@@ -11,8 +11,6 @@ import { getSealDefinition } from '../Domain/Effect/Seal'
 import { LAYOUT, SHOP_STYLE, GRID_SIZE } from '../Data/Constants'
 import { BlockDataMapUtils } from '../Domain/Piece/BlockData'
 
-/** ショップアイテムボックス内の最大セル数 */
-const SHOP_ITEM_CELLS_WIDTH = 6
 
 /**
  * BlockDataからエフェクト情報を取得
@@ -157,8 +155,14 @@ function hitTestSlots(
   return []
 }
 
+/** ショップアイテムボックスのセル数（ヘキソミノ最大6x6 + 余白で7） */
+const SHOP_BOX_CELLS = 7
+/** ショップアイテムボックスの価格表示用追加高さ */
+const SHOP_BOX_PRICE_HEIGHT = 30
+
 /**
  * ショップ領域のヒットテスト
+ * 座標計算はshopRenderer.tsのrenderShop/renderBlockShopItem/renderPieceShapeと同一
  */
 function hitTestShop(
   pos: Position,
@@ -170,28 +174,38 @@ function hitTestShop(
   const centerY = canvasHeight / 2
 
   const shopCellSize = cellSize * SHOP_STYLE.cellSizeRatio
+
+  // shopRenderer.tsと同じボックスサイズ計算
+  const boxWidth = SHOP_BOX_CELLS * shopCellSize + SHOP_STYLE.itemBoxPadding * 2
+  const boxHeight = SHOP_BOX_CELLS * shopCellSize + SHOP_STYLE.itemBoxPadding * 2 + SHOP_BOX_PRICE_HEIGHT
+
+  // shopRenderer.tsと同じレイアウト計算
   const itemCount = shopState.items.length
-  const totalWidth =
-    itemCount * (shopCellSize * SHOP_ITEM_CELLS_WIDTH + SHOP_STYLE.itemBoxPadding * 2) +
-    (itemCount - 1) * SHOP_STYLE.itemBoxGap
+  const totalWidth = boxWidth * itemCount + SHOP_STYLE.itemBoxGap * (itemCount - 1)
   const startX = centerX - totalWidth / 2
+  const boxY = centerY + SHOP_STYLE.itemsOffsetY - boxHeight / 2
 
   for (let i = 0; i < shopState.items.length; i++) {
     const item = shopState.items[i]
     if (item.type !== 'block' || !item.piece) continue
 
-    const itemWidth = shopCellSize * SHOP_ITEM_CELLS_WIDTH + SHOP_STYLE.itemBoxPadding * 2
-    const itemX = startX + i * (itemWidth + SHOP_STYLE.itemBoxGap)
-    const itemY = centerY + SHOP_STYLE.itemsOffsetY
+    const boxX = startX + i * (boxWidth + SHOP_STYLE.itemBoxGap)
 
     const shape = item.piece.shape
-    const shapeWidth = shape[0].length * shopCellSize
-    const pieceX = itemX + SHOP_STYLE.itemBoxPadding + (shopCellSize * SHOP_ITEM_CELLS_WIDTH - shapeWidth) / 2
-    const pieceY = itemY + SHOP_STYLE.itemBoxPadding + SHOP_STYLE.shapeVerticalOffset
+    const rows = shape.length
+    const cols = shape[0].length
+    const shapeWidth = cols * shopCellSize
+    const shapeHeight = rows * shopCellSize
+
+    // shopRenderer.tsのrenderBlockShopItem/renderPieceShapeと同じ座標計算
+    const shapeCenterX = boxX + boxWidth / 2
+    const shapeCenterY = boxY + boxHeight / 2 - SHOP_STYLE.shapeVerticalOffset
+    const pieceX = shapeCenterX - shapeWidth / 2
+    const pieceY = shapeCenterY - shapeHeight / 2
 
     // ピースの各セルをチェック
-    for (let row = 0; row < shape.length; row++) {
-      for (let col = 0; col < shape[row].length; col++) {
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
         if (!shape[row][col]) continue
 
         const cellX = pieceX + col * shopCellSize
