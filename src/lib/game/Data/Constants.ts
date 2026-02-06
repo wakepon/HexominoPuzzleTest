@@ -229,6 +229,23 @@ export const DEBUG_WINDOW_STYLE = {
   minWindowWidth: 90,      // 最小ウィンドウ幅
   offsetX: 10,             // 左端からのオフセット
   offsetY: 80,             // 上端からのオフセット
+  // 確率設定セクション
+  probabilitySection: {
+    sectionMarginTop: 12,   // セクション間のマージン
+    labelFontSize: 11,      // ラベルのフォントサイズ
+    labelColor: '#AAAAAA',  // ラベルの色
+    valueFontSize: 12,      // 値表示のフォントサイズ
+    valueColor: '#00FF00',  // 値の色
+    buttonWidth: 20,        // +/-ボタンの幅
+    buttonHeight: 18,       // +/-ボタンの高さ
+    buttonColor: '#4CAF50', // ボタンの色
+    buttonHoverColor: '#66BB6A', // ボタンホバー時の色
+    buttonTextColor: '#FFFFFF',  // ボタンテキストの色
+    buttonFontSize: 14,     // ボタンテキストのフォントサイズ
+    rowHeight: 24,          // 各行の高さ
+    valueWidth: 40,         // 値表示の幅
+    buttonGap: 4,           // ボタン間のギャップ
+  },
 }
 
 // パターン別カラー定義
@@ -290,3 +307,10 @@ export const SEAL_SYMBOL_STYLE = {
   borderRadius: 2,
   padding: 1,
 }
+
+// デバッグ用確率設定
+export const DEBUG_PROBABILITY_SETTINGS = {
+  MIN: 0,
+  MAX: 100,
+  STEP: 10,
+} as const

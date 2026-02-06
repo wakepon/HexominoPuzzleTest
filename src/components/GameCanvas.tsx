@@ -1,6 +1,6 @@
 import { useRef, useEffect, useCallback, useState } from 'react'
 import { GameState, CanvasLayout, Position } from '../lib/game/types'
-import { COLORS, LAYOUT, ROUND_CLEAR_STYLE } from '../lib/game/constants'
+import { COLORS, LAYOUT, ROUND_CLEAR_STYLE, DEBUG_PROBABILITY_SETTINGS } from '../lib/game/constants'
 import { renderBoard } from './renderer/boardRenderer'
 import { renderPieceSlots, renderDraggingPiece } from './renderer/pieceRenderer'
 import { renderPlacementPreview } from './renderer/previewRenderer'
@@ -10,7 +10,8 @@ import { renderRemainingHands, renderGold } from './renderer/uiRenderer'
 import { renderRoundInfo } from './renderer/roundRenderer'
 import { renderRoundClear, renderGameOver, renderGameClear } from './renderer/overlayRenderer'
 import { renderShop, ShopRenderResult } from './renderer/shopRenderer'
-import { renderDebugWindow } from './renderer/debugRenderer'
+import { renderDebugWindow, DebugWindowRenderResult } from './renderer/debugRenderer'
+import type { DebugSettings } from '../lib/game/Domain/Debug'
 import { screenToBoardPosition } from '../lib/game/collisionDetection'
 import { getPieceSize } from '../lib/game/pieceDefinitions'
 import { canAfford } from '../lib/game/shopLogic'
@@ -18,6 +19,7 @@ import { canAfford } from '../lib/game/shopLogic'
 interface GameCanvasProps {
   state: GameState
   layout: CanvasLayout
+  debugSettings: DebugSettings
   onDragStart: (slotIndex: number, startPos: { x: number; y: number }) => void
   onDragMove: (currentPos: { x: number; y: number }, boardPos: { x: number; y: number } | null) => void
   onDragEnd: () => void
@@ -26,11 +28,13 @@ interface GameCanvasProps {
   onReset: () => void
   onBuyItem: (itemIndex: number) => void
   onLeaveShop: () => void
+  onUpdateDebugSettings: (updates: Partial<DebugSettings>) => void
 }
 
 export function GameCanvas({
   state,
   layout,
+  debugSettings,
   onDragStart,
   onDragMove,
   onDragEnd,
@@ -39,6 +43,7 @@ export function GameCanvas({
   onReset,
   onBuyItem,
   onLeaveShop,
+  onUpdateDebugSettings,
 }: GameCanvasProps) {
   const [canvas, setCanvas] = useState<HTMLCanvasElement | null>(null)
   const [showDebugWindow, setShowDebugWindow] = useState(false)
@@ -48,6 +53,7 @@ export function GameCanvas({
   const buttonAreaRef = useRef<{ x: number; y: number; width: number; height: number } | null>(null)
   const roundClearTimeRef = useRef<number | null>(null)
   const shopRenderResultRef = useRef<ShopRenderResult | null>(null)
+  const debugWindowResultRef = useRef<DebugWindowRenderResult | null>(null)
 
   // callback ref でcanvasを取得
   const canvasRefCallback = useCallback((node: HTMLCanvasElement | null) => {
@@ -120,9 +126,11 @@ export function GameCanvas({
 
     // デバッグウィンドウ描画
     if (showDebugWindow) {
-      renderDebugWindow(ctx, state.deck)
+      debugWindowResultRef.current = renderDebugWindow(ctx, state.deck, debugSettings)
+    } else {
+      debugWindowResultRef.current = null
     }
-  }, [canvas, state, layout, onClearAnimationEnd, showDebugWindow])
+  }, [canvas, state, layout, onClearAnimationEnd, showDebugWindow, debugSettings])
 
   // Canvasサイズの設定
   useEffect(() => {
@@ -314,9 +322,60 @@ export function GameCanvas({
       return false
     }
 
+    const handleDebugWindowClick = (pos: Position): boolean => {
+      const debugResult = debugWindowResultRef.current
+      if (!debugResult || !showDebugWindow) return false
+
+      const { MIN, MAX, STEP } = DEBUG_PROBABILITY_SETTINGS
+
+      // パターン確率のマイナスボタン
+      if (isPointInArea(pos, debugResult.patternMinusButton)) {
+        onUpdateDebugSettings({
+          patternProbability: Math.max(MIN, debugSettings.patternProbability - STEP),
+        })
+        return true
+      }
+
+      // パターン確率のプラスボタン
+      if (isPointInArea(pos, debugResult.patternPlusButton)) {
+        onUpdateDebugSettings({
+          patternProbability: Math.min(MAX, debugSettings.patternProbability + STEP),
+        })
+        return true
+      }
+
+      // シール確率のマイナスボタン
+      if (isPointInArea(pos, debugResult.sealMinusButton)) {
+        onUpdateDebugSettings({
+          sealProbability: Math.max(MIN, debugSettings.sealProbability - STEP),
+        })
+        return true
+      }
+
+      // シール確率のプラスボタン
+      if (isPointInArea(pos, debugResult.sealPlusButton)) {
+        onUpdateDebugSettings({
+          sealProbability: Math.min(MAX, debugSettings.sealProbability + STEP),
+        })
+        return true
+      }
+
+      // ウィンドウ内のクリックはイベントを消費（貫通しない）
+      if (isPointInArea(pos, debugResult.windowBounds)) {
+        return true
+      }
+
+      return false
+    }
+
     const handleMouseDown = (e: MouseEvent) => {
       e.preventDefault()
       const pos = getCanvasPosition(e)
+
+      // デバッグウィンドウのクリック判定（最優先）
+      if (handleDebugWindowClick(pos)) {
+        return
+      }
 
       // ショッピングフェーズ
       if (state.phase === 'shopping') {
@@ -365,6 +424,11 @@ export function GameCanvas({
     const handleTouchStart = (e: TouchEvent) => {
       e.preventDefault()
       const pos = getCanvasPosition(e.touches[0])
+
+      // デバッグウィンドウのクリック判定（最優先）
+      if (handleDebugWindowClick(pos)) {
+        return
+      }
 
       // ショッピングフェーズ
       if (state.phase === 'shopping') {
@@ -429,7 +493,7 @@ export function GameCanvas({
       window.removeEventListener('touchend', handleTouchEnd)
       window.removeEventListener('touchcancel', handleTouchEnd)
     }
-  }, [canvas, layout, state.pieceSlots, state.clearingAnimation, state.phase, state.shopState, state.gold, onDragStart, onDragMove, onDragEnd, onReset, onBuyItem, onLeaveShop])
+  }, [canvas, layout, state.pieceSlots, state.clearingAnimation, state.phase, state.shopState, state.gold, onDragStart, onDragMove, onDragEnd, onReset, onBuyItem, onLeaveShop, showDebugWindow, debugSettings, onUpdateDebugSettings])
 
   return (
     <canvas

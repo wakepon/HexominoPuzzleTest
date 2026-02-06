@@ -11,6 +11,7 @@
  */
 
 import type { Position } from '../../Domain'
+import type { ProbabilityOverride } from '../../Services/ShopService'
 
 // ボードアクション
 export type BoardAction =
@@ -32,7 +33,7 @@ export type AnimationAction =
 
 // ラウンドアクション
 export type RoundAction =
-  | { type: 'ROUND/ADVANCE' }
+  | { type: 'ROUND/ADVANCE'; probabilityOverride?: ProbabilityOverride }
 
 // ショップアクション
 export type ShopAction =

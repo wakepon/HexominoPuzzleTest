@@ -5,6 +5,17 @@
 import type { ShopItem, ShopState, DeckState, MinoCategory, Piece } from '../Domain'
 import type { PatternId, SealId } from '../Domain/Core/Id'
 import type { RandomGenerator } from '../Utils/Random'
+
+/**
+ * 確率オーバーライド設定（デバッグ用）
+ * 指定された場合、サイズ別の確率を上書きする
+ */
+export interface ProbabilityOverride {
+  /** パターン付与確率 (0-1) */
+  pattern?: number
+  /** シール付与確率 (0-1) */
+  seal?: number
+}
 import { MINOS_BY_CATEGORY } from '../Data/MinoDefinitions'
 import { shuffleDeck } from './DeckService'
 import {
@@ -116,13 +127,15 @@ function calculatePiecePrice(piece: Piece): number {
 function createShopPiece(
   categories: MinoCategory[],
   size: ShopItemSize,
-  rng: RandomGenerator
+  rng: RandomGenerator,
+  override?: ProbabilityOverride
 ): Piece {
   const mino = pickRandomMinoFromCategories(categories, rng)
 
   // パターンとシールの付与判定（独立）
-  const patternProb = PATTERN_PROBABILITY[size]
-  const sealProb = SEAL_PROBABILITY[size]
+  // オーバーライドがあれば使用、なければサイズ別のデフォルト確率
+  const patternProb = override?.pattern ?? PATTERN_PROBABILITY[size]
+  const sealProb = override?.seal ?? SEAL_PROBABILITY[size]
 
   const addPattern = patternProb > 0 && rng.next() < patternProb
   const addSeal = sealProb > 0 && rng.next() < sealProb
@@ -152,11 +165,15 @@ function createShopPiece(
  * - 小: モノミノ/ドミノ/トリミノ（パターンなし）
  * - 中: テトロミノ/ペントミノ（30%でパターン付き）
  * - 大: ペントミノ/ヘキソミノ（50%でパターン付き）
+ * @param override デバッグ用の確率オーバーライド
  */
-export function generateShopItems(rng: RandomGenerator): ShopItem[] {
-  const smallPiece = createShopPiece(SMALL_CATEGORIES, 'small', rng)
-  const mediumPiece = createShopPiece(MEDIUM_CATEGORIES, 'medium', rng)
-  const largePiece = createShopPiece(LARGE_CATEGORIES, 'large', rng)
+export function generateShopItems(
+  rng: RandomGenerator,
+  override?: ProbabilityOverride
+): ShopItem[] {
+  const smallPiece = createShopPiece(SMALL_CATEGORIES, 'small', rng, override)
+  const mediumPiece = createShopPiece(MEDIUM_CATEGORIES, 'medium', rng, override)
+  const largePiece = createShopPiece(LARGE_CATEGORIES, 'large', rng, override)
 
   return [
     {
@@ -185,10 +202,14 @@ export function generateShopItems(rng: RandomGenerator): ShopItem[] {
 
 /**
  * ショップ状態を作成
+ * @param override デバッグ用の確率オーバーライド
  */
-export function createShopState(rng: RandomGenerator): ShopState {
+export function createShopState(
+  rng: RandomGenerator,
+  override?: ProbabilityOverride
+): ShopState {
   return {
-    items: generateShopItems(rng),
+    items: generateShopItems(rng, override),
   }
 }
 

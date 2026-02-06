@@ -307,14 +307,14 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         }
       }
 
-      // ショップへ遷移
+      // ショップへ遷移（デバッグ用の確率オーバーライドを適用）
       const rng = new DefaultRandom()
       const goldReward = calculateGoldReward(state.deck.remainingHands)
       return {
         ...state,
         phase: 'shopping',
         gold: state.gold + goldReward,
-        shopState: createShopState(rng),
+        shopState: createShopState(rng, action.probabilityOverride),
       }
     }
 

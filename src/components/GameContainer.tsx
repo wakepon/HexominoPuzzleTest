@@ -3,7 +3,7 @@ import { useCanvasLayout } from '../hooks/useCanvasLayout'
 import { GameCanvas } from './GameCanvas'
 
 export function GameContainer() {
-  const { state, actions } = useGame()
+  const { state, debugSettings, actions } = useGame()
   const layout = useCanvasLayout(state.pieceSlots)
 
   if (!layout) {
@@ -24,6 +24,7 @@ export function GameContainer() {
       <GameCanvas
         state={state}
         layout={layout}
+        debugSettings={debugSettings}
         onDragStart={actions.startDrag}
         onDragMove={actions.updateDrag}
         onDragEnd={actions.endDrag}
@@ -32,6 +33,7 @@ export function GameContainer() {
         onReset={actions.resetGame}
         onBuyItem={actions.buyItem}
         onLeaveShop={actions.leaveShop}
+        onUpdateDebugSettings={actions.updateDebugSettings}
       />
     </div>
   )
