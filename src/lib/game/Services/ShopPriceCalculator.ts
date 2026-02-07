@@ -38,19 +38,15 @@ export function calculatePiecePrice(piece: Piece): number {
     0
   )
 
-  // パターンとシールの価格を計算
-  let patternPrice = 0
-  let sealPrice = 0
+  // イミュータブルにパターンとシールの価格を取得
+  const blocksArray = Array.from(piece.blocks.values())
+  const patternBlock = blocksArray.find((b) => b.pattern)
+  const sealBlock = blocksArray.find((b) => b.seal)
 
-  for (const blockData of piece.blocks.values()) {
-    if (blockData.pattern && patternPrice === 0) {
-      patternPrice = getPatternPrice(blockData.pattern)
-    }
-    if (blockData.seal && sealPrice === 0) {
-      sealPrice = getSealPrice(blockData.seal)
-    }
-    if (patternPrice > 0 && sealPrice > 0) break
-  }
+  const patternPrice = patternBlock?.pattern
+    ? getPatternPrice(patternBlock.pattern)
+    : 0
+  const sealPrice = sealBlock?.seal ? getSealPrice(sealBlock.seal) : 0
 
   return cellCount + patternPrice + sealPrice
 }

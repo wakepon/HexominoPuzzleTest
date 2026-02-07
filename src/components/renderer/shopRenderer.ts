@@ -4,6 +4,7 @@
 
 import type { CanvasLayout, Piece } from '../../lib/game/types'
 import type { ShopState, BlockShopItem, RelicShopItem } from '../../lib/game/Domain/Shop/ShopTypes'
+import type { BlockData, BlockDataMap } from '../../lib/game/Domain/Piece/BlockData'
 import {
   SHOP_STYLE,
   COLORS,
@@ -67,6 +68,96 @@ function renderStrikethroughText(
 
   ctx.restore()
   return metrics.width
+}
+
+/**
+ * BlockDataMapから効果名（パターン/シール）を取得
+ */
+function getEffectLabels(blocks: BlockDataMap): string[] {
+  const blocksArray: BlockData[] = Array.from(blocks.values())
+  const labels: string[] = []
+
+  // パターン名を取得
+  const patternBlock = blocksArray.find((b) => b.pattern)
+  if (patternBlock?.pattern) {
+    const patternDef = getPatternDefinition(patternBlock.pattern)
+    if (patternDef) {
+      labels.push(patternDef.name)
+    }
+  }
+
+  // シール名を取得
+  const sealBlock = blocksArray.find((b) => b.seal)
+  if (sealBlock?.seal) {
+    const sealDef = getSealDefinition(sealBlock.seal)
+    if (sealDef) {
+      labels.push(sealDef.name)
+    }
+  }
+
+  return labels
+}
+
+/**
+ * 価格表示を描画（購入済み/セール/購入不可/通常の4パターン）
+ */
+function renderPriceDisplay(
+  ctx: CanvasRenderingContext2D,
+  centerX: number,
+  priceY: number,
+  price: number,
+  originalPrice: number,
+  purchased: boolean,
+  onSale: boolean,
+  affordable: boolean,
+  fontSize: number = SHOP_STYLE.priceFontSize,
+  saleOffset: { original: number; sale: number } = { original: -10, sale: 8 }
+): void {
+  if (purchased) {
+    ctx.font = `bold ${fontSize}px Arial, sans-serif`
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillStyle = SHOP_STYLE.priceDisabledColor
+    ctx.fillText('購入済み', centerX, priceY)
+  } else if (onSale) {
+    // セール時: 元価格（打ち消し線）+ セール価格（赤字）
+    const originalPriceY = priceY + saleOffset.original
+    const salePriceY = priceY + saleOffset.sale
+
+    // 元価格（打ち消し線付き）
+    renderStrikethroughText(
+      ctx,
+      `${originalPrice}G`,
+      centerX,
+      originalPriceY,
+      SHOP_STYLE.originalPriceColor,
+      fontSize - 2
+    )
+
+    // セール価格
+    ctx.font = `bold ${fontSize}px Arial, sans-serif`
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillStyle = affordable ? SHOP_STYLE.saleColor : SHOP_STYLE.priceDisabledColor
+    ctx.fillText(`${price}G`, centerX, salePriceY)
+  } else if (!affordable) {
+    // 購入不可時: 打ち消し線
+    renderStrikethroughText(
+      ctx,
+      `${price}G`,
+      centerX,
+      priceY,
+      SHOP_STYLE.priceDisabledColor,
+      fontSize
+    )
+  } else {
+    // 通常価格
+    ctx.font = `bold ${fontSize}px Arial, sans-serif`
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillStyle = SHOP_STYLE.priceColor
+    ctx.fillText(`${price}G`, centerX, priceY)
+  }
 }
 
 /**
@@ -279,31 +370,7 @@ function renderBlockShopItem(
   ctx.restore()
 
   // パターン名・シール名を表示
-  const effectLabels: string[] = []
-
-  // パターン名を収集
-  for (const blockData of piece.blocks.values()) {
-    if (blockData.pattern) {
-      const patternDef = getPatternDefinition(blockData.pattern)
-      if (patternDef) {
-        effectLabels.push(patternDef.name)
-      }
-      break // パターンは全ブロック共通なので1つ見つければOK
-    }
-  }
-
-  // シール名を収集
-  for (const blockData of piece.blocks.values()) {
-    if (blockData.seal) {
-      const sealDef = getSealDefinition(blockData.seal)
-      if (sealDef) {
-        effectLabels.push(sealDef.name)
-      }
-      break // シールは1つだけなので1つ見つければOK
-    }
-  }
-
-  // 効果名を表示（パターン名 / シール名）
+  const effectLabels = getEffectLabels(piece.blocks)
   if (effectLabels.length > 0) {
     ctx.font = `bold 11px Arial, sans-serif`
     ctx.textAlign = 'center'
@@ -313,52 +380,16 @@ function renderBlockShopItem(
 
   // 価格表示
   const priceY = boxY + boxHeight - SHOP_STYLE.priceVerticalOffset
-
-  if (purchased) {
-    ctx.font = `bold ${SHOP_STYLE.priceFontSize}px Arial, sans-serif`
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'middle'
-    ctx.fillStyle = SHOP_STYLE.priceDisabledColor
-    ctx.fillText('購入済み', boxX + boxWidth / 2, priceY)
-  } else if (onSale) {
-    // セール時: 元価格（打ち消し線）+ セール価格（赤字）
-    const originalPriceY = priceY - 10
-    const salePriceY = priceY + 8
-
-    // 元価格（打ち消し線付き）
-    renderStrikethroughText(
-      ctx,
-      `${originalPrice}G`,
-      boxX + boxWidth / 2,
-      originalPriceY,
-      SHOP_STYLE.originalPriceColor,
-      SHOP_STYLE.priceFontSize - 2
-    )
-
-    // セール価格
-    ctx.font = `bold ${SHOP_STYLE.priceFontSize}px Arial, sans-serif`
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'middle'
-    ctx.fillStyle = affordable ? SHOP_STYLE.saleColor : SHOP_STYLE.priceDisabledColor
-    ctx.fillText(`${price}G`, boxX + boxWidth / 2, salePriceY)
-  } else if (!affordable) {
-    // 購入不可時: 打ち消し線
-    renderStrikethroughText(
-      ctx,
-      `${price}G`,
-      boxX + boxWidth / 2,
-      priceY,
-      SHOP_STYLE.priceDisabledColor,
-      SHOP_STYLE.priceFontSize
-    )
-  } else {
-    // 通常価格
-    ctx.font = `bold ${SHOP_STYLE.priceFontSize}px Arial, sans-serif`
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'middle'
-    ctx.fillStyle = SHOP_STYLE.priceColor
-    ctx.fillText(`${price}G`, boxX + boxWidth / 2, priceY)
-  }
+  renderPriceDisplay(
+    ctx,
+    boxX + boxWidth / 2,
+    priceY,
+    price,
+    originalPrice,
+    purchased,
+    onSale,
+    affordable
+  )
 }
 
 /**
@@ -419,52 +450,18 @@ function renderRelicShopItem(
 
   // 価格表示
   const priceY = boxY + boxHeight - 15
-
-  if (purchased) {
-    ctx.font = `bold ${SHOP_STYLE.priceFontSize}px Arial, sans-serif`
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'middle'
-    ctx.fillStyle = SHOP_STYLE.priceDisabledColor
-    ctx.fillText('購入済み', boxX + boxWidth / 2, priceY)
-  } else if (onSale) {
-    // セール時: 元価格（打ち消し線）+ セール価格（赤字）
-    const originalPriceY = priceY - 8
-    const salePriceY = priceY + 6
-
-    // 元価格（打ち消し線付き）
-    renderStrikethroughText(
-      ctx,
-      `${originalPrice}G`,
-      boxX + boxWidth / 2,
-      originalPriceY,
-      SHOP_STYLE.originalPriceColor,
-      SHOP_STYLE.priceFontSize - 4
-    )
-
-    // セール価格
-    ctx.font = `bold ${SHOP_STYLE.priceFontSize - 2}px Arial, sans-serif`
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'middle'
-    ctx.fillStyle = affordable ? SHOP_STYLE.saleColor : SHOP_STYLE.priceDisabledColor
-    ctx.fillText(`${price}G`, boxX + boxWidth / 2, salePriceY)
-  } else if (!affordable) {
-    // 購入不可時: 打ち消し線
-    renderStrikethroughText(
-      ctx,
-      `${price}G`,
-      boxX + boxWidth / 2,
-      priceY,
-      SHOP_STYLE.priceDisabledColor,
-      SHOP_STYLE.priceFontSize
-    )
-  } else {
-    // 通常価格
-    ctx.font = `bold ${SHOP_STYLE.priceFontSize}px Arial, sans-serif`
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'middle'
-    ctx.fillStyle = SHOP_STYLE.priceColor
-    ctx.fillText(`${price}G`, boxX + boxWidth / 2, priceY)
-  }
+  renderPriceDisplay(
+    ctx,
+    boxX + boxWidth / 2,
+    priceY,
+    price,
+    originalPrice,
+    purchased,
+    onSale,
+    affordable,
+    SHOP_STYLE.priceFontSize,
+    { original: -8, sale: 6 }
+  )
 }
 
 /**
