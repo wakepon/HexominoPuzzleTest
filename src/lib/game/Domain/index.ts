@@ -32,5 +32,8 @@ export * from './Animation'
 // Canvas
 export * from './Canvas'
 
+// Player
+export * from './Player'
+
 // GameState
 export * from './GameState'

@@ -3,12 +3,13 @@
  */
 
 import type { CanvasLayout, Piece } from '../../lib/game/types'
-import type { ShopState, BlockShopItem } from '../../lib/game/Domain/Shop/ShopTypes'
-import { SHOP_STYLE, COLORS, CELL_STYLE, PATTERN_COLORS, PATTERN_SYMBOL_STYLE, SEAL_COLORS, SEAL_SYMBOL_STYLE } from '../../lib/game/constants'
+import type { ShopState, BlockShopItem, RelicShopItem } from '../../lib/game/Domain/Shop/ShopTypes'
+import { SHOP_STYLE, COLORS, CELL_STYLE, PATTERN_COLORS, PATTERN_SYMBOL_STYLE, SEAL_COLORS, SEAL_SYMBOL_STYLE, RARITY_COLORS } from '../../lib/game/constants'
 import { canAfford } from '../../lib/game/Services/ShopService'
-import { isBlockShopItem } from '../../lib/game/Domain/Shop/ShopTypes'
+import { isBlockShopItem, isRelicShopItem } from '../../lib/game/Domain/Shop/ShopTypes'
 import { getPatternDefinition } from '../../lib/game/Domain/Effect/Pattern'
 import { getSealDefinition } from '../../lib/game/Domain/Effect/Seal'
+import { getRelicDefinition } from '../../lib/game/Domain/Effect/Relic'
 import { BlockDataMapUtils } from '../../lib/game/Domain/Piece/BlockData'
 import { ButtonArea } from './overlayRenderer'
 
@@ -239,6 +240,67 @@ function renderBlockShopItem(
 }
 
 /**
+ * レリック商品ボックスを描画
+ */
+function renderRelicShopItem(
+  ctx: CanvasRenderingContext2D,
+  item: RelicShopItem,
+  gold: number,
+  boxX: number,
+  boxY: number,
+  boxWidth: number,
+  boxHeight: number
+): void {
+  const def = getRelicDefinition(item.relicId)
+  if (!def) return
+
+  const { price, purchased } = item
+  const affordable = canAfford(gold, price)
+
+  // ボックス背景
+  ctx.fillStyle = purchased
+    ? SHOP_STYLE.itemPurchasedColor
+    : SHOP_STYLE.itemBackgroundColor
+  ctx.fillRect(boxX, boxY, boxWidth, boxHeight)
+
+  // ボックス枠線
+  ctx.strokeStyle = SHOP_STYLE.itemBorderColor
+  ctx.lineWidth = SHOP_STYLE.itemBorderWidth
+  ctx.strokeRect(boxX, boxY, boxWidth, boxHeight)
+
+  // レリックアイコン（絵文字）
+  ctx.font = `${SHOP_STYLE.relicIconSize}px Arial, sans-serif`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(def.icon, boxX + boxWidth / 2, boxY + 30)
+
+  // レリック名
+  ctx.font = `bold 12px Arial, sans-serif`
+  ctx.fillStyle = '#FFD700'
+  ctx.fillText(def.name, boxX + boxWidth / 2, boxY + 55)
+
+  // レアリティ表示
+  ctx.font = `10px Arial, sans-serif`
+  ctx.fillStyle = RARITY_COLORS[def.rarity] ?? '#FFFFFF'
+  ctx.fillText(def.rarity, boxX + boxWidth / 2, boxY + 70)
+
+  // 価格表示
+  ctx.font = `bold ${SHOP_STYLE.priceFontSize}px Arial, sans-serif`
+  const priceY = boxY + boxHeight - 15
+
+  if (purchased) {
+    ctx.fillStyle = SHOP_STYLE.priceDisabledColor
+    ctx.fillText('購入済み', boxX + boxWidth / 2, priceY)
+  } else if (!affordable) {
+    ctx.fillStyle = SHOP_STYLE.priceDisabledColor
+    ctx.fillText(`${price}G`, boxX + boxWidth / 2, priceY)
+  } else {
+    ctx.fillStyle = SHOP_STYLE.priceColor
+    ctx.fillText(`${price}G`, boxX + boxWidth / 2, priceY)
+  }
+}
+
+/**
  * ショップ画面を描画
  */
 export function renderShop(
@@ -285,43 +347,77 @@ export function renderShop(
   ctx.fillStyle = titleColor
   ctx.fillText('ブロックを購入しますか？', centerX, centerY + titleOffsetY)
 
+  // ブロック商品とレリック商品を分離
+  const blockItems = shopState.items.filter(isBlockShopItem)
+  const relicItems = shopState.items.filter(isRelicShopItem)
+
   // アイテムボックスのサイズ計算
   const cellSize = layout.cellSize * cellSizeRatio
   const boxWidth = 7 * cellSize + itemBoxPadding * 2 // ヘキソミノ(最大6x6)が収まるサイズ
   const boxHeight = 7 * cellSize + itemBoxPadding * 2 + 30 // 価格表示分の余裕
 
-  // 3つのアイテムの配置（小さい順 = 左から）
-  const totalWidth = boxWidth * 3 + itemBoxGap * 2
-  const startX = centerX - totalWidth / 2
-  const boxY = centerY + itemsOffsetY - boxHeight / 2
+  // ブロック行の配置
+  const blockTotalWidth = boxWidth * blockItems.length + itemBoxGap * (blockItems.length - 1)
+  const blockStartX = centerX - blockTotalWidth / 2
+  const blockBoxY = centerY + itemsOffsetY - boxHeight / 2
 
   const itemAreas: ShopItemArea[] = []
 
-  shopState.items.forEach((item, index) => {
-    const boxX = startX + index * (boxWidth + itemBoxGap)
+  // ブロック商品を描画
+  blockItems.forEach((item, blockIndex) => {
+    const boxX = blockStartX + blockIndex * (boxWidth + itemBoxGap)
+    const originalIndex = shopState.items.indexOf(item)
 
-    if (isBlockShopItem(item)) {
-      renderBlockShopItem(
-        ctx,
-        item,
-        gold,
-        boxX,
-        boxY,
-        boxWidth,
-        boxHeight,
-        cellSize
-      )
-    }
-    // RelicShopItem の描画はスライス5で追加
+    renderBlockShopItem(
+      ctx,
+      item,
+      gold,
+      boxX,
+      blockBoxY,
+      boxWidth,
+      boxHeight,
+      cellSize
+    )
 
     itemAreas.push({
-      itemIndex: index,
+      itemIndex: originalIndex,
       x: boxX,
-      y: boxY,
+      y: blockBoxY,
       width: boxWidth,
       height: boxHeight,
     })
   })
+
+  // レリック行の配置（ブロック行の下）
+  if (relicItems.length > 0) {
+    const { relicBoxWidth, relicBoxHeight, relicRowOffsetY } = SHOP_STYLE
+    const relicTotalWidth = relicBoxWidth * relicItems.length + itemBoxGap * (relicItems.length - 1)
+    const relicStartX = centerX - relicTotalWidth / 2
+    const relicBoxY = blockBoxY + boxHeight + relicRowOffsetY
+
+    relicItems.forEach((item, relicIndex) => {
+      const boxX = relicStartX + relicIndex * (relicBoxWidth + itemBoxGap)
+      const originalIndex = shopState.items.indexOf(item)
+
+      renderRelicShopItem(
+        ctx,
+        item,
+        gold,
+        boxX,
+        relicBoxY,
+        relicBoxWidth,
+        relicBoxHeight
+      )
+
+      itemAreas.push({
+        itemIndex: originalIndex,
+        x: boxX,
+        y: relicBoxY,
+        width: relicBoxWidth,
+        height: relicBoxHeight,
+      })
+    })
+  }
 
   // 「店を出る」ボタン
   const buttonX = centerX - leaveButtonWidth / 2

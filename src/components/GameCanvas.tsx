@@ -12,6 +12,7 @@ import { renderRoundClear, renderGameOver, renderGameClear } from './renderer/ov
 import { renderShop, ShopRenderResult } from './renderer/shopRenderer'
 import { renderDebugWindow, DebugWindowRenderResult } from './renderer/debugRenderer'
 import { renderTooltip } from './renderer/tooltipRenderer'
+import { renderRelicPanel } from './renderer/relicPanelRenderer'
 import type { DebugSettings } from '../lib/game/Domain/Debug'
 import type { TooltipState } from '../lib/game/Domain/Tooltip'
 import { INITIAL_TOOLTIP_STATE } from '../lib/game/Domain/Tooltip'
@@ -80,7 +81,10 @@ export function GameCanvas({
     ctx.fillRect(0, 0, layout.canvasWidth, layout.canvasHeight)
 
     // ゴールド描画
-    renderGold(ctx, state.gold)
+    renderGold(ctx, state.player.gold)
+
+    // レリックパネル描画（ゴールドの右隣）
+    renderRelicPanel(ctx, state.player.ownedRelics)
 
     // スコア描画
     renderScore(ctx, state.score, layout)
@@ -116,13 +120,13 @@ export function GameCanvas({
       buttonAreaRef.current = null
       shopRenderResultRef.current = null
     } else if (state.phase === 'shopping' && state.shopState) {
-      shopRenderResultRef.current = renderShop(ctx, state.shopState, state.gold, layout)
+      shopRenderResultRef.current = renderShop(ctx, state.shopState, state.player.gold, layout)
       buttonAreaRef.current = null
     } else if (state.phase === 'game_over') {
-      buttonAreaRef.current = renderGameOver(ctx, state.round, state.score, state.gold, layout)
+      buttonAreaRef.current = renderGameOver(ctx, state.round, state.score, state.player.gold, layout)
       shopRenderResultRef.current = null
     } else if (state.phase === 'game_clear') {
-      buttonAreaRef.current = renderGameClear(ctx, state.gold, layout)
+      buttonAreaRef.current = renderGameClear(ctx, state.player.gold, layout)
       shopRenderResultRef.current = null
     } else {
       buttonAreaRef.current = null
@@ -330,7 +334,7 @@ export function GameCanvas({
         if (isPointInArea(pos, itemArea)) {
           const item = state.shopState.items[itemArea.itemIndex]
           // 購入済みでなく、ゴールドが足りている場合のみ購入
-          if (!item.purchased && canAfford(state.gold, item.price)) {
+          if (!item.purchased && canAfford(state.player.gold, item.price)) {
             onBuyItem(itemArea.itemIndex)
           }
           return true
@@ -545,7 +549,7 @@ export function GameCanvas({
       window.removeEventListener('touchend', handleTouchEnd)
       window.removeEventListener('touchcancel', handleTouchEnd)
     }
-  }, [canvas, layout, state.pieceSlots, state.clearingAnimation, state.phase, state.shopState, state.gold, state.board, state.dragState, onDragStart, onDragMove, onDragEnd, onReset, onBuyItem, onLeaveShop, showDebugWindow, debugSettings, onUpdateDebugSettings])
+  }, [canvas, layout, state.pieceSlots, state.clearingAnimation, state.phase, state.shopState, state.player, state.board, state.dragState, onDragStart, onDragMove, onDragEnd, onReset, onBuyItem, onLeaveShop, showDebugWindow, debugSettings, onUpdateDebugSettings])
 
   return (
     <canvas

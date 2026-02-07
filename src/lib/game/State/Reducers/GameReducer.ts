@@ -4,7 +4,8 @@
 
 import type { GameState, PieceSlot, DeckState, Piece } from '../../Domain'
 import type { GameAction } from '../Actions/GameActions'
-import { isBlockShopItem } from '../../Domain/Shop/ShopTypes'
+import { isBlockShopItem, isRelicShopItem } from '../../Domain/Shop/ShopTypes'
+import { addRelic, addGold, subtractGold } from './PlayerReducer'
 import {
   initialDragState,
   createInitialState,
@@ -116,7 +117,7 @@ function createNextRoundState(currentState: GameState): GameState {
     deck: newDeck,
     phase: 'playing',
     round: nextRound,
-    gold: currentState.gold,
+    player: currentState.player,
     targetScore: calculateTargetScore(nextRound),
     shopState: null,
     comboCount: 0,
@@ -218,7 +219,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           const newScore = state.score + scoreGain
           // ゴールドシール効果: 消去されたゴールドシール数分ゴールドを加算
           const goldGain = scoreBreakdown.goldCount
-          const newGold = state.gold + goldGain
+          const newPlayer = addGold(state.player, goldGain)
           const newPhase = determinePhase(
             newScore,
             state.targetScore,
@@ -237,7 +238,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
               duration: CLEAR_ANIMATION.duration,
             },
             score: newScore,
-            gold: newGold,
+            player: newPlayer,
             deck: finalDeck,
             phase: newPhase,
             comboCount: newComboCount,
@@ -335,7 +336,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         return {
           ...state,
           phase: 'game_clear',
-          gold: state.gold + goldReward,
+          player: addGold(state.player, goldReward),
           shopState: null,
         }
       }
@@ -346,8 +347,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       return {
         ...state,
         phase: 'shopping',
-        gold: state.gold + goldReward,
-        shopState: createShopState(rng, action.probabilityOverride),
+        player: addGold(state.player, goldReward),
+        shopState: createShopState(rng, state.player.ownedRelics, action.probabilityOverride),
       }
     }
 
@@ -363,21 +364,28 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const item = state.shopState.items[itemIndex]
 
       // 既に購入済み、またはゴールド不足の場合は何もしない
-      if (item.purchased || !canAfford(state.gold, item.price)) return state
+      if (item.purchased || !canAfford(state.player.gold, item.price)) return state
 
       // アイテムを購入済みにする
       const newShopState = markItemAsPurchased(state.shopState, itemIndex)
+
+      // 価格を支払う
+      let newPlayer = subtractGold(state.player, item.price)
 
       // BlockShopItemの場合はPieceをデッキに追加
       let newDeck = state.deck
       if (isBlockShopItem(item)) {
         newDeck = addPieceToDeck(state.deck, item.piece)
       }
-      // RelicShopItemの場合はスライス5で対応
+
+      // RelicShopItemの場合はレリックをプレイヤーに追加
+      if (isRelicShopItem(item)) {
+        newPlayer = addRelic(newPlayer, item.relicId)
+      }
 
       return {
         ...state,
-        gold: state.gold - item.price,
+        player: newPlayer,
         deck: newDeck,
         shopState: newShopState,
       }

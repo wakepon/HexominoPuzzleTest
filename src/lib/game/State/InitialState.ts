@@ -8,6 +8,7 @@ import { createInitialDeckState, drawPiecesFromDeck } from '../Services/DeckServ
 import { calculateTargetScore } from '../Services/RoundService'
 import { DefaultRandom } from '../Utils/Random'
 import { ROUND_CONFIG } from '../Data/Constants'
+import { createInitialPlayerState } from '../Domain/Player/PlayerState'
 
 /**
  * 初期ドラッグ状態
@@ -52,7 +53,7 @@ export function createInitialState(): GameState {
     deck: newDeck,
     phase: 'playing',
     round: initialRound,
-    gold: ROUND_CONFIG.initialGold,
+    player: createInitialPlayerState(ROUND_CONFIG.initialGold),
     targetScore: calculateTargetScore(initialRound),
     shopState: null,
     comboCount: 0,

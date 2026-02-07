@@ -210,6 +210,22 @@ export const SHOP_STYLE = {
   cellSizeRatio: 0.6,
   shapeVerticalOffset: 15,      // ミノ形状の垂直オフセット
   priceVerticalOffset: 20,      // 価格表示の下からのオフセット
+  // レリック行（ブロック行の下）
+  relicRowOffsetY: 100,         // ブロック行からのオフセット
+  relicBoxWidth: 100,
+  relicBoxHeight: 100,
+  relicIconSize: 32,
+}
+
+// レリックパネル表示スタイル（画面上部、ゴールドの右隣）
+export const RELIC_PANEL_STYLE = {
+  iconSize: 24,
+  iconGap: 8,
+  paddingLeft: 100,             // ゴールド表示の右隣
+  paddingTop: 20,
+  backgroundColor: 'rgba(0, 0, 0, 0.3)',
+  borderRadius: 4,
+  padding: 4,
 }
 
 // デバッグウィンドウ表示スタイル
@@ -246,6 +262,14 @@ export const DEBUG_WINDOW_STYLE = {
     valueWidth: 40,         // 値表示の幅
     buttonGap: 4,           // ボタン間のギャップ
   },
+}
+
+// レアリティ別カラー定義
+export const RARITY_COLORS: Record<string, string> = {
+  common: '#AAAAAA',
+  uncommon: '#55AA55',
+  rare: '#5555FF',
+  epic: '#AA00AA',
 }
 
 // パターン別カラー定義

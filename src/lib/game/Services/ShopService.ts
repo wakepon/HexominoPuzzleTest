@@ -2,9 +2,10 @@
  * ショップ機能のpure functions
  */
 
-import type { ShopItem, ShopState, DeckState, MinoCategory, Piece } from '../Domain'
-import type { PatternId, SealId } from '../Domain/Core/Id'
+import type { ShopItem, ShopState, DeckState, MinoCategory, Piece, RelicShopItem } from '../Domain'
+import type { PatternId, SealId, RelicId } from '../Domain/Core/Id'
 import type { RandomGenerator } from '../Utils/Random'
+import { RELIC_DEFINITIONS, RelicType } from '../Domain/Effect/Relic'
 
 /**
  * 確率オーバーライド設定（デバッグ用）
@@ -201,15 +202,56 @@ export function generateShopItems(
 }
 
 /**
+ * 未所持レリックからランダムに選択してショップ商品を生成
+ * @param ownedRelics 所持済みレリックID配列
+ * @param maxCount 最大生成数
+ */
+export function generateRelicShopItems(
+  rng: RandomGenerator,
+  ownedRelics: readonly RelicId[],
+  maxCount: number = 3
+): RelicShopItem[] {
+  // 全レリックから未所持のものをフィルタ
+  const allRelicTypes = Object.keys(RELIC_DEFINITIONS) as RelicType[]
+  const availableRelics = allRelicTypes.filter(
+    (type) => !ownedRelics.includes(type as RelicId)
+  )
+
+  if (availableRelics.length === 0) {
+    return []
+  }
+
+  // シャッフルして最大maxCount個を選択
+  const shuffled = [...availableRelics].sort(() => rng.next() - 0.5)
+  const selected = shuffled.slice(0, Math.min(maxCount, shuffled.length))
+
+  return selected.map((type) => {
+    const def = RELIC_DEFINITIONS[type]
+    return {
+      type: 'relic' as const,
+      relicId: def.id,
+      price: def.price,
+      purchased: false,
+      onSale: false,
+    }
+  })
+}
+
+/**
  * ショップ状態を作成
+ * @param ownedRelics 所持済みレリックID配列（所持レリックはショップに出ない）
  * @param override デバッグ用の確率オーバーライド
  */
 export function createShopState(
   rng: RandomGenerator,
+  ownedRelics: readonly RelicId[] = [],
   override?: ProbabilityOverride
 ): ShopState {
+  const blockItems = generateShopItems(rng, override)
+  const relicItems = generateRelicShopItems(rng, ownedRelics)
+
   return {
-    items: generateShopItems(rng, override),
+    items: [...blockItems, ...relicItems],
   }
 }
 

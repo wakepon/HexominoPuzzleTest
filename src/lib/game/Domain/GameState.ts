@@ -4,13 +4,10 @@ import type { GamePhase } from './Round/GamePhase'
 import type { ShopState } from './Shop/ShopTypes'
 import type { DragState } from './Input/DragState'
 import type { ClearingAnimationState } from './Animation/AnimationState'
+import type { PlayerState } from './Player/PlayerState'
 
 /**
  * ゲーム全体の状態（不変）
- *
- * 注意: Architecture.mdでは player, roundInfo, hand 等が分離されているが、
- * 現在の基本パズル実装では既存構造を維持。
- * 将来のローグライト機能で完全準拠に移行予定。
  */
 export interface GameState {
   // ボード関連
@@ -29,7 +26,7 @@ export interface GameState {
   readonly targetScore: number
 
   // プレイヤー関連
-  readonly gold: number
+  readonly player: PlayerState
 
   // ショップ関連
   readonly shopState: ShopState | null

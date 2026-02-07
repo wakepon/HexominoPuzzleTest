@@ -27,6 +27,7 @@ export interface RelicDefinition {
   readonly description: string
   readonly rarity: RelicRarity
   readonly price: number
+  readonly icon: string
 }
 
 /**
@@ -40,6 +41,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     description: '盤面を全て空にするとスコア+20',
     rarity: 'common',
     price: 15,
+    icon: '🏆',
   },
   small_luck: {
     id: 'small_luck' as RelicId,
@@ -48,6 +50,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     description: '3ブロックのピースでライン消去時+20点',
     rarity: 'common',
     price: 15,
+    icon: '🍀',
   },
   chain_master: {
     id: 'chain_master' as RelicId,
@@ -56,6 +59,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     description: '複数行列を同時消しでスコア×1.5',
     rarity: 'rare',
     price: 30,
+    icon: '⛓️',
   },
 }
 
