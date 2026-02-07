@@ -3,9 +3,19 @@
  */
 
 import type { GameState, DragState, PieceSlot, DeckState, GamePhase } from '../Domain'
-import { createEmptyBoard } from '../Services/BoardService'
-import { createInitialDeckState, drawPiecesFromDeck } from '../Services/DeckService'
-import { calculateTargetScore } from '../Services/RoundService'
+import type { RandomGenerator } from '../Utils/Random'
+import { createEmptyBoard, placeObstacleOnBoard } from '../Services/BoardService'
+import {
+  createInitialDeckStateWithParams,
+  drawPiecesFromDeck,
+  drawPiecesFromDeckWithCount,
+} from '../Services/DeckService'
+import {
+  calculateTargetScore,
+  createRoundInfo,
+  getMaxPlacements,
+  getDrawCount,
+} from '../Services/RoundService'
 import { DefaultRandom } from '../Utils/Random'
 import { ROUND_CONFIG } from '../Data/Constants'
 import { createInitialPlayerState } from '../Domain/Player/PlayerState'
@@ -36,16 +46,49 @@ export function generateNewPieceSlotsFromDeck(deck: DeckState): { slots: PieceSl
 }
 
 /**
+ * 指定枚数でデッキから新しいピースセットを生成
+ */
+export function generateNewPieceSlotsFromDeckWithCount(
+  deck: DeckState,
+  count: number,
+  rng?: RandomGenerator
+): { slots: PieceSlot[]; newDeck: DeckState } {
+  const random = rng ?? new DefaultRandom()
+  const { pieces, newDeck } = drawPiecesFromDeckWithCount(deck, count, random)
+  const slots = pieces.map((piece) => ({
+    piece,
+    position: { x: 0, y: 0 },
+  }))
+  return { slots, newDeck }
+}
+
+/**
  * 初期ゲーム状態を作成
  */
 export function createInitialState(): GameState {
   const rng = new DefaultRandom()
-  const initialDeck = createInitialDeckState(rng)
-  const { slots, newDeck } = generateNewPieceSlotsFromDeck(initialDeck)
   const initialRound = 1
+  const roundInfo = createRoundInfo(initialRound, rng)
+
+  // ボス条件に基づいた配置回数とドロー枚数を取得
+  const maxHands = getMaxPlacements(roundInfo)
+  const drawCount = getDrawCount(roundInfo)
+
+  const initialDeck = createInitialDeckStateWithParams(rng, maxHands)
+  const { slots, newDeck } = generateNewPieceSlotsFromDeckWithCount(
+    initialDeck,
+    drawCount,
+    rng
+  )
+
+  // ボス条件「おじゃまブロック」の場合は配置
+  let board = createEmptyBoard()
+  if (roundInfo.bossCondition?.id === 'obstacle') {
+    board = placeObstacleOnBoard(board, rng)
+  }
 
   return {
-    board: createEmptyBoard(),
+    board,
     pieceSlots: slots,
     dragState: initialDragState,
     score: 0,
@@ -54,6 +97,7 @@ export function createInitialState(): GameState {
     deck: newDeck,
     phase: 'playing',
     round: initialRound,
+    roundInfo,
     player: createInitialPlayerState(ROUND_CONFIG.initialGold),
     targetScore: calculateTargetScore(initialRound),
     shopState: null,

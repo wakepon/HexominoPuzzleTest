@@ -23,6 +23,12 @@ export type { Cell } from './Domain/Board/Cell'
 export type { Board } from './Domain/Board/Board'
 export type { DeckState, PieceSlot, HandState } from './Domain/Deck/DeckState'
 export type { GamePhase } from './Domain/Round/GamePhase'
+export type {
+  RoundType,
+  BossConditionType,
+  BossCondition,
+  RoundInfo,
+} from './Domain/Round/RoundTypes'
 export type { ShopItem, ShopState } from './Domain/Shop/ShopTypes'
 export type { DragState } from './Domain/Input/DragState'
 export type { ClearingCell, ClearingAnimationState } from './Domain/Animation/AnimationState'

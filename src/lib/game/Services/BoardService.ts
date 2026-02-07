@@ -3,6 +3,8 @@
  */
 
 import type { Board, Cell, Position, Piece, PieceShape } from '../Domain'
+import type { PatternId } from '../Domain/Core/Id'
+import type { RandomGenerator } from '../Utils/Random'
 import { BlockDataMapUtils } from '../Domain/Piece/BlockData'
 import { GRID_SIZE } from '../Data/Constants'
 
@@ -107,4 +109,28 @@ export function getCell(board: Board, position: Position): Cell | null {
     return null
   }
   return board[position.y][position.x]
+}
+
+/**
+ * おじゃまブロックをランダムな位置に配置
+ */
+export function placeObstacleOnBoard(
+  board: Board,
+  rng: RandomGenerator
+): Board {
+  const row = Math.floor(rng.next() * GRID_SIZE)
+  const col = Math.floor(rng.next() * GRID_SIZE)
+
+  // 新しいボードを作成（immutable）
+  const newBoard: Cell[][] = board.map((r) => r.map((cell) => ({ ...cell })))
+
+  // おじゃまブロックを配置（pattern: 'obstacle'、消去不可）
+  newBoard[row][col] = {
+    filled: true,
+    blockSetId: null,
+    pattern: 'obstacle' as PatternId,
+    seal: null,
+  }
+
+  return newBoard
 }

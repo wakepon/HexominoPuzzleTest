@@ -122,6 +122,24 @@ export function createInitialDeckState(rng: RandomGenerator): DeckState {
 }
 
 /**
+ * 指定された配置回数でデッキを初期化
+ */
+export function createInitialDeckStateWithParams(
+  rng: RandomGenerator,
+  totalHands: number
+): DeckState {
+  const cards = getDeckMinoIds()
+  const shuffled = shuffleDeck(cards, rng)
+
+  return {
+    cards: shuffled,
+    remainingHands: totalHands,
+    allMinos: [...cards],
+    purchasedPieces: new Map(),
+  }
+}
+
+/**
  * デッキから3つのPieceを生成
  */
 export function drawPiecesFromDeck(
@@ -129,6 +147,27 @@ export function drawPiecesFromDeck(
   rng: RandomGenerator
 ): { pieces: Piece[]; newDeck: DeckState } {
   const { drawn, newDeck } = drawFromDeck(deck, DECK_CONFIG.drawCount, rng)
+
+  const pieces: Piece[] = []
+  for (const minoId of drawn) {
+    const piece = minoIdToPiece(minoId, newDeck.purchasedPieces)
+    if (piece) {
+      pieces.push(piece)
+    }
+  }
+
+  return { pieces, newDeck }
+}
+
+/**
+ * 指定枚数でデッキからPieceを生成
+ */
+export function drawPiecesFromDeckWithCount(
+  deck: DeckState,
+  count: number,
+  rng: RandomGenerator
+): { pieces: Piece[]; newDeck: DeckState } {
+  const { drawn, newDeck } = drawFromDeck(deck, count, rng)
 
   const pieces: Piece[] = []
   for (const minoId of drawn) {

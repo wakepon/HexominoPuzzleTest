@@ -1,6 +1,7 @@
 import type { Board } from './Board/Board'
 import type { DeckState, PieceSlot } from './Deck/DeckState'
 import type { GamePhase } from './Round/GamePhase'
+import type { RoundInfo } from './Round/RoundTypes'
 import type { ShopState } from './Shop/ShopTypes'
 import type { DragState } from './Input/DragState'
 import type {
@@ -26,6 +27,7 @@ export interface GameState {
   // ラウンド関連
   readonly phase: GamePhase
   readonly round: number
+  readonly roundInfo: RoundInfo
   readonly score: number
   readonly targetScore: number
 

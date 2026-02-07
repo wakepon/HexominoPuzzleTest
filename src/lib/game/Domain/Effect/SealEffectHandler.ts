@@ -6,9 +6,10 @@ import type { Board, ClearingCell } from '..'
 import type { SealId } from '../Core/Id'
 import type { SealEffectResult } from './SealEffectTypes'
 import { getSealDefinition } from './Seal'
+import { getPatternDefinition } from './Pattern'
 
 /**
- * 消去対象からstoneシール付きセルを除外
+ * 消去対象からstoneシール付きセル・ネガティブパターンセルを除外
  * ライン完成判定は変更せず、消去対象のみをフィルタリング
  */
 export function filterClearableCells(
@@ -17,11 +18,20 @@ export function filterClearableCells(
 ): ClearingCell[] {
   return cells.filter((cell) => {
     const boardCell = board[cell.row][cell.col]
-    if (!boardCell.seal) return true
 
-    const sealDef = getSealDefinition(boardCell.seal)
+    // ネガティブパターン（obstacleなど）は消去不可
+    if (boardCell.pattern) {
+      const patternDef = getPatternDefinition(boardCell.pattern)
+      if (patternDef?.isNegative) return false
+    }
+
     // preventsClearing が true のシール（stone）は除外
-    return !sealDef?.preventsClearing
+    if (boardCell.seal) {
+      const sealDef = getSealDefinition(boardCell.seal)
+      if (sealDef?.preventsClearing) return false
+    }
+
+    return true
   })
 }
 

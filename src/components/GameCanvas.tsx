@@ -96,7 +96,7 @@ export function GameCanvas({
     renderRemainingHands(ctx, state.deck.remainingHands, state.targetScore, layout)
 
     // ラウンド情報描画（右上）
-    renderRoundInfo(ctx, state.round, layout)
+    renderRoundInfo(ctx, state.roundInfo, layout)
 
     // ボード描画（消去アニメーション中のセルは除外）
     const clearingCells = state.clearingAnimation?.isAnimating

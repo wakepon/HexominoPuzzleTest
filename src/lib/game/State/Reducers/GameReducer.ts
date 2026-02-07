@@ -11,10 +11,15 @@ import {
   initialDragState,
   createInitialState,
   generateNewPieceSlotsFromDeck,
+  generateNewPieceSlotsFromDeckWithCount,
   areAllSlotsEmpty,
   determinePhase,
 } from '../InitialState'
-import { createEmptyBoard, placePieceOnBoard } from '../../Services/BoardService'
+import {
+  createEmptyBoard,
+  placePieceOnBoard,
+  placeObstacleOnBoard,
+} from '../../Services/BoardService'
 import { canPlacePiece } from '../../Services/CollisionService'
 import {
   findCompletedLines,
@@ -30,6 +35,9 @@ import {
   calculateTargetScore,
   isFinalRound,
   calculateGoldReward,
+  createRoundInfo,
+  getMaxPlacements,
+  getDrawCount,
 } from '../../Services/RoundService'
 import {
   createShopState,
@@ -38,7 +46,7 @@ import {
   shuffleCurrentDeck,
 } from '../../Services/ShopService'
 import { DefaultRandom } from '../../Utils/Random'
-import { CLEAR_ANIMATION, DECK_CONFIG, RELIC_EFFECT_STYLE } from '../../Data/Constants'
+import { CLEAR_ANIMATION, RELIC_EFFECT_STYLE } from '../../Data/Constants'
 
 /**
  * ピースのブロック数を取得
@@ -123,21 +131,36 @@ function addPieceToDeck(deck: DeckState, piece: Piece): DeckState {
  */
 function createNextRoundState(currentState: GameState): GameState {
   const rng = new DefaultRandom()
+  const nextRound = currentState.round + 1
+  const roundInfo = createRoundInfo(nextRound, rng)
+
+  // ボス条件に基づいた配置回数とドロー枚数を取得
+  const maxHands = getMaxPlacements(roundInfo)
+  const drawCount = getDrawCount(roundInfo)
 
   // allMinos（初期デッキ + 購入済みブロック）を使って新しいデッキを作成
   // purchasedPiecesも引き継ぐ（パターン/シール情報を維持するため）
   const baseDeck: DeckState = {
     cards: shuffleCurrentDeck(currentState.deck, rng).cards,
     allMinos: currentState.deck.allMinos,
-    remainingHands: DECK_CONFIG.totalHands,
+    remainingHands: maxHands,
     purchasedPieces: currentState.deck.purchasedPieces,
   }
 
-  const { slots, newDeck } = generateNewPieceSlotsFromDeck(baseDeck)
-  const nextRound = currentState.round + 1
+  const { slots, newDeck } = generateNewPieceSlotsFromDeckWithCount(
+    baseDeck,
+    drawCount,
+    rng
+  )
+
+  // ボス条件「おじゃまブロック」の場合は配置
+  let board = createEmptyBoard()
+  if (roundInfo.bossCondition?.id === 'obstacle') {
+    board = placeObstacleOnBoard(board, rng)
+  }
 
   return {
-    board: createEmptyBoard(),
+    board,
     pieceSlots: slots,
     dragState: initialDragState,
     score: 0,
@@ -146,6 +169,7 @@ function createNextRoundState(currentState: GameState): GameState {
     deck: newDeck,
     phase: 'playing',
     round: nextRound,
+    roundInfo,
     player: currentState.player,
     targetScore: calculateTargetScore(nextRound),
     shopState: null,
