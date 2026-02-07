@@ -3,7 +3,10 @@ import type { DeckState, PieceSlot } from './Deck/DeckState'
 import type { GamePhase } from './Round/GamePhase'
 import type { ShopState } from './Shop/ShopTypes'
 import type { DragState } from './Input/DragState'
-import type { ClearingAnimationState } from './Animation/AnimationState'
+import type {
+  ClearingAnimationState,
+  RelicActivationAnimationState,
+} from './Animation/AnimationState'
 import type { PlayerState } from './Player/PlayerState'
 
 /**
@@ -18,6 +21,7 @@ export interface GameState {
   // UI関連
   readonly dragState: DragState
   readonly clearingAnimation: ClearingAnimationState | null
+  readonly relicActivationAnimation: RelicActivationAnimationState | null
 
   // ラウンド関連
   readonly phase: GamePhase

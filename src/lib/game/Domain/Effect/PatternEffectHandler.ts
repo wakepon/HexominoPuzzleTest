@@ -5,7 +5,9 @@
 import type { Board, ClearingCell, Piece } from '..'
 import type { PatternId } from '../Core/Id'
 import type { PatternEffectResult, ScoreBreakdown } from './PatternEffectTypes'
+import type { RelicEffectContext, RelicEffectResult } from './RelicEffectTypes'
 import { calculateSealEffects } from './SealEffectHandler'
+import { calculateRelicEffects } from './RelicEffectHandler'
 import { GRID_SIZE } from '../../Data/Constants'
 
 /**
@@ -183,13 +185,29 @@ export function calculatePatternEffects(
 }
 
 /**
- * スコア計算の詳細を返す（パターン効果とシール効果を含む）
+ * デフォルトのレリック効果結果（レリック効果なし）
+ */
+const DEFAULT_RELIC_EFFECTS: RelicEffectResult = {
+  activations: {
+    chainMasterActive: false,
+    smallLuckActive: false,
+    fullClearActive: false,
+  },
+  chainMasterMultiplier: 1.0,
+  smallLuckBonus: 0,
+  fullClearBonus: 0,
+  totalRelicBonus: 0,
+}
+
+/**
+ * スコア計算の詳細を返す（パターン効果、シール効果、レリック効果を含む）
  */
 export function calculateScoreBreakdown(
   board: Board,
   cellsToRemove: readonly ClearingCell[],
   linesCleared: number,
   comboCount: number,
+  relicContext: RelicEffectContext | null = null,
   luckyRandom: () => number = Math.random
 ): ScoreBreakdown {
   const baseBlocks = cellsToRemove.length
@@ -203,7 +221,8 @@ export function calculateScoreBreakdown(
   const { multiBonus, scoreBonus: sealScoreBonus, goldCount } = sealEffects
 
   // 合計ブロック数（乗算対象）= パターン効果 + multiシール効果
-  const totalBlocks = baseBlocks + enhancedBonus + auraBonus + mossBonus + multiBonus
+  const totalBlocks =
+    baseBlocks + enhancedBonus + auraBonus + mossBonus + multiBonus
 
   // 基本スコア
   const baseScore = totalBlocks * linesCleared
@@ -214,8 +233,24 @@ export function calculateScoreBreakdown(
   // lucky効果
   const luckyMultiplier = rollLuckyMultiplier(board, cellsToRemove, luckyRandom)
 
-  // 最終スコア = (baseScore + comboBonus) × lucky倍率 + scoreシールボーナス
-  const finalScore = (baseScore + comboBonus) * luckyMultiplier + sealScoreBonus
+  // パターン+シール効果込みのスコア
+  const scoreBeforeRelics =
+    (baseScore + comboBonus) * luckyMultiplier + sealScoreBonus
+
+  // レリック効果を計算
+  const relicEffects = relicContext
+    ? calculateRelicEffects(relicContext)
+    : DEFAULT_RELIC_EFFECTS
+  const { chainMasterMultiplier, smallLuckBonus, fullClearBonus } = relicEffects
+
+  // 最終スコア計算（仕様書の順序に従う）
+  // 1. 基本スコア（パターン+シール効果込み）
+  // 2. 連鎖の達人（×1.5、切り捨て）
+  const scoreAfterChainMaster = Math.floor(
+    scoreBeforeRelics * chainMasterMultiplier
+  )
+  // 3. 小さな幸運（+20）+ 全消しボーナス（+20）
+  const finalScore = scoreAfterChainMaster + smallLuckBonus + fullClearBonus
 
   return {
     baseBlocks,
@@ -230,6 +265,10 @@ export function calculateScoreBreakdown(
     luckyMultiplier,
     sealScoreBonus,
     goldCount,
+    chainMasterMultiplier,
+    smallLuckBonus,
+    fullClearBonus,
+    relicBonusTotal: smallLuckBonus + fullClearBonus,
     finalScore,
   }
 }

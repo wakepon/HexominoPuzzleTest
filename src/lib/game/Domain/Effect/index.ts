@@ -47,3 +47,18 @@ export {
   calculateMultiBonus,
   calculateSealEffects,
 } from './SealEffectHandler'
+
+// レリック効果
+export type {
+  RelicEffectContext,
+  RelicActivationState,
+  RelicEffectResult,
+  ActivatedRelicInfo,
+} from './RelicEffectTypes'
+export {
+  checkRelicActivations,
+  calculateRelicEffects,
+  getActivatedRelics,
+  applyRelicEffectsToScore,
+  getActivatedRelicsFromScoreBreakdown,
+} from './RelicEffectHandler'

@@ -357,3 +357,27 @@ export const TOOLTIP_STYLE = {
   offsetY: 15,
   effectGap: 8,
 }
+
+// レリック発動エフェクトスタイル
+export const RELIC_EFFECT_STYLE = {
+  duration: 1500, // エフェクト表示時間（ms）
+  popupWidth: 200,
+  popupHeight: 80,
+  popupGap: 10, // ポップアップ間のギャップ
+  backgroundColor: 'rgba(0, 0, 0, 0.8)',
+  borderColor: '#FFD700',
+  borderWidth: 3,
+  borderRadius: 10,
+  iconSize: 32,
+  iconOffsetX: 40, // アイコンのX位置オフセット
+  nameFontSize: 16,
+  nameOffsetX: 70, // 名前のX位置オフセット
+  nameOffsetY: 25, // 名前のY位置オフセット
+  bonusFontSize: 20,
+  bonusOffsetY: 55, // ボーナス値のY位置オフセット
+  nameColor: '#FFFFFF',
+  bonusColor: '#FFD700',
+  fontFamily: 'Arial, sans-serif',
+  glowColor: 'rgba(255, 215, 0, 0.5)',
+  glowRadius: 20,
+}

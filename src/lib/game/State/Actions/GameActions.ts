@@ -30,6 +30,7 @@ export type GameCoreAction =
 // アニメーションアクション
 export type AnimationAction =
   | { type: 'ANIMATION/END_CLEAR' }
+  | { type: 'ANIMATION/END_RELIC_ACTIVATION' }
 
 // ラウンドアクション
 export type RoundAction =

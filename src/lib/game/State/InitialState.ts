@@ -50,6 +50,7 @@ export function createInitialState(): GameState {
     dragState: initialDragState,
     score: 0,
     clearingAnimation: null,
+    relicActivationAnimation: null,
     deck: newDeck,
     phase: 'playing',
     round: initialRound,

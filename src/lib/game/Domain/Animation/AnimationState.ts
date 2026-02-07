@@ -1,3 +1,5 @@
+import type { ActivatedRelicInfo } from '../Effect/RelicEffectTypes'
+
 /**
  * 消去対象セル
  *
@@ -30,6 +32,29 @@ export const createClearingAnimation = (
 ): ClearingAnimationState => ({
   isAnimating: true,
   cells,
+  startTime: Date.now(),
+  duration,
+})
+
+/**
+ * レリック発動アニメーション状態
+ */
+export interface RelicActivationAnimationState {
+  readonly isAnimating: boolean
+  readonly activatedRelics: readonly ActivatedRelicInfo[]
+  readonly startTime: number
+  readonly duration: number
+}
+
+/**
+ * レリック発動アニメーションを作成
+ */
+export const createRelicActivationAnimation = (
+  activatedRelics: readonly ActivatedRelicInfo[],
+  duration: number
+): RelicActivationAnimationState => ({
+  isAnimating: activatedRelics.length > 0,
+  activatedRelics,
   startTime: Date.now(),
   duration,
 })

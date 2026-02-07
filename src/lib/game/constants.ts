@@ -33,4 +33,5 @@ export {
   TOOLTIP_STYLE,
   RELIC_PANEL_STYLE,
   RARITY_COLORS,
+  RELIC_EFFECT_STYLE,
 } from './Data/Constants'

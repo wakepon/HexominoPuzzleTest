@@ -5,6 +5,15 @@
 import type { RelicId } from '../Core/Id'
 
 /**
+ * レリック効果の数値定数
+ */
+export const RELIC_EFFECT_VALUES = {
+  CHAIN_MASTER_MULTIPLIER: 1.5,
+  SMALL_LUCK_BONUS: 20,
+  FULL_CLEAR_BONUS: 20,
+} as const
+
+/**
  * レリックのレアリティ
  */
 export type RelicRarity = 'common' | 'uncommon' | 'rare' | 'epic'

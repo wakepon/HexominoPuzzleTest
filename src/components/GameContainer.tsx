@@ -29,6 +29,7 @@ export function GameContainer() {
         onDragMove={actions.updateDrag}
         onDragEnd={actions.endDrag}
         onClearAnimationEnd={actions.endClearAnimation}
+        onRelicActivationAnimationEnd={actions.endRelicActivationAnimation}
         onAdvanceRound={actions.advanceRound}
         onReset={actions.resetGame}
         onBuyItem={actions.buyItem}

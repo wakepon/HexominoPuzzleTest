@@ -13,6 +13,7 @@ import { renderShop, ShopRenderResult } from './renderer/shopRenderer'
 import { renderDebugWindow, DebugWindowRenderResult } from './renderer/debugRenderer'
 import { renderTooltip } from './renderer/tooltipRenderer'
 import { renderRelicPanel } from './renderer/relicPanelRenderer'
+import { renderRelicEffect } from './renderer/relicEffectRenderer'
 import type { DebugSettings } from '../lib/game/Domain/Debug'
 import type { TooltipState } from '../lib/game/Domain/Tooltip'
 import { INITIAL_TOOLTIP_STATE } from '../lib/game/Domain/Tooltip'
@@ -29,6 +30,7 @@ interface GameCanvasProps {
   onDragMove: (currentPos: { x: number; y: number }, boardPos: { x: number; y: number } | null) => void
   onDragEnd: () => void
   onClearAnimationEnd: () => void
+  onRelicActivationAnimationEnd: () => void
   onAdvanceRound: () => void
   onReset: () => void
   onBuyItem: (itemIndex: number) => void
@@ -44,6 +46,7 @@ export function GameCanvas({
   onDragMove,
   onDragEnd,
   onClearAnimationEnd,
+  onRelicActivationAnimationEnd,
   onAdvanceRound,
   onReset,
   onBuyItem,
@@ -113,6 +116,14 @@ export function GameCanvas({
       }
     }
 
+    // レリック発動エフェクト描画
+    if (state.relicActivationAnimation?.isAnimating) {
+      const isComplete = renderRelicEffect(ctx, state.relicActivationAnimation, layout)
+      if (isComplete) {
+        onRelicActivationAnimationEnd()
+      }
+    }
+
     // オーバーレイ描画
     if (state.phase === 'round_clear') {
       const goldReward = state.deck.remainingHands
@@ -152,7 +163,7 @@ export function GameCanvas({
     if (showTooltip) {
       renderTooltip(ctx, tooltipState, layout.canvasWidth, layout.canvasHeight)
     }
-  }, [canvas, state, layout, onClearAnimationEnd, showDebugWindow, debugSettings, tooltipState])
+  }, [canvas, state, layout, onClearAnimationEnd, onRelicActivationAnimationEnd, showDebugWindow, debugSettings, tooltipState])
 
   // Canvasサイズの設定
   useEffect(() => {
@@ -207,6 +218,24 @@ export function GameCanvas({
       cancelAnimationFrame(animationId)
     }
   }, [state.clearingAnimation?.isAnimating, render])
+
+  // レリック発動アニメーションのループ
+  useEffect(() => {
+    if (!state.relicActivationAnimation?.isAnimating) return
+
+    let animationId: number
+
+    const animate = () => {
+      render()
+      animationId = requestAnimationFrame(animate)
+    }
+
+    animationId = requestAnimationFrame(animate)
+
+    return () => {
+      cancelAnimationFrame(animationId)
+    }
+  }, [state.relicActivationAnimation?.isAnimating, render])
 
   // ラウンドクリア演出のタイマー
   useEffect(() => {

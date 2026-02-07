@@ -3,6 +3,7 @@
  */
 
 import type { Board, ClearingCell, ScoreBreakdown } from '../Domain'
+import type { RelicEffectContext } from '../Domain/Effect/RelicEffectTypes'
 import { calculateScoreBreakdown as calculatePatternScoreBreakdown } from '../Domain/Effect/PatternEffectHandler'
 import { filterClearableCells } from '../Domain/Effect/SealEffectHandler'
 import { GRID_SIZE } from '../Data/Constants'
@@ -103,10 +104,11 @@ export function calculateScore(completedLines: CompletedLines): number {
 }
 
 /**
- * パターン効果とシール効果を考慮したスコアを計算
+ * パターン効果、シール効果、レリック効果を考慮したスコアを計算
  * @param board 現在のボード状態
  * @param completedLines 完成したライン情報
  * @param comboCount 現在のコンボ回数
+ * @param relicContext レリック効果コンテキスト（null可）
  * @param luckyRandom 乱数生成関数（テスト用に注入可能）
  * @returns スコア計算の詳細内訳
  */
@@ -114,6 +116,7 @@ export function calculateScoreWithEffects(
   board: Board,
   completedLines: CompletedLines,
   comboCount: number,
+  relicContext: RelicEffectContext | null = null,
   luckyRandom: () => number = Math.random
 ): ScoreBreakdown {
   const totalLines = completedLines.rows.length + completedLines.columns.length
@@ -131,6 +134,10 @@ export function calculateScoreWithEffects(
       luckyMultiplier: 1,
       sealScoreBonus: 0,
       goldCount: 0,
+      chainMasterMultiplier: 1,
+      smallLuckBonus: 0,
+      fullClearBonus: 0,
+      relicBonusTotal: 0,
       finalScore: 0,
     }
   }
@@ -143,6 +150,7 @@ export function calculateScoreWithEffects(
     cellsToRemove,
     totalLines,
     comboCount,
+    relicContext,
     luckyRandom
   )
 }

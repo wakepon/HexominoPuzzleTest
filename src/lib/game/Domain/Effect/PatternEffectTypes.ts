@@ -27,6 +27,11 @@ export interface ScoreBreakdown {
   readonly luckyMultiplier: number // lucky倍率（1 or 2）
   readonly sealScoreBonus: number // scoreシールによる加算（+5点/個）
   readonly goldCount: number // goldシール数（スコアには影響しないがReducerで使用）
+  // レリック効果
+  readonly chainMasterMultiplier: number // 連鎖の達人倍率（1.0 or 1.5）
+  readonly smallLuckBonus: number // 小さな幸運ボーナス（0 or 20）
+  readonly fullClearBonus: number // 全消しボーナス（0 or 20）
+  readonly relicBonusTotal: number // レリック加算ボーナス合計
   readonly finalScore: number // 最終スコア
 }
 

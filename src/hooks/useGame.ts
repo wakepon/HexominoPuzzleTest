@@ -30,6 +30,10 @@ export function useGame() {
     dispatch({ type: 'ANIMATION/END_CLEAR' })
   }, [])
 
+  const endRelicActivationAnimation = useCallback(() => {
+    dispatch({ type: 'ANIMATION/END_RELIC_ACTIVATION' })
+  }, [])
+
   const advanceRound = useCallback(() => {
     dispatch({
       type: 'ROUND/ADVANCE',
@@ -61,6 +65,7 @@ export function useGame() {
       endDrag,
       resetGame,
       endClearAnimation,
+      endRelicActivationAnimation,
       advanceRound,
       buyItem,
       leaveShop,

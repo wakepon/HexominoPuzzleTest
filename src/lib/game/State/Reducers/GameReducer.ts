@@ -2,8 +2,9 @@
  * ゲームReducer
  */
 
-import type { GameState, PieceSlot, DeckState, Piece } from '../../Domain'
+import type { GameState, PieceSlot, DeckState, Piece, Board } from '../../Domain'
 import type { GameAction } from '../Actions/GameActions'
+import type { RelicEffectContext } from '../../Domain/Effect/RelicEffectTypes'
 import { isBlockShopItem, isRelicShopItem } from '../../Domain/Shop/ShopTypes'
 import { addRelic, addGold, subtractGold } from './PlayerReducer'
 import {
@@ -22,6 +23,8 @@ import {
   calculateScoreWithEffects,
 } from '../../Services/LineService'
 import { hasComboPattern } from '../../Domain/Effect/PatternEffectHandler'
+import { getActivatedRelicsFromScoreBreakdown } from '../../Domain/Effect/RelicEffectHandler'
+import { createRelicActivationAnimation } from '../../Domain/Animation/AnimationState'
 import { decrementRemainingHands } from '../../Services/DeckService'
 import {
   calculateTargetScore,
@@ -35,7 +38,32 @@ import {
   shuffleCurrentDeck,
 } from '../../Services/ShopService'
 import { DefaultRandom } from '../../Utils/Random'
-import { CLEAR_ANIMATION, DECK_CONFIG } from '../../Data/Constants'
+import { CLEAR_ANIMATION, DECK_CONFIG, RELIC_EFFECT_STYLE } from '../../Data/Constants'
+
+/**
+ * ピースのブロック数を取得
+ */
+function getPieceBlockCount(piece: Piece): number {
+  let count = 0
+  for (const row of piece.shape) {
+    for (const cell of row) {
+      if (cell) count++
+    }
+  }
+  return count
+}
+
+/**
+ * 盤面が空か判定
+ */
+function isBoardEmpty(board: Board): boolean {
+  for (const row of board) {
+    for (const cell of row) {
+      if (cell.filled) return false
+    }
+  }
+  return true
+}
 
 /**
  * 配置後のデッキとスロットの状態を計算
@@ -114,6 +142,7 @@ function createNextRoundState(currentState: GameState): GameState {
     dragState: initialDragState,
     score: 0,
     clearingAnimation: null,
+    relicActivationAnimation: null,
     deck: newDeck,
     phase: 'playing',
     round: nextRound,
@@ -209,10 +238,23 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         if (totalLines > 0) {
           // 石シールを除いた消去対象セルを取得
           const cells = getCellsToRemoveWithFilter(newBoard, completedLines)
+
+          // 消去後の盤面を先に計算（全消し判定用）
+          const boardAfterClear = clearLines(newBoard, cells)
+
+          // レリック効果コンテキストを作成
+          const relicContext: RelicEffectContext = {
+            ownedRelics: state.player.ownedRelics,
+            totalLines,
+            placedBlockSize: getPieceBlockCount(slot.piece),
+            isBoardEmptyAfterClear: isBoardEmpty(boardAfterClear),
+          }
+
           const scoreBreakdown = calculateScoreWithEffects(
             newBoard,
             completedLines,
             newComboCount,
+            relicContext,
             Math.random
           )
           const scoreGain = scoreBreakdown.finalScore
@@ -226,6 +268,17 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             finalDeck.remainingHands
           )
 
+          // レリック発動アニメーション（scoreBreakdownから直接取得し、重複計算を回避）
+          const activatedRelics =
+            getActivatedRelicsFromScoreBreakdown(scoreBreakdown)
+          const relicAnimation =
+            activatedRelics.length > 0
+              ? createRelicActivationAnimation(
+                  activatedRelics,
+                  RELIC_EFFECT_STYLE.duration
+                )
+              : null
+
           return {
             ...state,
             board: newBoard,
@@ -237,6 +290,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
               startTime: Date.now(),
               duration: CLEAR_ANIMATION.duration,
             },
+            relicActivationAnimation: relicAnimation,
             score: newScore,
             player: newPlayer,
             deck: finalDeck,
@@ -323,6 +377,13 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         ...state,
         board: clearedBoard,
         clearingAnimation: null,
+      }
+    }
+
+    case 'ANIMATION/END_RELIC_ACTIVATION': {
+      return {
+        ...state,
+        relicActivationAnimation: null,
       }
     }
 
