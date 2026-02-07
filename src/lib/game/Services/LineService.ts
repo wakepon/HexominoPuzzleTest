@@ -2,7 +2,8 @@
  * ライン消去ロジック
  */
 
-import type { Board, ClearingCell } from '../Domain'
+import type { Board, ClearingCell, ScoreBreakdown } from '../Domain'
+import { calculateScoreBreakdown as calculatePatternScoreBreakdown } from '../Domain/Effect/PatternEffectHandler'
 import { GRID_SIZE } from '../Data/Constants'
 
 /**
@@ -83,6 +84,47 @@ export function calculateScore(completedLines: CompletedLines): number {
   const blockCount = cells.length
 
   return blockCount * totalLines
+}
+
+/**
+ * パターン効果を考慮したスコアを計算
+ * @param board 現在のボード状態
+ * @param completedLines 完成したライン情報
+ * @param comboCount 現在のコンボ回数
+ * @param luckyRandom 乱数生成関数（テスト用に注入可能）
+ * @returns スコア計算の詳細内訳
+ */
+export function calculateScoreWithEffects(
+  board: Board,
+  completedLines: CompletedLines,
+  comboCount: number,
+  luckyRandom: () => number = Math.random
+): ScoreBreakdown {
+  const totalLines = completedLines.rows.length + completedLines.columns.length
+  if (totalLines === 0) {
+    return {
+      baseBlocks: 0,
+      enhancedBonus: 0,
+      auraBonus: 0,
+      mossBonus: 0,
+      totalBlocks: 0,
+      linesCleared: 0,
+      baseScore: 0,
+      comboBonus: 0,
+      luckyMultiplier: 1,
+      finalScore: 0,
+    }
+  }
+
+  const cellsToRemove = getCellsToRemove(completedLines)
+
+  return calculatePatternScoreBreakdown(
+    board,
+    cellsToRemove,
+    totalLines,
+    comboCount,
+    luckyRandom
+  )
 }
 
 /**

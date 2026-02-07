@@ -16,10 +16,11 @@ import { createEmptyBoard, placePieceOnBoard } from '../../Services/BoardService
 import { canPlacePiece } from '../../Services/CollisionService'
 import {
   findCompletedLines,
-  calculateScore,
   getCellsToRemove,
   clearLines,
+  calculateScoreWithEffects,
 } from '../../Services/LineService'
+import { hasComboPattern } from '../../Domain/Effect/PatternEffectHandler'
 import { decrementRemainingHands } from '../../Services/DeckService'
 import {
   calculateTargetScore,
@@ -118,6 +119,7 @@ function createNextRoundState(currentState: GameState): GameState {
     gold: currentState.gold,
     targetScore: calculateTargetScore(nextRound),
     shopState: null,
+    comboCount: 0,
   }
 }
 
@@ -193,6 +195,11 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         // 配置後の状態を計算
         const { finalSlots, finalDeck } = handlePlacement(newSlots, state.deck)
 
+        // comboCount更新（配置したピースがcomboパターンを持つか）
+        const newComboCount = hasComboPattern(slot.piece)
+          ? state.comboCount + 1
+          : 0
+
         // ライン消去判定
         const completedLines = findCompletedLines(newBoard)
         const totalLines =
@@ -200,7 +207,13 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
         if (totalLines > 0) {
           const cells = getCellsToRemove(completedLines)
-          const scoreGain = calculateScore(completedLines)
+          const scoreBreakdown = calculateScoreWithEffects(
+            newBoard,
+            completedLines,
+            newComboCount,
+            Math.random
+          )
+          const scoreGain = scoreBreakdown.finalScore
           const newScore = state.score + scoreGain
           const newPhase = determinePhase(
             newScore,
@@ -222,6 +235,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             score: newScore,
             deck: finalDeck,
             phase: newPhase,
+            comboCount: newComboCount,
           }
         }
 
@@ -239,6 +253,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           dragState: initialDragState,
           deck: finalDeck,
           phase: newPhase,
+          comboCount: newComboCount,
         }
       }
 
@@ -260,6 +275,11 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         return state
       }
 
+      // comboCount更新（配置したピースがcomboパターンを持つか）
+      const newComboCount = hasComboPattern(slot.piece)
+        ? state.comboCount + 1
+        : 0
+
       // Piece全体を渡す
       const newBoard = placePieceOnBoard(state.board, slot.piece, action.position)
       const newSlots = state.pieceSlots.map((s, i) =>
@@ -280,6 +300,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         pieceSlots: finalSlots,
         deck: finalDeck,
         phase: newPhase,
+        comboCount: newComboCount,
       }
     }
 

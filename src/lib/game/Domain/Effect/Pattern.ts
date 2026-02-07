@@ -43,7 +43,7 @@ export const PATTERN_DEFINITIONS: Record<PatternType, PatternDefinition> = {
     id: 'lucky' as PatternId,
     type: 'lucky',
     name: 'ラッキーブロック',
-    description: '配置時に10%の確率でスコア2倍',
+    description: 'このブロックが消えると10%の確率でスコア2倍',
     symbol: '♣',
     isNegative: false,
   },

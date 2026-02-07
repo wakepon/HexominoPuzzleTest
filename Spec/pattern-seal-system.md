@@ -29,8 +29,8 @@
 |------|-----|
 | ID | `lucky` |
 | 名前 | ラッキーブロック |
-| 説明 | 配置時に10%の確率でスコア2倍 |
-| 効果 | 確率でスコア倍化 |
+| 説明 | このブロックが消えると10%の確率でスコア2倍 |
+| 効果 | 消去時に確率でスコア倍化 |
 
 #### コンボブロック (combo)
 
@@ -122,21 +122,28 @@
 ### スコア計算フロー
 
 1. 消去対象セルを収集（石シール・おじゃまブロック除外）
-2. パターン効果を計算（オーラ、苔）
-3. `totalBlocks = baseBlocks + auraBonus + mossBonus`
-4. `score = totalBlocks × linesCleared`
-5. レリック効果を適用（連鎖の達人: ×1.5）
-6. シール効果を適用（ゴールド、スコア加算）
+2. パターン効果を計算（enhanced, aura, moss）
+3. `totalBlocks = baseBlocks + enhancedBonus + auraBonus + mossBonus`
+4. `baseScore = totalBlocks × linesCleared`
+5. コンボボーナスを加算: `score = baseScore + comboBonus`
+6. lucky効果を判定（10%で2倍）: `score = score × luckyMultiplier`
+7. レリック効果を適用（連鎖の達人: ×1.5）
+8. シール効果を適用（ゴールド、スコア加算）
 
 ### パターン効果計算
 
 ```
-効果計算(消去対象セル) {
+効果計算(消去対象セル, comboCount) {
     baseBlocks = 消去対象セル数
+    enhancedBonus = 0
     auraBonus = 0
     mossBonus = 0
 
     各消去対象セルについて:
+        // enhanced効果
+        if (パターン === 'enhanced') {
+            enhancedBonus += 2
+        }
         // オーラ効果
         if (隣接にオーラブロック(別セット)がある) {
             auraBonus++
@@ -146,11 +153,25 @@
             mossBonus += 盤面端との接触辺数
         }
 
+    // combo効果（連続配置回数でボーナス: 1回目=0, 2回目=+2, 3回目=+4...）
+    comboBonus = comboCount > 1 ? (comboCount - 1) * 2 : 0
+
+    // lucky効果（10%の確率で2倍）
+    luckyMultiplier = 消去対象にluckyブロックがあり && 10%判定成功 ? 2 : 1
+
+    totalBlocks = baseBlocks + enhancedBonus + auraBonus + mossBonus
+    baseScore = totalBlocks × linesCleared
+    finalScore = (baseScore + comboBonus) × luckyMultiplier
+
     return {
         baseBlocks,
+        enhancedBonus,
         auraBonus,
         mossBonus,
-        totalBlocks: baseBlocks + auraBonus + mossBonus
+        totalBlocks,
+        comboBonus,
+        luckyMultiplier,
+        finalScore
     }
 }
 ```

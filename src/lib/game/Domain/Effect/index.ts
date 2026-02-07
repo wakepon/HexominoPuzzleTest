@@ -20,3 +20,20 @@ export { SEAL_DEFINITIONS, getSealDefinition, SHOP_AVAILABLE_SEALS } from './Sea
 // レリック
 export type { RelicRarity, RelicType, RelicDefinition } from './Relic'
 export { RELIC_DEFINITIONS, getRelicDefinition } from './Relic'
+
+// パターン効果
+export type {
+  PatternEffectResult,
+  ScoreBreakdown,
+  ComboState,
+} from './PatternEffectTypes'
+export {
+  calculateEnhancedBonus,
+  calculateAuraBonus,
+  calculateMossBonus,
+  rollLuckyMultiplier,
+  calculateComboBonus,
+  hasComboPattern,
+  calculatePatternEffects,
+  calculateScoreBreakdown,
+} from './PatternEffectHandler'

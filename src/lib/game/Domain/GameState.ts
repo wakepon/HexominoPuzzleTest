@@ -33,4 +33,7 @@ export interface GameState {
 
   // ショップ関連
   readonly shopState: ShopState | null
+
+  // コンボ状態（combo効果用）
+  readonly comboCount: number
 }

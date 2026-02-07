@@ -55,6 +55,7 @@ export function createInitialState(): GameState {
     gold: ROUND_CONFIG.initialGold,
     targetScore: calculateTargetScore(initialRound),
     shopState: null,
+    comboCount: 0,
   }
 }
 
