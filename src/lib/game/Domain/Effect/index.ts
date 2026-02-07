@@ -37,3 +37,13 @@ export {
   calculatePatternEffects,
   calculateScoreBreakdown,
 } from './PatternEffectHandler'
+
+// シール効果
+export type { SealEffectResult } from './SealEffectTypes'
+export {
+  filterClearableCells,
+  calculateGoldCount,
+  calculateScoreBonus,
+  calculateMultiBonus,
+  calculateSealEffects,
+} from './SealEffectHandler'

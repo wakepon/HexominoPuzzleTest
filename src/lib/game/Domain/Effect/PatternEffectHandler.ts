@@ -5,6 +5,7 @@
 import type { Board, ClearingCell, Piece } from '..'
 import type { PatternId } from '../Core/Id'
 import type { PatternEffectResult, ScoreBreakdown } from './PatternEffectTypes'
+import { calculateSealEffects } from './SealEffectHandler'
 import { GRID_SIZE } from '../../Data/Constants'
 
 /**
@@ -182,7 +183,7 @@ export function calculatePatternEffects(
 }
 
 /**
- * スコア計算の詳細を返す（パターン効果を含む）
+ * スコア計算の詳細を返す（パターン効果とシール効果を含む）
  */
 export function calculateScoreBreakdown(
   board: Board,
@@ -197,8 +198,12 @@ export function calculateScoreBreakdown(
   const patternEffects = calculatePatternEffects(board, cellsToRemove)
   const { enhancedBonus, auraBonus, mossBonus } = patternEffects
 
-  // 合計ブロック数（乗算対象）
-  const totalBlocks = baseBlocks + enhancedBonus + auraBonus + mossBonus
+  // シール効果を計算
+  const sealEffects = calculateSealEffects(board, cellsToRemove)
+  const { multiBonus, scoreBonus: sealScoreBonus, goldCount } = sealEffects
+
+  // 合計ブロック数（乗算対象）= パターン効果 + multiシール効果
+  const totalBlocks = baseBlocks + enhancedBonus + auraBonus + mossBonus + multiBonus
 
   // 基本スコア
   const baseScore = totalBlocks * linesCleared
@@ -209,19 +214,22 @@ export function calculateScoreBreakdown(
   // lucky効果
   const luckyMultiplier = rollLuckyMultiplier(board, cellsToRemove, luckyRandom)
 
-  // 最終スコア
-  const finalScore = (baseScore + comboBonus) * luckyMultiplier
+  // 最終スコア = (baseScore + comboBonus) × lucky倍率 + scoreシールボーナス
+  const finalScore = (baseScore + comboBonus) * luckyMultiplier + sealScoreBonus
 
   return {
     baseBlocks,
     enhancedBonus,
     auraBonus,
     mossBonus,
+    multiBonus,
     totalBlocks,
     linesCleared,
     baseScore,
     comboBonus,
     luckyMultiplier,
+    sealScoreBonus,
+    goldCount,
     finalScore,
   }
 }

@@ -16,7 +16,7 @@ import { createEmptyBoard, placePieceOnBoard } from '../../Services/BoardService
 import { canPlacePiece } from '../../Services/CollisionService'
 import {
   findCompletedLines,
-  getCellsToRemove,
+  getCellsToRemoveWithFilter,
   clearLines,
   calculateScoreWithEffects,
 } from '../../Services/LineService'
@@ -206,7 +206,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           completedLines.rows.length + completedLines.columns.length
 
         if (totalLines > 0) {
-          const cells = getCellsToRemove(completedLines)
+          // 石シールを除いた消去対象セルを取得
+          const cells = getCellsToRemoveWithFilter(newBoard, completedLines)
           const scoreBreakdown = calculateScoreWithEffects(
             newBoard,
             completedLines,
@@ -215,6 +216,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           )
           const scoreGain = scoreBreakdown.finalScore
           const newScore = state.score + scoreGain
+          // ゴールドシール効果: 消去されたゴールドシール数分ゴールドを加算
+          const goldGain = scoreBreakdown.goldCount
+          const newGold = state.gold + goldGain
           const newPhase = determinePhase(
             newScore,
             state.targetScore,
@@ -233,6 +237,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
               duration: CLEAR_ANIMATION.duration,
             },
             score: newScore,
+            gold: newGold,
             deck: finalDeck,
             phase: newPhase,
             comboCount: newComboCount,
