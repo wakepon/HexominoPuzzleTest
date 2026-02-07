@@ -215,6 +215,19 @@ export const SHOP_STYLE = {
   relicBoxWidth: 100,
   relicBoxHeight: 100,
   relicIconSize: 32,
+  // セール表示
+  saleColor: '#FF4444',               // セール価格の色（赤）
+  saleBadgeColor: '#FF0000',          // SALEバッジ背景色
+  saleBadgeTextColor: '#FFFFFF',      // SALEバッジ文字色
+  saleBadgeFontSize: 10,
+  saleBadgeWidth: 40,
+  saleBadgeHeight: 16,
+  saleBadgeOffsetX: 5,                // ボックス左上からのオフセット
+  saleBadgeOffsetY: 5,
+  originalPriceColor: '#888888',      // 元価格の色（グレー）
+  strikethroughColor: '#888888',      // 打ち消し線の色
+  // 購入不可表示
+  unavailableOpacity: 0.5,            // 購入不可時の不透明度
 }
 
 // レリックパネル表示スタイル（画面上部、ゴールドの右隣）

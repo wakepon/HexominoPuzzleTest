@@ -25,6 +25,7 @@ export interface PatternDefinition {
   readonly description: string
   readonly symbol: string // 表示記号
   readonly isNegative: boolean // おじゃまブロック等
+  readonly price: number // ショップでの価格ボーナス
 }
 
 /**
@@ -38,6 +39,7 @@ export const PATTERN_DEFINITIONS: Record<PatternType, PatternDefinition> = {
     description: 'このセットのブロックが消えると+2点/ブロック',
     symbol: '★',
     isNegative: false,
+    price: 4, // 安定した+2点/ブロック
   },
   lucky: {
     id: 'lucky' as PatternId,
@@ -46,6 +48,7 @@ export const PATTERN_DEFINITIONS: Record<PatternType, PatternDefinition> = {
     description: 'このブロックが消えると10%の確率でスコア2倍',
     symbol: '♣',
     isNegative: false,
+    price: 5, // 10%で2倍という高いリターン
   },
   combo: {
     id: 'combo' as PatternId,
@@ -54,6 +57,7 @@ export const PATTERN_DEFINITIONS: Record<PatternType, PatternDefinition> = {
     description: '連続配置でボーナススコア',
     symbol: 'C',
     isNegative: false,
+    price: 3, // 連続配置が必要で条件付き
   },
   aura: {
     id: 'aura' as PatternId,
@@ -62,6 +66,7 @@ export const PATTERN_DEFINITIONS: Record<PatternType, PatternDefinition> = {
     description: '隣接する既存ブロックにバフ付与（消去時+1点）',
     symbol: '◎',
     isNegative: false,
+    price: 4, // 隣接バフで安定
   },
   moss: {
     id: 'moss' as PatternId,
@@ -70,6 +75,7 @@ export const PATTERN_DEFINITIONS: Record<PatternType, PatternDefinition> = {
     description: 'フィールド端と接している辺の数だけスコア加算',
     symbol: 'M',
     isNegative: false,
+    price: 3, // 端配置が必要で条件付き
   },
   obstacle: {
     id: 'obstacle' as PatternId,
@@ -78,6 +84,7 @@ export const PATTERN_DEFINITIONS: Record<PatternType, PatternDefinition> = {
     description: '消去できないブロック',
     symbol: '×',
     isNegative: true,
+    price: 0, // ショップに出ない
   },
 }
 

@@ -23,6 +23,7 @@ export interface SealDefinition {
   readonly description: string
   readonly symbol: string
   readonly preventsClearing: boolean
+  readonly price: number // ショップでの価格ボーナス
 }
 
 /**
@@ -36,6 +37,7 @@ export const SEAL_DEFINITIONS: Record<SealType, SealDefinition> = {
     description: 'このブロックが消えると+1G',
     symbol: 'G',
     preventsClearing: false,
+    price: 3, // ゴールド獲得で回収可能
   },
   score: {
     id: 'score' as SealId,
@@ -44,6 +46,7 @@ export const SEAL_DEFINITIONS: Record<SealType, SealDefinition> = {
     description: 'このブロックが消えると+5点',
     symbol: '+5',
     preventsClearing: false,
+    price: 2, // 固定+5点
   },
   multi: {
     id: 'multi' as SealId,
@@ -52,6 +55,7 @@ export const SEAL_DEFINITIONS: Record<SealType, SealDefinition> = {
     description: 'ライン消し時にこのブロックが2回カウントされる',
     symbol: '×2',
     preventsClearing: false,
+    price: 4, // 2倍カウントで高い効果
   },
   stone: {
     id: 'stone' as SealId,
@@ -60,6 +64,7 @@ export const SEAL_DEFINITIONS: Record<SealType, SealDefinition> = {
     description: 'このブロックは消えない',
     symbol: '石',
     preventsClearing: true,
+    price: 0, // ショップに出ない
   },
 }
 

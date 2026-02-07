@@ -4,7 +4,16 @@
 
 import type { CanvasLayout, Piece } from '../../lib/game/types'
 import type { ShopState, BlockShopItem, RelicShopItem } from '../../lib/game/Domain/Shop/ShopTypes'
-import { SHOP_STYLE, COLORS, CELL_STYLE, PATTERN_COLORS, PATTERN_SYMBOL_STYLE, SEAL_COLORS, SEAL_SYMBOL_STYLE, RARITY_COLORS } from '../../lib/game/constants'
+import {
+  SHOP_STYLE,
+  COLORS,
+  CELL_STYLE,
+  PATTERN_COLORS,
+  PATTERN_SYMBOL_STYLE,
+  SEAL_COLORS,
+  SEAL_SYMBOL_STYLE,
+  RARITY_COLORS,
+} from '../../lib/game/constants'
 import { canAfford } from '../../lib/game/Services/ShopService'
 import { isBlockShopItem, isRelicShopItem } from '../../lib/game/Domain/Shop/ShopTypes'
 import { getPatternDefinition } from '../../lib/game/Domain/Effect/Pattern'
@@ -26,6 +35,77 @@ export interface ShopItemArea extends ButtonArea {
 export interface ShopRenderResult {
   itemAreas: ShopItemArea[]
   leaveButtonArea: ButtonArea
+}
+
+/**
+ * 打ち消し線付きテキストを描画
+ */
+function renderStrikethroughText(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  color: string,
+  fontSize: number
+): number {
+  ctx.save()
+  ctx.font = `bold ${fontSize}px Arial, sans-serif`
+  ctx.fillStyle = color
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+
+  const metrics = ctx.measureText(text)
+  ctx.fillText(text, x, y)
+
+  // 打ち消し線を描画
+  ctx.strokeStyle = SHOP_STYLE.strikethroughColor
+  ctx.lineWidth = 2
+  ctx.beginPath()
+  ctx.moveTo(x - metrics.width / 2 - 2, y)
+  ctx.lineTo(x + metrics.width / 2 + 2, y)
+  ctx.stroke()
+
+  ctx.restore()
+  return metrics.width
+}
+
+/**
+ * SALEバッジを描画
+ */
+function renderSaleBadge(
+  ctx: CanvasRenderingContext2D,
+  boxX: number,
+  boxY: number
+): void {
+  const {
+    saleBadgeColor,
+    saleBadgeTextColor,
+    saleBadgeFontSize,
+    saleBadgeWidth,
+    saleBadgeHeight,
+    saleBadgeOffsetX,
+    saleBadgeOffsetY,
+  } = SHOP_STYLE
+
+  const badgeX = boxX + saleBadgeOffsetX
+  const badgeY = boxY + saleBadgeOffsetY
+
+  ctx.save()
+
+  // バッジ背景
+  ctx.fillStyle = saleBadgeColor
+  ctx.beginPath()
+  ctx.roundRect(badgeX, badgeY, saleBadgeWidth, saleBadgeHeight, 3)
+  ctx.fill()
+
+  // バッジテキスト
+  ctx.font = `bold ${saleBadgeFontSize}px Arial, sans-serif`
+  ctx.fillStyle = saleBadgeTextColor
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText('SALE', badgeX + saleBadgeWidth / 2, badgeY + saleBadgeHeight / 2)
+
+  ctx.restore()
 }
 
 /**
@@ -168,7 +248,7 @@ function renderBlockShopItem(
   boxHeight: number,
   cellSize: number
 ): void {
-  const { piece, price, purchased } = item
+  const { piece, price, originalPrice, purchased, onSale } = item
   const affordable = canAfford(gold, price)
 
   // ボックス背景
@@ -182,10 +262,21 @@ function renderBlockShopItem(
   ctx.lineWidth = SHOP_STYLE.itemBorderWidth
   ctx.strokeRect(boxX, boxY, boxWidth, boxHeight)
 
+  // セールバッジを描画
+  if (onSale && !purchased) {
+    renderSaleBadge(ctx, boxX, boxY)
+  }
+
   // ピースの形状を描画
+  ctx.save()
+  // 購入不可時はグレーアウト
+  if (!purchased && !affordable) {
+    ctx.globalAlpha = SHOP_STYLE.unavailableOpacity
+  }
   const shapeCenterX = boxX + boxWidth / 2
   const shapeCenterY = boxY + boxHeight / 2 - SHOP_STYLE.shapeVerticalOffset
   renderPieceShape(ctx, piece, shapeCenterX, shapeCenterY, cellSize)
+  ctx.restore()
 
   // パターン名・シール名を表示
   const effectLabels: string[] = []
@@ -221,19 +312,50 @@ function renderBlockShopItem(
   }
 
   // 価格表示
-  ctx.font = `bold ${SHOP_STYLE.priceFontSize}px Arial, sans-serif`
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
-
   const priceY = boxY + boxHeight - SHOP_STYLE.priceVerticalOffset
 
   if (purchased) {
+    ctx.font = `bold ${SHOP_STYLE.priceFontSize}px Arial, sans-serif`
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
     ctx.fillStyle = SHOP_STYLE.priceDisabledColor
     ctx.fillText('購入済み', boxX + boxWidth / 2, priceY)
+  } else if (onSale) {
+    // セール時: 元価格（打ち消し線）+ セール価格（赤字）
+    const originalPriceY = priceY - 10
+    const salePriceY = priceY + 8
+
+    // 元価格（打ち消し線付き）
+    renderStrikethroughText(
+      ctx,
+      `${originalPrice}G`,
+      boxX + boxWidth / 2,
+      originalPriceY,
+      SHOP_STYLE.originalPriceColor,
+      SHOP_STYLE.priceFontSize - 2
+    )
+
+    // セール価格
+    ctx.font = `bold ${SHOP_STYLE.priceFontSize}px Arial, sans-serif`
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillStyle = affordable ? SHOP_STYLE.saleColor : SHOP_STYLE.priceDisabledColor
+    ctx.fillText(`${price}G`, boxX + boxWidth / 2, salePriceY)
   } else if (!affordable) {
-    ctx.fillStyle = SHOP_STYLE.priceDisabledColor
-    ctx.fillText(`${price}G`, boxX + boxWidth / 2, priceY)
+    // 購入不可時: 打ち消し線
+    renderStrikethroughText(
+      ctx,
+      `${price}G`,
+      boxX + boxWidth / 2,
+      priceY,
+      SHOP_STYLE.priceDisabledColor,
+      SHOP_STYLE.priceFontSize
+    )
   } else {
+    // 通常価格
+    ctx.font = `bold ${SHOP_STYLE.priceFontSize}px Arial, sans-serif`
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
     ctx.fillStyle = SHOP_STYLE.priceColor
     ctx.fillText(`${price}G`, boxX + boxWidth / 2, priceY)
   }
@@ -254,7 +376,7 @@ function renderRelicShopItem(
   const def = getRelicDefinition(item.relicId)
   if (!def) return
 
-  const { price, purchased } = item
+  const { price, originalPrice, purchased, onSale } = item
   const affordable = canAfford(gold, price)
 
   // ボックス背景
@@ -268,11 +390,22 @@ function renderRelicShopItem(
   ctx.lineWidth = SHOP_STYLE.itemBorderWidth
   ctx.strokeRect(boxX, boxY, boxWidth, boxHeight)
 
+  // セールバッジを描画
+  if (onSale && !purchased) {
+    renderSaleBadge(ctx, boxX, boxY)
+  }
+
   // レリックアイコン（絵文字）
+  ctx.save()
+  // 購入不可時はグレーアウト
+  if (!purchased && !affordable) {
+    ctx.globalAlpha = SHOP_STYLE.unavailableOpacity
+  }
   ctx.font = `${SHOP_STYLE.relicIconSize}px Arial, sans-serif`
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   ctx.fillText(def.icon, boxX + boxWidth / 2, boxY + 30)
+  ctx.restore()
 
   // レリック名
   ctx.font = `bold 12px Arial, sans-serif`
@@ -285,16 +418,50 @@ function renderRelicShopItem(
   ctx.fillText(def.rarity, boxX + boxWidth / 2, boxY + 70)
 
   // 価格表示
-  ctx.font = `bold ${SHOP_STYLE.priceFontSize}px Arial, sans-serif`
   const priceY = boxY + boxHeight - 15
 
   if (purchased) {
+    ctx.font = `bold ${SHOP_STYLE.priceFontSize}px Arial, sans-serif`
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
     ctx.fillStyle = SHOP_STYLE.priceDisabledColor
     ctx.fillText('購入済み', boxX + boxWidth / 2, priceY)
+  } else if (onSale) {
+    // セール時: 元価格（打ち消し線）+ セール価格（赤字）
+    const originalPriceY = priceY - 8
+    const salePriceY = priceY + 6
+
+    // 元価格（打ち消し線付き）
+    renderStrikethroughText(
+      ctx,
+      `${originalPrice}G`,
+      boxX + boxWidth / 2,
+      originalPriceY,
+      SHOP_STYLE.originalPriceColor,
+      SHOP_STYLE.priceFontSize - 4
+    )
+
+    // セール価格
+    ctx.font = `bold ${SHOP_STYLE.priceFontSize - 2}px Arial, sans-serif`
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillStyle = affordable ? SHOP_STYLE.saleColor : SHOP_STYLE.priceDisabledColor
+    ctx.fillText(`${price}G`, boxX + boxWidth / 2, salePriceY)
   } else if (!affordable) {
-    ctx.fillStyle = SHOP_STYLE.priceDisabledColor
-    ctx.fillText(`${price}G`, boxX + boxWidth / 2, priceY)
+    // 購入不可時: 打ち消し線
+    renderStrikethroughText(
+      ctx,
+      `${price}G`,
+      boxX + boxWidth / 2,
+      priceY,
+      SHOP_STYLE.priceDisabledColor,
+      SHOP_STYLE.priceFontSize
+    )
   } else {
+    // 通常価格
+    ctx.font = `bold ${SHOP_STYLE.priceFontSize}px Arial, sans-serif`
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
     ctx.fillStyle = SHOP_STYLE.priceColor
     ctx.fillText(`${price}G`, boxX + boxWidth / 2, priceY)
   }

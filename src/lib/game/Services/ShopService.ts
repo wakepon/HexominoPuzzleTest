@@ -2,10 +2,11 @@
  * ショップ機能のpure functions
  */
 
-import type { ShopItem, ShopState, DeckState, MinoCategory, Piece, RelicShopItem } from '../Domain'
+import type { ShopItem, ShopState, DeckState, MinoCategory, Piece, RelicShopItem, BlockShopItem } from '../Domain'
 import type { PatternId, SealId, RelicId } from '../Domain/Core/Id'
 import type { RandomGenerator } from '../Utils/Random'
 import { RELIC_DEFINITIONS, RelicType } from '../Domain/Effect/Relic'
+import { calculatePiecePrice, calculateSalePrice } from './ShopPriceCalculator'
 
 /**
  * 確率オーバーライド設定（デバッグ用）
@@ -88,39 +89,7 @@ function pickRandomSeal(rng: RandomGenerator): SealId {
   return SHOP_AVAILABLE_SEALS[index] as SealId
 }
 
-/** パターン付きの追加価格 */
-const PATTERN_PRICE_BONUS = 3
-
-/** シール付きの追加価格 */
-const SEAL_PRICE_BONUS = 2
-
-/**
- * Pieceの価格を計算
- * - 基本価格: セル数
- * - パターン付きの場合: +PATTERN_PRICE_BONUS
- * - シール付きの場合: +SEAL_PRICE_BONUS
- */
-function calculatePiecePrice(piece: Piece): number {
-  const cellCount = piece.shape.reduce(
-    (sum, row) => sum + row.filter(Boolean).length,
-    0
-  )
-
-  // パターンとシールの有無をチェック
-  let hasPattern = false
-  let hasSeal = false
-  for (const blockData of piece.blocks.values()) {
-    if (blockData.pattern) hasPattern = true
-    if (blockData.seal) hasSeal = true
-    if (hasPattern && hasSeal) break
-  }
-
-  return (
-    cellCount +
-    (hasPattern ? PATTERN_PRICE_BONUS : 0) +
-    (hasSeal ? SEAL_PRICE_BONUS : 0)
-  )
-}
+// 価格計算は ShopPriceCalculator に移動
 
 /**
  * ショップ用のPieceを生成（パターン・シール付与判定含む）
@@ -171,30 +140,37 @@ function createShopPiece(
 export function generateShopItems(
   rng: RandomGenerator,
   override?: ProbabilityOverride
-): ShopItem[] {
+): BlockShopItem[] {
   const smallPiece = createShopPiece(SMALL_CATEGORIES, 'small', rng, override)
   const mediumPiece = createShopPiece(MEDIUM_CATEGORIES, 'medium', rng, override)
   const largePiece = createShopPiece(LARGE_CATEGORIES, 'large', rng, override)
+
+  const smallPrice = calculatePiecePrice(smallPiece)
+  const mediumPrice = calculatePiecePrice(mediumPiece)
+  const largePrice = calculatePiecePrice(largePiece)
 
   return [
     {
       type: 'block',
       piece: smallPiece,
-      price: calculatePiecePrice(smallPiece),
+      price: smallPrice,
+      originalPrice: smallPrice,
       purchased: false,
       onSale: false,
     },
     {
       type: 'block',
       piece: mediumPiece,
-      price: calculatePiecePrice(mediumPiece),
+      price: mediumPrice,
+      originalPrice: mediumPrice,
       purchased: false,
       onSale: false,
     },
     {
       type: 'block',
       piece: largePiece,
-      price: calculatePiecePrice(largePiece),
+      price: largePrice,
+      originalPrice: largePrice,
       purchased: false,
       onSale: false,
     },
@@ -231,8 +207,35 @@ export function generateRelicShopItems(
       type: 'relic' as const,
       relicId: def.id,
       price: def.price,
+      originalPrice: def.price,
       purchased: false,
       onSale: false,
+    }
+  })
+}
+
+/**
+ * ランダムに1つの商品にセールを適用
+ */
+function applySaleToRandomItem(
+  items: ShopItem[],
+  rng: RandomGenerator
+): ShopItem[] {
+  if (items.length === 0) return items
+
+  // ランダムに1つ選択
+  const saleIndex = Math.floor(rng.next() * items.length)
+
+  return items.map((item, i) => {
+    if (i !== saleIndex) return item
+
+    // セール価格を計算（25%OFF、切り下げ）
+    const salePrice = calculateSalePrice(item.originalPrice)
+
+    return {
+      ...item,
+      price: salePrice,
+      onSale: true,
     }
   })
 }
@@ -250,8 +253,12 @@ export function createShopState(
   const blockItems = generateShopItems(rng, override)
   const relicItems = generateRelicShopItems(rng, ownedRelics)
 
+  // 全商品からランダムに1つセール対象を選択
+  const allItems = [...blockItems, ...relicItems]
+  const itemsWithSale = applySaleToRandomItem(allItems, rng)
+
   return {
-    items: [...blockItems, ...relicItems],
+    items: itemsWithSale,
   }
 }
 

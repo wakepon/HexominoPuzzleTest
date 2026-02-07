@@ -10,7 +10,8 @@ import type { Piece } from '../Piece/Piece'
 export interface BlockShopItem {
   readonly type: 'block'
   readonly piece: Piece
-  readonly price: number
+  readonly price: number // 実際の販売価格（セール適用後）
+  readonly originalPrice: number // 元の価格（セール表示用）
   readonly purchased: boolean
   readonly onSale: boolean
 }
@@ -21,7 +22,8 @@ export interface BlockShopItem {
 export interface RelicShopItem {
   readonly type: 'relic'
   readonly relicId: RelicId
-  readonly price: number
+  readonly price: number // 実際の販売価格（セール適用後）
+  readonly originalPrice: number // 元の価格（セール表示用）
   readonly purchased: boolean
   readonly onSale: boolean
 }
