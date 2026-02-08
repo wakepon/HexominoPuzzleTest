@@ -1,4 +1,4 @@
-import { COLORS, CELL_STYLE, PATTERN_COLORS, PATTERN_SYMBOL_STYLE, SEAL_COLORS, SEAL_SYMBOL_STYLE } from '../../lib/game/constants'
+import { COLORS, CELL_STYLE, PATTERN_COLORS, PATTERN_SYMBOL_STYLE, SEAL_COLORS, SEAL_SYMBOL_STYLE } from '../../lib/game/Data/Constants'
 import type { PatternId, SealId } from '../../lib/game/Domain/Core/Id'
 import { getPatternDefinition } from '../../lib/game/Domain/Effect/Pattern'
 import { getSealDefinition } from '../../lib/game/Domain/Effect/Seal'

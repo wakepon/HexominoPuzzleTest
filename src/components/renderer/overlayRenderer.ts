@@ -3,7 +3,7 @@
  */
 
 import { CanvasLayout } from '../../lib/game/types'
-import { ROUND_CLEAR_STYLE, GAME_OVER_STYLE, GAME_CLEAR_STYLE, ROUND_CONFIG } from '../../lib/game/constants'
+import { ROUND_CLEAR_STYLE, GAME_OVER_STYLE, GAME_CLEAR_STYLE, ROUND_CONFIG } from '../../lib/game/Data/Constants'
 
 /**
  * ボタン領域の型

@@ -14,7 +14,7 @@ import {
   SEAL_COLORS,
   SEAL_SYMBOL_STYLE,
   RARITY_COLORS,
-} from '../../lib/game/constants'
+} from '../../lib/game/Data/Constants'
 import { canAfford } from '../../lib/game/Services/ShopService'
 import { isBlockShopItem, isRelicShopItem } from '../../lib/game/Domain/Shop/ShopTypes'
 import { getPatternDefinition } from '../../lib/game/Domain/Effect/Pattern'

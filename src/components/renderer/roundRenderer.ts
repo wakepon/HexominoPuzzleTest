@@ -3,7 +3,7 @@
  */
 
 import type { CanvasLayout, RoundInfo, RoundType } from '../../lib/game/types'
-import { ROUND_STYLE, ROUND_CONFIG } from '../../lib/game/constants'
+import { ROUND_STYLE, ROUND_CONFIG } from '../../lib/game/Data/Constants'
 
 /**
  * ラウンドタイプのラベル

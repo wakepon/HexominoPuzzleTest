@@ -1,6 +1,6 @@
 import { useRef, useEffect, useCallback, useState } from 'react'
 import { GameState, CanvasLayout, Position } from '../lib/game/types'
-import { COLORS, LAYOUT, ROUND_CLEAR_STYLE, DEBUG_PROBABILITY_SETTINGS } from '../lib/game/constants'
+import { COLORS, LAYOUT, ROUND_CLEAR_STYLE, DEBUG_PROBABILITY_SETTINGS } from '../lib/game/Data/Constants'
 import { renderBoard } from './renderer/boardRenderer'
 import { renderPieceSlots, renderDraggingPiece } from './renderer/pieceRenderer'
 import { renderPlacementPreview } from './renderer/previewRenderer'
@@ -18,9 +18,9 @@ import type { DebugSettings } from '../lib/game/Domain/Debug'
 import type { TooltipState } from '../lib/game/Domain/Tooltip'
 import { INITIAL_TOOLTIP_STATE } from '../lib/game/Domain/Tooltip'
 import { calculateTooltipState } from '../lib/game/Services/TooltipService'
-import { screenToBoardPosition } from '../lib/game/collisionDetection'
-import { getPieceSize } from '../lib/game/pieceDefinitions'
-import { canAfford } from '../lib/game/shopLogic'
+import { screenToBoardPosition } from '../lib/game/Services/CollisionService'
+import { getPieceSize } from '../lib/game/Services/PieceService'
+import { canAfford } from '../lib/game/Services/ShopService'
 
 interface GameCanvasProps {
   state: GameState

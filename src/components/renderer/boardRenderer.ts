@@ -1,5 +1,5 @@
 import { Board, CanvasLayout, ClearingCell } from '../../lib/game/types'
-import { COLORS, LAYOUT, GRID_SIZE } from '../../lib/game/constants'
+import { COLORS, LAYOUT, GRID_SIZE } from '../../lib/game/Data/Constants'
 import { drawWoodenCell } from './cellRenderer'
 
 /**

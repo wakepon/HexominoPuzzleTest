@@ -4,7 +4,7 @@
 
 import type { RelicId } from '../../lib/game/Domain/Core/Id'
 import { getRelicDefinition } from '../../lib/game/Domain/Effect/Relic'
-import { RELIC_PANEL_STYLE } from '../../lib/game/constants'
+import { RELIC_PANEL_STYLE } from '../../lib/game/Data/Constants'
 
 /**
  * 所持レリックパネルを描画（ゴールドの右隣）

@@ -3,7 +3,7 @@
  */
 
 import type { TooltipState } from '../../lib/game/Domain/Tooltip'
-import { TOOLTIP_STYLE } from '../../lib/game/constants'
+import { TOOLTIP_STYLE } from '../../lib/game/Data/Constants'
 
 /**
  * テキストを最大幅で折り返す

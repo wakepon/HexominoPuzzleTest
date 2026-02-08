@@ -1,5 +1,5 @@
 import type { PieceSlot, DragState, CanvasLayout, PieceShape, Piece } from '../../lib/game/types'
-import { ANIMATION, LAYOUT } from '../../lib/game/constants'
+import { ANIMATION, LAYOUT } from '../../lib/game/Data/Constants'
 import { drawWoodenCellWithBorder } from './cellRenderer'
 import { BlockDataMapUtils } from '../../lib/game/Domain/Piece/BlockData'
 

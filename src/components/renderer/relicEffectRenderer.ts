@@ -5,7 +5,7 @@
 import type { RelicActivationAnimationState } from '../../lib/game/Domain/Animation/AnimationState'
 import type { CanvasLayout } from '../../lib/game/Domain/Canvas/CanvasLayout'
 import { getRelicDefinition } from '../../lib/game/Domain/Effect/Relic'
-import { RELIC_EFFECT_STYLE } from '../../lib/game/constants'
+import { RELIC_EFFECT_STYLE } from '../../lib/game/Data/Constants'
 
 /**
  * レリック発動エフェクトを描画

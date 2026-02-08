@@ -3,7 +3,7 @@
  */
 
 import { DeckState, PieceShape } from '../../lib/game/types'
-import { DEBUG_WINDOW_STYLE, COLORS } from '../../lib/game/constants'
+import { DEBUG_WINDOW_STYLE, COLORS } from '../../lib/game/Data/Constants'
 import { getMinoById } from '../../lib/game/minoDefinitions'
 import type { DebugSettings } from '../../lib/game/Domain/Debug'
 
