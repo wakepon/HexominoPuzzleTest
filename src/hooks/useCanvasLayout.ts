@@ -81,11 +81,11 @@ export function useCanvasLayout(pieceSlots: readonly PieceSlot[]): CanvasLayout 
 }
 
 /**
- * スロット位置を計算（右側パネル内で中央揃え）
+ * スロット位置を計算（ボードの中央に揃える）
  */
 function calculateSlotPositions(
-  rightPanelStartX: number,
-  canvasWidth: number,
+  _rightPanelStartX: number,
+  _canvasWidth: number,
   slotAreaY: number,
   cellSize: number,
   pieceSlots: readonly PieceSlot[]
@@ -105,11 +105,12 @@ function calculateSlotPositions(
   // 全体の幅を計算
   const totalWidth = pieceWidths.reduce((sum, w) => sum + w, 0) + HD_LAYOUT.slotGap * Math.max(0, pieceSlots.length - 1)
 
-  // 右側パネルの幅
-  const rightPanelWidth = canvasWidth - rightPanelStartX
+  // ボードの幅と中央位置
+  const boardWidth = 6 * cellSize  // 6x6グリッド
+  const boardCenterX = HD_LAYOUT.boardOffsetX + boardWidth / 2
 
-  // 開始位置（右側パネル内で中央揃え）
-  let currentX = rightPanelStartX + (rightPanelWidth - totalWidth) / 2
+  // 開始位置（ボードの中央に揃える）
+  let currentX = boardCenterX - totalWidth / 2
 
   for (let i = 0; i < pieceSlots.length; i++) {
     positions.push({
