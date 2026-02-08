@@ -203,7 +203,7 @@ export const SHOP_STYLE = {
   leaveButtonColor: '#8B7355',
   leaveButtonTextColor: '#FFFFFF',
   leaveButtonFontSize: 20,
-  leaveButtonGap: 30,             // 商品とボタンの間隔
+  leaveButtonGap: 50,             // 商品とボタンの間隔
   titleOffsetY: -180,
   itemsOffsetY: -50,
   goldDisplayOffsetY: -220,
@@ -211,7 +211,7 @@ export const SHOP_STYLE = {
   shapeVerticalOffset: 15,      // ミノ形状の垂直オフセット
   priceVerticalOffset: 20,      // 価格表示の下からのオフセット
   // レリック行（ブロック行の下）
-  relicRowOffsetY: 100,         // ブロック行からのオフセット
+  relicRowOffsetY: 20,          // ブロック行からのオフセット
   relicBoxWidth: 100,
   relicBoxHeight: 100,
   relicIconSize: 32,
