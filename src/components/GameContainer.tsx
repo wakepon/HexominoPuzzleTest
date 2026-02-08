@@ -35,6 +35,7 @@ export function GameContainer() {
         onBuyItem={actions.buyItem}
         onLeaveShop={actions.leaveShop}
         onUpdateDebugSettings={actions.updateDebugSettings}
+        onDeleteSave={actions.deleteSave}
       />
     </div>
   )

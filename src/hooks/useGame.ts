@@ -56,6 +56,12 @@ export function useGame() {
     setDebugSettings((prev) => ({ ...prev, ...updates }))
   }, [])
 
+  // セーブデータを削除してゲームをリセット（デバッグ用）
+  // GAME/RESET アクション内で clearGameState() が呼ばれる
+  const deleteSave = useCallback(() => {
+    dispatch({ type: 'GAME/RESET' })
+  }, [])
+
   return {
     state,
     debugSettings,
@@ -70,6 +76,7 @@ export function useGame() {
       buyItem,
       leaveShop,
       updateDebugSettings,
+      deleteSave,
     },
   }
 }

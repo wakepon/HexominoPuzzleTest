@@ -34,6 +34,7 @@ interface GameCanvasProps {
   onBuyItem: (itemIndex: number) => void
   onLeaveShop: () => void
   onUpdateDebugSettings: (updates: Partial<DebugSettings>) => void
+  onDeleteSave: () => void
 }
 
 export function GameCanvas({
@@ -50,6 +51,7 @@ export function GameCanvas({
   onBuyItem,
   onLeaveShop,
   onUpdateDebugSettings,
+  onDeleteSave,
 }: GameCanvasProps) {
   const [canvas, setCanvas] = useState<HTMLCanvasElement | null>(null)
   const [showDebugWindow, setShowDebugWindow] = useState(false)
@@ -406,6 +408,12 @@ export function GameCanvas({
         onUpdateDebugSettings({
           sealProbability: Math.min(MAX, debugSettings.sealProbability + STEP),
         })
+        return true
+      }
+
+      // セーブデータ削除ボタン
+      if (isPointInArea(pos, debugResult.deleteSaveButton)) {
+        onDeleteSave()
         return true
       }
 

@@ -25,6 +25,7 @@ export interface DebugWindowRenderResult {
   patternMinusButton: ButtonArea
   sealPlusButton: ButtonArea
   sealMinusButton: ButtonArea
+  deleteSaveButton: ButtonArea
   windowBounds: ButtonArea
 }
 
@@ -228,8 +229,11 @@ export function renderDebugWindow(
   const ps = DEBUG_WINDOW_STYLE.probabilitySection
   const probabilitySectionHeight = ps.sectionMarginTop + ps.rowHeight * 2 + padding
 
+  // 削除ボタン用の高さ
+  const deleteSaveButtonSectionHeight = 30 + padding
+
   const windowWidth = Math.max(maxMinoWidth + padding * 2 + numberColumnWidth + 5, minWindowWidth, 130)
-  const windowHeight = headerHeight + totalMinoHeight + ellipsisHeight + probabilitySectionHeight + padding
+  const windowHeight = headerHeight + totalMinoHeight + ellipsisHeight + probabilitySectionHeight + deleteSaveButtonSectionHeight + padding
 
   ctx.save()
 
@@ -320,6 +324,30 @@ export function renderDebugWindow(
     ctx, 'Seal', debugSettings.sealProbability,
     offsetX, y, windowWidth, padding
   )
+  y += ps.rowHeight
+
+  // セーブデータ削除ボタン
+  y += padding / 2
+
+  // セパレータライン
+  ctx.strokeStyle = titleColor
+  ctx.lineWidth = 1
+  ctx.beginPath()
+  ctx.moveTo(offsetX + padding, y)
+  ctx.lineTo(offsetX + windowWidth - padding, y)
+  ctx.stroke()
+
+  y += padding / 2
+
+  const deleteButtonWidth = windowWidth - padding * 2
+  const deleteButtonHeight = 22
+  const deleteButtonX = offsetX + padding
+  const deleteButtonY = y
+
+  drawProbabilityButton(
+    ctx, deleteButtonX, deleteButtonY, deleteButtonWidth, deleteButtonHeight,
+    'Delete Save', '#CC3333', '#FFFFFF', 11
+  )
 
   ctx.restore()
 
@@ -328,6 +356,7 @@ export function renderDebugWindow(
     patternMinusButton: patternButtons.minusButton,
     sealPlusButton: sealButtons.plusButton,
     sealMinusButton: sealButtons.minusButton,
+    deleteSaveButton: { x: deleteButtonX, y: deleteButtonY, width: deleteButtonWidth, height: deleteButtonHeight },
     windowBounds: { x: offsetX, y: offsetY, width: windowWidth, height: windowHeight },
   }
 }
