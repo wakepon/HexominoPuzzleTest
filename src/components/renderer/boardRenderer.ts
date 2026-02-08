@@ -1,5 +1,5 @@
 import { Board, CanvasLayout, ClearingCell } from '../../lib/game/types'
-import { COLORS, LAYOUT, GRID_SIZE } from '../../lib/game/constants'
+import { COLORS, LAYOUT, GRID_SIZE } from '../../lib/game/Data/Constants'
 import { drawWoodenCell } from './cellRenderer'
 
 /**
@@ -44,8 +44,8 @@ export function renderBoard(
 
       // セル背景
       if (cell.filled && !isClearing) {
-        // 配置済みブロック（消去中でない場合のみ）
-        drawWoodenCell(ctx, cellX, cellY, cellSize)
+        // 配置済みブロック（消去中でない場合のみ）- パターンとシールを渡す
+        drawWoodenCell(ctx, cellX, cellY, cellSize, cell.pattern, cell.seal)
       } else {
         // 空のセル
         drawEmptyCell(ctx, cellX, cellY, cellSize)

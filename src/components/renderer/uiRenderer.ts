@@ -3,7 +3,7 @@
  */
 
 import { CanvasLayout } from '../../lib/game/types'
-import { HANDS_STYLE, GOLD_STYLE } from '../../lib/game/constants'
+import { HANDS_STYLE, GOLD_STYLE } from '../../lib/game/Data/Constants'
 
 /**
  * 残りハンド数をCanvas内に描画

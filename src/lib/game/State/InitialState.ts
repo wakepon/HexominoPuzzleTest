@@ -3,11 +3,23 @@
  */
 
 import type { GameState, DragState, PieceSlot, DeckState, GamePhase } from '../Domain'
-import { createEmptyBoard } from '../Services/BoardService'
-import { createInitialDeckState, drawPiecesFromDeck } from '../Services/DeckService'
-import { calculateTargetScore } from '../Services/RoundService'
+import type { RandomGenerator } from '../Utils/Random'
+import { createEmptyBoard, placeObstacleOnBoard } from '../Services/BoardService'
+import {
+  createInitialDeckStateWithParams,
+  drawPiecesFromDeck,
+  drawPiecesFromDeckWithCount,
+} from '../Services/DeckService'
+import {
+  calculateTargetScore,
+  createRoundInfo,
+  getMaxPlacements,
+  getDrawCount,
+} from '../Services/RoundService'
 import { DefaultRandom } from '../Utils/Random'
 import { ROUND_CONFIG } from '../Data/Constants'
+import { createInitialPlayerState } from '../Domain/Player/PlayerState'
+import { loadGameState, restoreGameState, clearGameState } from '../Services/StorageService'
 
 /**
  * 初期ドラッグ状態
@@ -35,27 +47,85 @@ export function generateNewPieceSlotsFromDeck(deck: DeckState): { slots: PieceSl
 }
 
 /**
- * 初期ゲーム状態を作成
+ * 指定枚数でデッキから新しいピースセットを生成
  */
-export function createInitialState(): GameState {
+export function generateNewPieceSlotsFromDeckWithCount(
+  deck: DeckState,
+  count: number,
+  rng?: RandomGenerator
+): { slots: PieceSlot[]; newDeck: DeckState } {
+  const random = rng ?? new DefaultRandom()
+  const { pieces, newDeck } = drawPiecesFromDeckWithCount(deck, count, random)
+  const slots = pieces.map((piece) => ({
+    piece,
+    position: { x: 0, y: 0 },
+  }))
+  return { slots, newDeck }
+}
+
+/**
+ * 新規ゲーム状態を作成（保存データなし）
+ */
+function createNewGameState(): GameState {
   const rng = new DefaultRandom()
-  const initialDeck = createInitialDeckState(rng)
-  const { slots, newDeck } = generateNewPieceSlotsFromDeck(initialDeck)
   const initialRound = 1
+  const roundInfo = createRoundInfo(initialRound, rng)
+
+  // ボス条件に基づいた配置回数とドロー枚数を取得
+  const maxHands = getMaxPlacements(roundInfo)
+  const drawCount = getDrawCount(roundInfo)
+
+  const initialDeck = createInitialDeckStateWithParams(rng, maxHands)
+  const { slots, newDeck } = generateNewPieceSlotsFromDeckWithCount(
+    initialDeck,
+    drawCount,
+    rng
+  )
+
+  // ボス条件「おじゃまブロック」の場合は配置
+  let board = createEmptyBoard()
+  if (roundInfo.bossCondition?.id === 'obstacle') {
+    board = placeObstacleOnBoard(board, rng)
+  }
 
   return {
-    board: createEmptyBoard(),
+    board,
     pieceSlots: slots,
     dragState: initialDragState,
     score: 0,
     clearingAnimation: null,
+    relicActivationAnimation: null,
     deck: newDeck,
     phase: 'playing',
     round: initialRound,
-    gold: ROUND_CONFIG.initialGold,
+    roundInfo,
+    player: createInitialPlayerState(ROUND_CONFIG.initialGold),
     targetScore: calculateTargetScore(initialRound),
     shopState: null,
+    comboCount: 0,
   }
+}
+
+/**
+ * 初期ゲーム状態を作成
+ * 保存データがあれば復元、なければ新規作成
+ */
+export function createInitialState(): GameState {
+  // 保存データの読み込みを試みる
+  const saved = loadGameState()
+
+  // 保存データがある場合は復元を試みる
+  if (saved) {
+    try {
+      return restoreGameState(saved, initialDragState)
+    } catch (error) {
+      console.warn('Failed to restore game state, starting new game:', error)
+      clearGameState()
+    }
+  }
+
+  // 保存データがない、または復元失敗の場合は新規ゲーム
+  return createNewGameState()
 }
 
 /**

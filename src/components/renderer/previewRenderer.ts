@@ -1,6 +1,6 @@
 import { Board, DragState, PieceSlot, CanvasLayout } from '../../lib/game/types'
-import { COLORS } from '../../lib/game/constants'
-import { canPlacePiece } from '../../lib/game/collisionDetection'
+import { COLORS } from '../../lib/game/Data/Constants'
+import { canPlacePiece } from '../../lib/game/Services/CollisionService'
 
 /**
  * 配置プレビューを描画

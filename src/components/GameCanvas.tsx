@@ -1,6 +1,6 @@
 import { useRef, useEffect, useCallback, useState } from 'react'
 import { GameState, CanvasLayout, Position } from '../lib/game/types'
-import { COLORS, LAYOUT, ROUND_CLEAR_STYLE } from '../lib/game/constants'
+import { COLORS, LAYOUT, ROUND_CLEAR_STYLE, DEBUG_PROBABILITY_SETTINGS } from '../lib/game/Data/Constants'
 import { renderBoard } from './renderer/boardRenderer'
 import { renderPieceSlots, renderDraggingPiece } from './renderer/pieceRenderer'
 import { renderPlacementPreview } from './renderer/previewRenderer'
@@ -10,44 +10,59 @@ import { renderRemainingHands, renderGold } from './renderer/uiRenderer'
 import { renderRoundInfo } from './renderer/roundRenderer'
 import { renderRoundClear, renderGameOver, renderGameClear } from './renderer/overlayRenderer'
 import { renderShop, ShopRenderResult } from './renderer/shopRenderer'
-import { renderDebugWindow } from './renderer/debugRenderer'
-import { screenToBoardPosition } from '../lib/game/collisionDetection'
-import { getPieceSize } from '../lib/game/pieceDefinitions'
-import { canAfford } from '../lib/game/shopLogic'
+import { renderDebugWindow, DebugWindowRenderResult } from './renderer/debugRenderer'
+import { renderTooltip } from './renderer/tooltipRenderer'
+import { renderRelicPanel } from './renderer/relicPanelRenderer'
+import { renderRelicEffect } from './renderer/relicEffectRenderer'
+import type { DebugSettings } from '../lib/game/Domain/Debug'
+import type { TooltipState } from '../lib/game/Domain/Tooltip'
+import { INITIAL_TOOLTIP_STATE } from '../lib/game/Domain/Tooltip'
+import { calculateTooltipState } from '../lib/game/Services/TooltipService'
+import { screenToBoardPosition } from '../lib/game/Services/CollisionService'
+import { getPieceSize } from '../lib/game/Services/PieceService'
+import { canAfford } from '../lib/game/Services/ShopService'
 
 interface GameCanvasProps {
   state: GameState
   layout: CanvasLayout
+  debugSettings: DebugSettings
   onDragStart: (slotIndex: number, startPos: { x: number; y: number }) => void
   onDragMove: (currentPos: { x: number; y: number }, boardPos: { x: number; y: number } | null) => void
   onDragEnd: () => void
   onClearAnimationEnd: () => void
+  onRelicActivationAnimationEnd: () => void
   onAdvanceRound: () => void
   onReset: () => void
   onBuyItem: (itemIndex: number) => void
   onLeaveShop: () => void
+  onUpdateDebugSettings: (updates: Partial<DebugSettings>) => void
 }
 
 export function GameCanvas({
   state,
   layout,
+  debugSettings,
   onDragStart,
   onDragMove,
   onDragEnd,
   onClearAnimationEnd,
+  onRelicActivationAnimationEnd,
   onAdvanceRound,
   onReset,
   onBuyItem,
   onLeaveShop,
+  onUpdateDebugSettings,
 }: GameCanvasProps) {
   const [canvas, setCanvas] = useState<HTMLCanvasElement | null>(null)
   const [showDebugWindow, setShowDebugWindow] = useState(false)
+  const [tooltipState, setTooltipState] = useState<TooltipState>(INITIAL_TOOLTIP_STATE)
   const dprRef = useRef(window.devicePixelRatio || 1)
   const isDraggingRef = useRef(false)
   const activeSlotRef = useRef<number | null>(null)
   const buttonAreaRef = useRef<{ x: number; y: number; width: number; height: number } | null>(null)
   const roundClearTimeRef = useRef<number | null>(null)
   const shopRenderResultRef = useRef<ShopRenderResult | null>(null)
+  const debugWindowResultRef = useRef<DebugWindowRenderResult | null>(null)
 
   // callback ref でcanvasを取得
   const canvasRefCallback = useCallback((node: HTMLCanvasElement | null) => {
@@ -69,7 +84,10 @@ export function GameCanvas({
     ctx.fillRect(0, 0, layout.canvasWidth, layout.canvasHeight)
 
     // ゴールド描画
-    renderGold(ctx, state.gold)
+    renderGold(ctx, state.player.gold)
+
+    // レリックパネル描画（ゴールドの右隣）
+    renderRelicPanel(ctx, state.player.ownedRelics)
 
     // スコア描画
     renderScore(ctx, state.score, layout)
@@ -78,7 +96,7 @@ export function GameCanvas({
     renderRemainingHands(ctx, state.deck.remainingHands, state.targetScore, layout)
 
     // ラウンド情報描画（右上）
-    renderRoundInfo(ctx, state.round, layout)
+    renderRoundInfo(ctx, state.roundInfo, layout)
 
     // ボード描画（消去アニメーション中のセルは除外）
     const clearingCells = state.clearingAnimation?.isAnimating
@@ -98,6 +116,14 @@ export function GameCanvas({
       }
     }
 
+    // レリック発動エフェクト描画
+    if (state.relicActivationAnimation?.isAnimating) {
+      const isComplete = renderRelicEffect(ctx, state.relicActivationAnimation, layout)
+      if (isComplete) {
+        onRelicActivationAnimationEnd()
+      }
+    }
+
     // オーバーレイ描画
     if (state.phase === 'round_clear') {
       const goldReward = state.deck.remainingHands
@@ -105,13 +131,13 @@ export function GameCanvas({
       buttonAreaRef.current = null
       shopRenderResultRef.current = null
     } else if (state.phase === 'shopping' && state.shopState) {
-      shopRenderResultRef.current = renderShop(ctx, state.shopState, state.gold, layout)
+      shopRenderResultRef.current = renderShop(ctx, state.shopState, state.player.gold, layout)
       buttonAreaRef.current = null
     } else if (state.phase === 'game_over') {
-      buttonAreaRef.current = renderGameOver(ctx, state.round, state.score, state.gold, layout)
+      buttonAreaRef.current = renderGameOver(ctx, state.round, state.score, state.player.gold, layout)
       shopRenderResultRef.current = null
     } else if (state.phase === 'game_clear') {
-      buttonAreaRef.current = renderGameClear(ctx, state.gold, layout)
+      buttonAreaRef.current = renderGameClear(ctx, state.player.gold, layout)
       shopRenderResultRef.current = null
     } else {
       buttonAreaRef.current = null
@@ -120,9 +146,24 @@ export function GameCanvas({
 
     // デバッグウィンドウ描画
     if (showDebugWindow) {
-      renderDebugWindow(ctx, state.deck)
+      debugWindowResultRef.current = renderDebugWindow(ctx, state.deck, debugSettings)
+    } else {
+      debugWindowResultRef.current = null
     }
-  }, [canvas, state, layout, onClearAnimationEnd, showDebugWindow])
+
+    // ツールチップ描画（オーバーレイ表示中やドラッグ中は非表示）
+    const showTooltip =
+      tooltipState.visible &&
+      !state.dragState.isDragging &&
+      !state.clearingAnimation?.isAnimating &&
+      state.phase !== 'round_clear' &&
+      state.phase !== 'game_over' &&
+      state.phase !== 'game_clear'
+
+    if (showTooltip) {
+      renderTooltip(ctx, tooltipState, layout.canvasWidth, layout.canvasHeight)
+    }
+  }, [canvas, state, layout, onClearAnimationEnd, onRelicActivationAnimationEnd, showDebugWindow, debugSettings, tooltipState])
 
   // Canvasサイズの設定
   useEffect(() => {
@@ -177,6 +218,24 @@ export function GameCanvas({
       cancelAnimationFrame(animationId)
     }
   }, [state.clearingAnimation?.isAnimating, render])
+
+  // レリック発動アニメーションのループ
+  useEffect(() => {
+    if (!state.relicActivationAnimation?.isAnimating) return
+
+    let animationId: number
+
+    const animate = () => {
+      render()
+      animationId = requestAnimationFrame(animate)
+    }
+
+    animationId = requestAnimationFrame(animate)
+
+    return () => {
+      cancelAnimationFrame(animationId)
+    }
+  }, [state.relicActivationAnimation?.isAnimating, render])
 
   // ラウンドクリア演出のタイマー
   useEffect(() => {
@@ -304,7 +363,7 @@ export function GameCanvas({
         if (isPointInArea(pos, itemArea)) {
           const item = state.shopState.items[itemArea.itemIndex]
           // 購入済みでなく、ゴールドが足りている場合のみ購入
-          if (!item.purchased && canAfford(state.gold, item.price)) {
+          if (!item.purchased && canAfford(state.player.gold, item.price)) {
             onBuyItem(itemArea.itemIndex)
           }
           return true
@@ -314,9 +373,60 @@ export function GameCanvas({
       return false
     }
 
+    const handleDebugWindowClick = (pos: Position): boolean => {
+      const debugResult = debugWindowResultRef.current
+      if (!debugResult || !showDebugWindow) return false
+
+      const { MIN, MAX, STEP } = DEBUG_PROBABILITY_SETTINGS
+
+      // パターン確率のマイナスボタン
+      if (isPointInArea(pos, debugResult.patternMinusButton)) {
+        onUpdateDebugSettings({
+          patternProbability: Math.max(MIN, debugSettings.patternProbability - STEP),
+        })
+        return true
+      }
+
+      // パターン確率のプラスボタン
+      if (isPointInArea(pos, debugResult.patternPlusButton)) {
+        onUpdateDebugSettings({
+          patternProbability: Math.min(MAX, debugSettings.patternProbability + STEP),
+        })
+        return true
+      }
+
+      // シール確率のマイナスボタン
+      if (isPointInArea(pos, debugResult.sealMinusButton)) {
+        onUpdateDebugSettings({
+          sealProbability: Math.max(MIN, debugSettings.sealProbability - STEP),
+        })
+        return true
+      }
+
+      // シール確率のプラスボタン
+      if (isPointInArea(pos, debugResult.sealPlusButton)) {
+        onUpdateDebugSettings({
+          sealProbability: Math.min(MAX, debugSettings.sealProbability + STEP),
+        })
+        return true
+      }
+
+      // ウィンドウ内のクリックはイベントを消費（貫通しない）
+      if (isPointInArea(pos, debugResult.windowBounds)) {
+        return true
+      }
+
+      return false
+    }
+
     const handleMouseDown = (e: MouseEvent) => {
       e.preventDefault()
       const pos = getCanvasPosition(e)
+
+      // デバッグウィンドウのクリック判定（最優先）
+      if (handleDebugWindowClick(pos)) {
+        return
+      }
 
       // ショッピングフェーズ
       if (state.phase === 'shopping') {
@@ -362,12 +472,67 @@ export function GameCanvas({
       onDragEnd()
     }
 
+    // タッチデバイス用: レリックタップでツールチップのトグル
+    const handleRelicTouch = (pos: Position): boolean => {
+      // ツールチップが表示されるかチェック（レリック領域のヒットテスト）
+      const newTooltipState = calculateTooltipState(pos, state, layout)
+
+      // 同じ場所で既にツールチップが表示中なら非表示にする
+      if (
+        tooltipState.visible &&
+        newTooltipState.visible &&
+        newTooltipState.effects.length > 0 &&
+        tooltipState.effects.length > 0 &&
+        tooltipState.effects[0].name === newTooltipState.effects[0].name
+      ) {
+        setTooltipState(INITIAL_TOOLTIP_STATE)
+        return true
+      }
+
+      // 新しいレリックをタップした場合はそのツールチップを表示
+      if (newTooltipState.visible && newTooltipState.effects.length > 0) {
+        setTooltipState(newTooltipState)
+        return true
+      }
+
+      // レリック以外の場所をタップした場合、ツールチップを非表示
+      if (tooltipState.visible) {
+        setTooltipState(INITIAL_TOOLTIP_STATE)
+      }
+
+      return false
+    }
+
     const handleTouchStart = (e: TouchEvent) => {
       e.preventDefault()
       const pos = getCanvasPosition(e.touches[0])
 
+      // デバッグウィンドウのクリック判定（最優先）
+      if (handleDebugWindowClick(pos)) {
+        return
+      }
+
+      // レリックのタップトグル処理（ショッピングフェーズ以外で優先）
+      // ショッピングフェーズではショップ購入処理を優先
+      if (state.phase !== 'shopping') {
+        // オーバーレイ表示中はツールチップを表示しない
+        if (
+          state.phase !== 'round_clear' &&
+          state.phase !== 'game_over' &&
+          state.phase !== 'game_clear'
+        ) {
+          if (handleRelicTouch(pos)) {
+            return
+          }
+        }
+      }
+
       // ショッピングフェーズ
       if (state.phase === 'shopping') {
+        // ショッピング中もレリックパネルのタップを処理
+        if (handleRelicTouch(pos)) {
+          return
+        }
         handleShopClick(pos)
         return
       }
@@ -410,7 +575,39 @@ export function GameCanvas({
       onDragEnd()
     }
 
+    // ツールチップ用のマウス移動ハンドラー
+    const handleCanvasMouseMove = (e: MouseEvent) => {
+      // ドラッグ中はツールチップを更新しない
+      if (isDraggingRef.current) {
+        setTooltipState((prev) => (prev.visible ? INITIAL_TOOLTIP_STATE : prev))
+        return
+      }
+
+      const pos = getCanvasPosition(e)
+      const newTooltipState = calculateTooltipState(pos, state, layout)
+
+      // 変化がある場合のみ更新（不要な再レンダリングを防ぐ）
+      setTooltipState((prev) => {
+        if (
+          prev.visible === newTooltipState.visible &&
+          prev.x === newTooltipState.x &&
+          prev.y === newTooltipState.y &&
+          prev.effects.length === newTooltipState.effects.length
+        ) {
+          return prev
+        }
+        return newTooltipState
+      })
+    }
+
+    // マウスがCanvas外に出た時のハンドラー
+    const handleCanvasMouseLeave = () => {
+      setTooltipState((prev) => (prev.visible ? INITIAL_TOOLTIP_STATE : prev))
+    }
+
     canvas.addEventListener('mousedown', handleMouseDown)
+    canvas.addEventListener('mousemove', handleCanvasMouseMove)
+    canvas.addEventListener('mouseleave', handleCanvasMouseLeave)
     window.addEventListener('mousemove', handleMouseMove)
     window.addEventListener('mouseup', handleMouseUp)
 
@@ -421,6 +618,8 @@ export function GameCanvas({
 
     return () => {
       canvas.removeEventListener('mousedown', handleMouseDown)
+      canvas.removeEventListener('mousemove', handleCanvasMouseMove)
+      canvas.removeEventListener('mouseleave', handleCanvasMouseLeave)
       window.removeEventListener('mousemove', handleMouseMove)
       window.removeEventListener('mouseup', handleMouseUp)
 
@@ -429,7 +628,7 @@ export function GameCanvas({
       window.removeEventListener('touchend', handleTouchEnd)
       window.removeEventListener('touchcancel', handleTouchEnd)
     }
-  }, [canvas, layout, state.pieceSlots, state.clearingAnimation, state.phase, state.shopState, state.gold, onDragStart, onDragMove, onDragEnd, onReset, onBuyItem, onLeaveShop])
+  }, [canvas, layout, state.pieceSlots, state.clearingAnimation, state.phase, state.shopState, state.player, state.board, state.dragState, onDragStart, onDragMove, onDragEnd, onReset, onBuyItem, onLeaveShop, showDebugWindow, debugSettings, onUpdateDebugSettings])
 
   return (
     <canvas

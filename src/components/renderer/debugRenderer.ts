@@ -3,8 +3,30 @@
  */
 
 import { DeckState, PieceShape } from '../../lib/game/types'
-import { DEBUG_WINDOW_STYLE, COLORS } from '../../lib/game/constants'
+import { DEBUG_WINDOW_STYLE, COLORS } from '../../lib/game/Data/Constants'
 import { getMinoById } from '../../lib/game/minoDefinitions'
+import type { DebugSettings } from '../../lib/game/Domain/Debug'
+
+/**
+ * ボタン領域の型定義
+ */
+export interface ButtonArea {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+/**
+ * デバッグウィンドウの描画結果
+ */
+export interface DebugWindowRenderResult {
+  patternPlusButton: ButtonArea
+  patternMinusButton: ButtonArea
+  sealPlusButton: ButtonArea
+  sealMinusButton: ButtonArea
+  windowBounds: ButtonArea
+}
 
 /**
  * ミノ形状を小さいセルで描画
@@ -61,13 +83,98 @@ function getMinoSize(shape: PieceShape, cellSize: number): { width: number; heig
 }
 
 /**
+ * +/-ボタンを描画
+ */
+function drawProbabilityButton(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  text: string,
+  buttonColor: string,
+  textColor: string,
+  fontSize: number
+): void {
+  // ボタン背景
+  ctx.fillStyle = buttonColor
+  ctx.fillRect(x, y, width, height)
+
+  // ボタン枠
+  ctx.strokeStyle = '#FFFFFF'
+  ctx.lineWidth = 1
+  ctx.strokeRect(x, y, width, height)
+
+  // ボタンテキスト
+  ctx.fillStyle = textColor
+  ctx.font = `bold ${fontSize}px Arial, sans-serif`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(text, x + width / 2, y + height / 2)
+}
+
+/**
+ * 確率設定行を描画
+ */
+function drawProbabilityRow(
+  ctx: CanvasRenderingContext2D,
+  label: string,
+  value: number,
+  x: number,
+  y: number,
+  windowWidth: number,
+  padding: number
+): { minusButton: ButtonArea; plusButton: ButtonArea } {
+  const ps = DEBUG_WINDOW_STYLE.probabilitySection
+
+  // ラベル
+  ctx.fillStyle = ps.labelColor
+  ctx.font = `${ps.labelFontSize}px ${DEBUG_WINDOW_STYLE.fontFamily}`
+  ctx.textAlign = 'left'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(label, x + padding, y + ps.rowHeight / 2)
+
+  // ボタンと値の配置計算（右端から配置）
+  const rightEdge = x + windowWidth - padding
+  const plusX = rightEdge - ps.buttonWidth
+  const valueX = plusX - ps.valueWidth
+  const minusX = valueX - ps.buttonGap - ps.buttonWidth
+  const buttonY = y + (ps.rowHeight - ps.buttonHeight) / 2
+
+  // マイナスボタン
+  drawProbabilityButton(
+    ctx, minusX, buttonY, ps.buttonWidth, ps.buttonHeight,
+    '-', ps.buttonColor, ps.buttonTextColor, ps.buttonFontSize
+  )
+
+  // 値表示
+  ctx.fillStyle = ps.valueColor
+  ctx.font = `bold ${ps.valueFontSize}px ${DEBUG_WINDOW_STYLE.fontFamily}`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(`${value}%`, valueX + ps.valueWidth / 2, y + ps.rowHeight / 2)
+
+  // プラスボタン
+  drawProbabilityButton(
+    ctx, plusX, buttonY, ps.buttonWidth, ps.buttonHeight,
+    '+', ps.buttonColor, ps.buttonTextColor, ps.buttonFontSize
+  )
+
+  return {
+    minusButton: { x: minusX, y: buttonY, width: ps.buttonWidth, height: ps.buttonHeight },
+    plusButton: { x: plusX, y: buttonY, width: ps.buttonWidth, height: ps.buttonHeight },
+  }
+}
+
+/**
  * デバッグウィンドウを描画
  * デッキの中身をストックに登場する順（先頭から）にブロック形状で表示する
  */
 export function renderDebugWindow(
   ctx: CanvasRenderingContext2D,
-  deck: DeckState
-): void {
+  deck: DeckState,
+  debugSettings: DebugSettings
+): DebugWindowRenderResult {
   const {
     backgroundColor,
     titleFontSize,
@@ -117,8 +224,12 @@ export function renderDebugWindow(
   // 省略テキスト用の高さ
   const ellipsisHeight = cards.length > maxItems ? infoFontSize + 4 : 0
 
-  const windowWidth = Math.max(maxMinoWidth + padding * 2 + numberColumnWidth + 5, minWindowWidth)
-  const windowHeight = headerHeight + totalMinoHeight + ellipsisHeight + padding
+  // 確率設定セクションの高さ
+  const ps = DEBUG_WINDOW_STYLE.probabilitySection
+  const probabilitySectionHeight = ps.sectionMarginTop + ps.rowHeight * 2 + padding
+
+  const windowWidth = Math.max(maxMinoWidth + padding * 2 + numberColumnWidth + 5, minWindowWidth, 130)
+  const windowHeight = headerHeight + totalMinoHeight + ellipsisHeight + probabilitySectionHeight + padding
 
   ctx.save()
 
@@ -183,7 +294,40 @@ export function renderDebugWindow(
     ctx.textAlign = 'left'
     ctx.textBaseline = 'top'
     ctx.fillText(`+${cards.length - maxItems}枚`, offsetX + padding, y)
+    y += infoFontSize + 4
   }
 
+  // 確率設定セクション
+  y += ps.sectionMarginTop
+
+  // セパレータライン
+  ctx.strokeStyle = titleColor
+  ctx.lineWidth = 1
+  ctx.beginPath()
+  ctx.moveTo(offsetX + padding, y - ps.sectionMarginTop / 2)
+  ctx.lineTo(offsetX + windowWidth - padding, y - ps.sectionMarginTop / 2)
+  ctx.stroke()
+
+  // パターン確率
+  const patternButtons = drawProbabilityRow(
+    ctx, 'Pattern', debugSettings.patternProbability,
+    offsetX, y, windowWidth, padding
+  )
+  y += ps.rowHeight
+
+  // シール確率
+  const sealButtons = drawProbabilityRow(
+    ctx, 'Seal', debugSettings.sealProbability,
+    offsetX, y, windowWidth, padding
+  )
+
   ctx.restore()
+
+  return {
+    patternPlusButton: patternButtons.plusButton,
+    patternMinusButton: patternButtons.minusButton,
+    sealPlusButton: sealButtons.plusButton,
+    sealMinusButton: sealButtons.minusButton,
+    windowBounds: { x: offsetX, y: offsetY, width: windowWidth, height: windowHeight },
+  }
 }

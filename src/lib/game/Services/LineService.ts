@@ -2,7 +2,10 @@
  * ライン消去ロジック
  */
 
-import type { Board, ClearingCell } from '../Domain'
+import type { Board, ClearingCell, ScoreBreakdown } from '../Domain'
+import type { RelicEffectContext } from '../Domain/Effect/RelicEffectTypes'
+import { calculateScoreBreakdown as calculatePatternScoreBreakdown } from '../Domain/Effect/PatternEffectHandler'
+import { filterClearableCells } from '../Domain/Effect/SealEffectHandler'
 import { GRID_SIZE } from '../Data/Constants'
 
 /**
@@ -41,6 +44,7 @@ export function findCompletedLines(board: Board): CompletedLines {
 
 /**
  * 消去対象のセルを取得（重複なし）
+ * 石シールを持つセルはフィルタされない（boardを渡した場合のみフィルタ可能）
  */
 export function getCellsToRemove(completedLines: CompletedLines): ClearingCell[] {
   const cellSet = new Set<string>()
@@ -72,6 +76,20 @@ export function getCellsToRemove(completedLines: CompletedLines): ClearingCell[]
 }
 
 /**
+ * 消去対象のセルを取得（石シール付きセルを除外）
+ * @param board 現在のボード状態
+ * @param completedLines 完成したライン情報
+ * @returns 石シールを除いた消去対象セル
+ */
+export function getCellsToRemoveWithFilter(
+  board: Board,
+  completedLines: CompletedLines
+): ClearingCell[] {
+  const cells = getCellsToRemove(completedLines)
+  return filterClearableCells(board, cells)
+}
+
+/**
  * スコアを計算する
  * スコア = 消えたブロック数 x 消えたライン数
  */
@@ -83,6 +101,58 @@ export function calculateScore(completedLines: CompletedLines): number {
   const blockCount = cells.length
 
   return blockCount * totalLines
+}
+
+/**
+ * パターン効果、シール効果、レリック効果を考慮したスコアを計算
+ * @param board 現在のボード状態
+ * @param completedLines 完成したライン情報
+ * @param comboCount 現在のコンボ回数
+ * @param relicContext レリック効果コンテキスト（null可）
+ * @param luckyRandom 乱数生成関数（テスト用に注入可能）
+ * @returns スコア計算の詳細内訳
+ */
+export function calculateScoreWithEffects(
+  board: Board,
+  completedLines: CompletedLines,
+  comboCount: number,
+  relicContext: RelicEffectContext | null = null,
+  luckyRandom: () => number = Math.random
+): ScoreBreakdown {
+  const totalLines = completedLines.rows.length + completedLines.columns.length
+  if (totalLines === 0) {
+    return {
+      baseBlocks: 0,
+      enhancedBonus: 0,
+      auraBonus: 0,
+      mossBonus: 0,
+      multiBonus: 0,
+      totalBlocks: 0,
+      linesCleared: 0,
+      baseScore: 0,
+      comboBonus: 0,
+      luckyMultiplier: 1,
+      sealScoreBonus: 0,
+      goldCount: 0,
+      chainMasterMultiplier: 1,
+      smallLuckBonus: 0,
+      fullClearBonus: 0,
+      relicBonusTotal: 0,
+      finalScore: 0,
+    }
+  }
+
+  // 石シールを除いた消去対象セルを取得
+  const cellsToRemove = getCellsToRemoveWithFilter(board, completedLines)
+
+  return calculatePatternScoreBreakdown(
+    board,
+    cellsToRemove,
+    totalLines,
+    comboCount,
+    relicContext,
+    luckyRandom
+  )
 }
 
 /**

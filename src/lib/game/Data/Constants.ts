@@ -203,13 +203,42 @@ export const SHOP_STYLE = {
   leaveButtonColor: '#8B7355',
   leaveButtonTextColor: '#FFFFFF',
   leaveButtonFontSize: 20,
+  leaveButtonGap: 50,             // 商品とボタンの間隔
   titleOffsetY: -180,
   itemsOffsetY: -50,
-  leaveButtonOffsetY: 180,
   goldDisplayOffsetY: -220,
   cellSizeRatio: 0.6,
   shapeVerticalOffset: 15,      // ミノ形状の垂直オフセット
   priceVerticalOffset: 20,      // 価格表示の下からのオフセット
+  // レリック行（ブロック行の下）
+  relicRowOffsetY: 20,          // ブロック行からのオフセット
+  relicBoxWidth: 100,
+  relicBoxHeight: 100,
+  relicIconSize: 32,
+  // セール表示
+  saleColor: '#FF4444',               // セール価格の色（赤）
+  saleBadgeColor: '#FF0000',          // SALEバッジ背景色
+  saleBadgeTextColor: '#FFFFFF',      // SALEバッジ文字色
+  saleBadgeFontSize: 10,
+  saleBadgeWidth: 40,
+  saleBadgeHeight: 16,
+  saleBadgeOffsetX: 5,                // ボックス左上からのオフセット
+  saleBadgeOffsetY: 5,
+  originalPriceColor: '#888888',      // 元価格の色（グレー）
+  strikethroughColor: '#888888',      // 打ち消し線の色
+  // 購入不可表示
+  unavailableOpacity: 0.5,            // 購入不可時の不透明度
+}
+
+// レリックパネル表示スタイル（画面上部、ゴールドの右隣）
+export const RELIC_PANEL_STYLE = {
+  iconSize: 24,
+  iconGap: 8,
+  paddingLeft: 100,             // ゴールド表示の右隣
+  paddingTop: 20,
+  backgroundColor: 'rgba(0, 0, 0, 0.3)',
+  borderRadius: 4,
+  padding: 4,
 }
 
 // デバッグウィンドウ表示スタイル
@@ -229,4 +258,139 @@ export const DEBUG_WINDOW_STYLE = {
   minWindowWidth: 90,      // 最小ウィンドウ幅
   offsetX: 10,             // 左端からのオフセット
   offsetY: 80,             // 上端からのオフセット
+  // 確率設定セクション
+  probabilitySection: {
+    sectionMarginTop: 12,   // セクション間のマージン
+    labelFontSize: 11,      // ラベルのフォントサイズ
+    labelColor: '#AAAAAA',  // ラベルの色
+    valueFontSize: 12,      // 値表示のフォントサイズ
+    valueColor: '#00FF00',  // 値の色
+    buttonWidth: 20,        // +/-ボタンの幅
+    buttonHeight: 18,       // +/-ボタンの高さ
+    buttonColor: '#4CAF50', // ボタンの色
+    buttonHoverColor: '#66BB6A', // ボタンホバー時の色
+    buttonTextColor: '#FFFFFF',  // ボタンテキストの色
+    buttonFontSize: 14,     // ボタンテキストのフォントサイズ
+    rowHeight: 24,          // 各行の高さ
+    valueWidth: 40,         // 値表示の幅
+    buttonGap: 4,           // ボタン間のギャップ
+  },
+}
+
+// レアリティ別カラー定義
+export const RARITY_COLORS: Record<string, string> = {
+  common: '#AAAAAA',
+  uncommon: '#55AA55',
+  rare: '#5555FF',
+  epic: '#AA00AA',
+}
+
+// パターン別カラー定義
+export const PATTERN_COLORS: Record<string, { base: string; highlight: string; shadow: string }> = {
+  enhanced: {
+    base: '#DAA520',      // ゴールデンロッド
+    highlight: '#FFD700', // ゴールド
+    shadow: '#B8860B',    // ダークゴールデンロッド
+  },
+  lucky: {
+    base: '#228B22',      // フォレストグリーン
+    highlight: '#32CD32', // ライムグリーン
+    shadow: '#006400',    // ダークグリーン
+  },
+  combo: {
+    base: '#8B008B',      // ダークマゼンタ
+    highlight: '#BA55D3', // ミディアムオーキッド
+    shadow: '#4B0082',    // インディゴ
+  },
+  aura: {
+    base: '#00CED1',      // ダークターコイズ
+    highlight: '#40E0D0', // ターコイズ
+    shadow: '#008B8B',    // ダークシアン
+  },
+  moss: {
+    base: '#2E8B57',      // シーグリーン
+    highlight: '#3CB371', // ミディアムシーグリーン
+    shadow: '#006400',    // ダークグリーン
+  },
+  obstacle: {
+    base: '#696969',      // ディムグレー
+    highlight: '#808080', // グレー
+    shadow: '#2F4F4F',    // ダークスレートグレー
+  },
+}
+
+// パターン記号のフォント設定
+export const PATTERN_SYMBOL_STYLE = {
+  fontSize: 12,
+  fontFamily: 'Arial, sans-serif',
+  color: '#FFFFFF',
+  shadowColor: '#000000',
+  shadowBlur: 2,
+}
+
+// シール別カラー定義
+export const SEAL_COLORS: Record<string, string> = {
+  gold: '#FFD700',   // ゴールド
+  score: '#00FF00',  // グリーン
+  multi: '#FF69B4',  // ピンク
+  stone: '#808080',  // グレー
+}
+
+// シール記号のスタイル設定
+export const SEAL_SYMBOL_STYLE = {
+  fontSize: 10,
+  fontFamily: 'Arial, sans-serif',
+  backgroundColor: 'rgba(0, 0, 0, 0.6)',
+  borderRadius: 2,
+  padding: 1,
+}
+
+// デバッグ用確率設定
+export const DEBUG_PROBABILITY_SETTINGS = {
+  MIN: 0,
+  MAX: 100,
+  STEP: 10,
+} as const
+
+// ツールチップスタイル設定
+export const TOOLTIP_STYLE = {
+  backgroundColor: 'rgba(0, 0, 0, 0.9)',
+  borderColor: '#8B7355',
+  borderWidth: 2,
+  borderRadius: 6,
+  padding: 10,
+  maxWidth: 180,
+  nameFontSize: 13,
+  descFontSize: 11,
+  fontFamily: 'Arial, sans-serif',
+  nameColor: '#FFD700',
+  descColor: '#FFFFFF',
+  lineHeight: 1.4,
+  offsetX: 15,
+  offsetY: 15,
+  effectGap: 8,
+}
+
+// レリック発動エフェクトスタイル
+export const RELIC_EFFECT_STYLE = {
+  duration: 1500, // エフェクト表示時間（ms）
+  popupWidth: 200,
+  popupHeight: 80,
+  popupGap: 10, // ポップアップ間のギャップ
+  backgroundColor: 'rgba(0, 0, 0, 0.8)',
+  borderColor: '#FFD700',
+  borderWidth: 3,
+  borderRadius: 10,
+  iconSize: 32,
+  iconOffsetX: 40, // アイコンのX位置オフセット
+  nameFontSize: 16,
+  nameOffsetX: 70, // 名前のX位置オフセット
+  nameOffsetY: 25, // 名前のY位置オフセット
+  bonusFontSize: 20,
+  bonusOffsetY: 55, // ボーナス値のY位置オフセット
+  nameColor: '#FFFFFF',
+  bonusColor: '#FFD700',
+  fontFamily: 'Arial, sans-serif',
+  glowColor: 'rgba(255, 215, 0, 0.5)',
+  glowRadius: 20,
 }

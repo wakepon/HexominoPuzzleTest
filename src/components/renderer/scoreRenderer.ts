@@ -3,7 +3,7 @@
  */
 
 import { CanvasLayout } from '../../lib/game/types'
-import { SCORE_STYLE } from '../../lib/game/constants'
+import { SCORE_STYLE } from '../../lib/game/Data/Constants'
 
 /**
  * スコアをCanvas内に描画

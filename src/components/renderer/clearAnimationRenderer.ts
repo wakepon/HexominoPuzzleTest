@@ -3,7 +3,7 @@
  */
 
 import { ClearingAnimationState, CanvasLayout } from '../../lib/game/types'
-import { CLEAR_ANIMATION, COLORS, CELL_STYLE } from '../../lib/game/constants'
+import { CLEAR_ANIMATION, COLORS, CELL_STYLE } from '../../lib/game/Data/Constants'
 
 /**
  * 消去アニメーションを描画

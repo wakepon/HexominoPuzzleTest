@@ -1,12 +1,14 @@
-import { useReducer, useCallback } from 'react'
+import { useReducer, useCallback, useState } from 'react'
 import type { Position } from '../lib/game/Domain'
 import { gameReducer, createInitialState } from '../lib/game/State'
+import { type DebugSettings, DEFAULT_DEBUG_SETTINGS } from '../lib/game/Domain/Debug'
 
 /**
  * ゲーム状態管理フック
  */
 export function useGame() {
   const [state, dispatch] = useReducer(gameReducer, null, createInitialState)
+  const [debugSettings, setDebugSettings] = useState<DebugSettings>(DEFAULT_DEBUG_SETTINGS)
 
   const startDrag = useCallback((slotIndex: number, startPos: Position) => {
     dispatch({ type: 'UI/START_DRAG', slotIndex, startPos })
@@ -28,9 +30,19 @@ export function useGame() {
     dispatch({ type: 'ANIMATION/END_CLEAR' })
   }, [])
 
-  const advanceRound = useCallback(() => {
-    dispatch({ type: 'ROUND/ADVANCE' })
+  const endRelicActivationAnimation = useCallback(() => {
+    dispatch({ type: 'ANIMATION/END_RELIC_ACTIVATION' })
   }, [])
+
+  const advanceRound = useCallback(() => {
+    dispatch({
+      type: 'ROUND/ADVANCE',
+      probabilityOverride: {
+        pattern: debugSettings.patternProbability / 100,
+        seal: debugSettings.sealProbability / 100,
+      },
+    })
+  }, [debugSettings])
 
   const buyItem = useCallback((itemIndex: number) => {
     dispatch({ type: 'SHOP/BUY_ITEM', itemIndex })
@@ -40,17 +52,24 @@ export function useGame() {
     dispatch({ type: 'SHOP/LEAVE' })
   }, [])
 
+  const updateDebugSettings = useCallback((updates: Partial<DebugSettings>) => {
+    setDebugSettings((prev) => ({ ...prev, ...updates }))
+  }, [])
+
   return {
     state,
+    debugSettings,
     actions: {
       startDrag,
       updateDrag,
       endDrag,
       resetGame,
       endClearAnimation,
+      endRelicActivationAnimation,
       advanceRound,
       buyItem,
       leaveShop,
+      updateDebugSettings,
     },
   }
 }
