@@ -19,6 +19,7 @@ import {
 import { DefaultRandom } from '../Utils/Random'
 import { ROUND_CONFIG } from '../Data/Constants'
 import { createInitialPlayerState } from '../Domain/Player/PlayerState'
+import { loadGameState, restoreGameState, clearGameState } from '../Services/StorageService'
 
 /**
  * 初期ドラッグ状態
@@ -63,9 +64,9 @@ export function generateNewPieceSlotsFromDeckWithCount(
 }
 
 /**
- * 初期ゲーム状態を作成
+ * 新規ゲーム状態を作成（保存データなし）
  */
-export function createInitialState(): GameState {
+function createNewGameState(): GameState {
   const rng = new DefaultRandom()
   const initialRound = 1
   const roundInfo = createRoundInfo(initialRound, rng)
@@ -103,6 +104,28 @@ export function createInitialState(): GameState {
     shopState: null,
     comboCount: 0,
   }
+}
+
+/**
+ * 初期ゲーム状態を作成
+ * 保存データがあれば復元、なければ新規作成
+ */
+export function createInitialState(): GameState {
+  // 保存データの読み込みを試みる
+  const saved = loadGameState()
+
+  // 保存データがある場合は復元を試みる
+  if (saved) {
+    try {
+      return restoreGameState(saved, initialDragState)
+    } catch (error) {
+      console.warn('Failed to restore game state, starting new game:', error)
+      clearGameState()
+    }
+  }
+
+  // 保存データがない、または復元失敗の場合は新規ゲーム
+  return createNewGameState()
 }
 
 /**

@@ -66,6 +66,7 @@ import {
 } from '../../Services/ShopService'
 import { DefaultRandom } from '../../Utils/Random'
 import { CLEAR_ANIMATION, RELIC_EFFECT_STYLE } from '../../Data/Constants'
+import { saveGameState, clearGameState } from '../../Services/StorageService'
 
 /**
  * ピースのブロック数を取得
@@ -497,6 +498,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     }
 
     case 'GAME/RESET': {
+      // 保存データを削除
+      clearGameState()
       return createInitialState()
     }
 
@@ -540,6 +543,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         emitRoundCleared(state.round, state.score, goldReward)
         emitGoldGained(goldReward, 'round_clear')
 
+        // ゲームクリア時は保存データを削除
+        clearGameState()
+
         return {
           ...state,
           phase: 'game_clear',
@@ -556,12 +562,17 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       emitRoundCleared(state.round, state.score, goldReward)
       emitGoldGained(goldReward, 'round_clear')
 
-      return {
+      const newState = {
         ...state,
-        phase: 'shopping',
+        phase: 'shopping' as const,
         player: addGold(state.player, goldReward),
         shopState: createShopState(rng, state.player.ownedRelics, action.probabilityOverride),
       }
+
+      // ショップ遷移時に保存
+      saveGameState(newState)
+
+      return newState
     }
 
     case 'SHOP/BUY_ITEM': {
@@ -595,19 +606,29 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         newPlayer = addRelic(newPlayer, item.relicId)
       }
 
-      return {
+      const updatedState = {
         ...state,
         player: newPlayer,
         deck: newDeck,
         shopState: newShopState,
       }
+
+      // 購入後に保存（データ整合性のため）
+      saveGameState(updatedState)
+
+      return updatedState
     }
 
     case 'SHOP/LEAVE': {
       // shopping状態でのみ店を出られる
       if (state.phase !== 'shopping') return state
 
-      return createNextRoundState(state)
+      const nextRoundState = createNextRoundState(state)
+
+      // 次ラウンド開始時に保存
+      saveGameState(nextRoundState)
+
+      return nextRoundState
     }
 
     default:
