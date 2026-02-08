@@ -472,6 +472,37 @@ export function GameCanvas({
       onDragEnd()
     }
 
+    // タッチデバイス用: レリックタップでツールチップのトグル
+    const handleRelicTouch = (pos: Position): boolean => {
+      // ツールチップが表示されるかチェック（レリック領域のヒットテスト）
+      const newTooltipState = calculateTooltipState(pos, state, layout)
+
+      // 同じ場所で既にツールチップが表示中なら非表示にする
+      if (
+        tooltipState.visible &&
+        newTooltipState.visible &&
+        newTooltipState.effects.length > 0 &&
+        tooltipState.effects.length > 0 &&
+        tooltipState.effects[0].name === newTooltipState.effects[0].name
+      ) {
+        setTooltipState(INITIAL_TOOLTIP_STATE)
+        return true
+      }
+
+      // 新しいレリックをタップした場合はそのツールチップを表示
+      if (newTooltipState.visible && newTooltipState.effects.length > 0) {
+        setTooltipState(newTooltipState)
+        return true
+      }
+
+      // レリック以外の場所をタップした場合、ツールチップを非表示
+      if (tooltipState.visible) {
+        setTooltipState(INITIAL_TOOLTIP_STATE)
+      }
+
+      return false
+    }
+
     const handleTouchStart = (e: TouchEvent) => {
       e.preventDefault()
       const pos = getCanvasPosition(e.touches[0])
@@ -481,8 +512,27 @@ export function GameCanvas({
         return
       }
 
+      // レリックのタップトグル処理（ショッピングフェーズ以外で優先）
+      // ショッピングフェーズではショップ購入処理を優先
+      if (state.phase !== 'shopping') {
+        // オーバーレイ表示中はツールチップを表示しない
+        if (
+          state.phase !== 'round_clear' &&
+          state.phase !== 'game_over' &&
+          state.phase !== 'game_clear'
+        ) {
+          if (handleRelicTouch(pos)) {
+            return
+          }
+        }
+      }
+
       // ショッピングフェーズ
       if (state.phase === 'shopping') {
+        // ショッピング中もレリックパネルのタップを処理
+        if (handleRelicTouch(pos)) {
+          return
+        }
         handleShopClick(pos)
         return
       }

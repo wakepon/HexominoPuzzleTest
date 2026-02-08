@@ -5,12 +5,14 @@
 import type { Position, GameState, CanvasLayout, PieceSlot, Board, ShopState } from '../Domain'
 import type { EffectInfo, TooltipState } from '../Domain/Tooltip'
 import type { BlockData } from '../Domain/Piece/BlockData'
+import type { RelicId } from '../Domain/Core/Id'
 import { INITIAL_TOOLTIP_STATE } from '../Domain/Tooltip'
 import { getPatternDefinition } from '../Domain/Effect/Pattern'
 import { getSealDefinition } from '../Domain/Effect/Seal'
-import { LAYOUT, SHOP_STYLE, GRID_SIZE } from '../Data/Constants'
+import { getRelicDefinition } from '../Domain/Effect/Relic'
+import { LAYOUT, SHOP_STYLE, GRID_SIZE, RELIC_PANEL_STYLE } from '../Data/Constants'
 import { BlockDataMapUtils } from '../Domain/Piece/BlockData'
-import { isBlockShopItem } from '../Domain/Shop/ShopTypes'
+import { isBlockShopItem, isRelicShopItem } from '../Domain/Shop/ShopTypes'
 
 
 /**
@@ -236,6 +238,94 @@ function hitTestShop(
 }
 
 /**
+ * レリックパネル領域のヒットテスト
+ * relicPanelRenderer.tsと同じ座標計算を使用
+ */
+function hitTestRelicPanel(
+  pos: Position,
+  ownedRelics: readonly RelicId[]
+): EffectInfo[] {
+  if (ownedRelics.length === 0) return []
+
+  const { iconSize, iconGap, paddingLeft, paddingTop } = RELIC_PANEL_STYLE
+
+  for (let i = 0; i < ownedRelics.length; i++) {
+    const relicId = ownedRelics[i]
+    const def = getRelicDefinition(relicId)
+    if (!def) continue
+
+    const x = paddingLeft + i * (iconSize + iconGap)
+    const y = paddingTop
+
+    // アイコン領域内かチェック
+    if (
+      pos.x >= x &&
+      pos.x < x + iconSize &&
+      pos.y >= y &&
+      pos.y < y + iconSize
+    ) {
+      return [{ name: def.name, description: def.description }]
+    }
+  }
+
+  return []
+}
+
+/**
+ * ショップのレリック商品ヒットテスト
+ * shopRenderer.tsと同じ座標計算を使用
+ */
+function hitTestShopRelics(
+  pos: Position,
+  shopState: ShopState,
+  layout: CanvasLayout
+): EffectInfo[] {
+  const { canvasWidth, canvasHeight, cellSize } = layout
+  const centerX = canvasWidth / 2
+  const centerY = canvasHeight / 2
+
+  const shopCellSize = cellSize * SHOP_STYLE.cellSizeRatio
+
+  // shopRenderer.tsと同じボックスサイズ計算（ブロック行の高さに必要）
+  const blockBoxHeight = SHOP_BOX_CELLS * shopCellSize + SHOP_STYLE.itemBoxPadding * 2 + SHOP_BOX_PRICE_HEIGHT
+
+  // レリックアイテムをフィルタ
+  const relicItems = shopState.items.filter(isRelicShopItem)
+
+  if (relicItems.length === 0) return []
+
+  // ブロック行の配置（レリック行の基準位置計算に必要）
+  const blockBoxY = centerY + SHOP_STYLE.itemsOffsetY - blockBoxHeight / 2
+
+  // レリック行の配置
+  const { relicBoxWidth, relicBoxHeight, relicRowOffsetY } = SHOP_STYLE
+  const relicTotalWidth = relicBoxWidth * relicItems.length + SHOP_STYLE.itemBoxGap * (relicItems.length - 1)
+  const relicStartX = centerX - relicTotalWidth / 2
+  const relicBoxY = blockBoxY + blockBoxHeight + relicRowOffsetY
+
+  // レリック商品のヒットテスト
+  for (let i = 0; i < relicItems.length; i++) {
+    const item = relicItems[i]
+    const boxX = relicStartX + i * (relicBoxWidth + SHOP_STYLE.itemBoxGap)
+
+    // ボックス領域内かチェック
+    if (
+      pos.x >= boxX &&
+      pos.x < boxX + relicBoxWidth &&
+      pos.y >= relicBoxY &&
+      pos.y < relicBoxY + relicBoxHeight
+    ) {
+      const def = getRelicDefinition(item.relicId)
+      if (def) {
+        return [{ name: def.name, description: def.description }]
+      }
+    }
+  }
+
+  return []
+}
+
+/**
  * マウス位置からツールチップ状態を計算
  */
 export function calculateTooltipState(
@@ -243,8 +333,31 @@ export function calculateTooltipState(
   state: GameState,
   layout: CanvasLayout
 ): TooltipState {
+  // 所持レリックパネルは全フェーズで常にチェック（最優先）
+  const relicPanelEffects = hitTestRelicPanel(pos, state.player.ownedRelics)
+  if (relicPanelEffects.length > 0) {
+    return {
+      visible: true,
+      x: pos.x,
+      y: pos.y,
+      effects: relicPanelEffects,
+    }
+  }
+
   // ショッピングフェーズの場合はショップをチェック
   if (state.phase === 'shopping' && state.shopState) {
+    // ショップのレリック商品をチェック
+    const shopRelicEffects = hitTestShopRelics(pos, state.shopState, layout)
+    if (shopRelicEffects.length > 0) {
+      return {
+        visible: true,
+        x: pos.x,
+        y: pos.y,
+        effects: shopRelicEffects,
+      }
+    }
+
+    // ショップのブロック商品をチェック
     const shopEffects = hitTestShop(pos, state.shopState, layout)
     if (shopEffects.length > 0) {
       return {
