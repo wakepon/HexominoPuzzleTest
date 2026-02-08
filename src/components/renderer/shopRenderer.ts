@@ -484,11 +484,13 @@ export function renderShop(
     leaveButtonColor,
     leaveButtonTextColor,
     leaveButtonFontSize,
+    leaveButtonGap,
     titleOffsetY,
     itemsOffsetY,
-    leaveButtonOffsetY,
     goldDisplayOffsetY,
     cellSizeRatio,
+    relicRowOffsetY,
+    relicBoxHeight,
   } = SHOP_STYLE
 
   ctx.save()
@@ -583,9 +585,13 @@ export function renderShop(
     })
   }
 
-  // 「店を出る」ボタン
+  // 「店を出る」ボタン - 商品の下に動的に配置
   const buttonX = centerX - leaveButtonWidth / 2
-  const buttonY = centerY + leaveButtonOffsetY
+  // レリック行がある場合はレリック行の下端、ない場合はブロック行の下端を基準にする
+  const contentBottomY = relicItems.length > 0
+    ? blockBoxY + boxHeight + relicRowOffsetY + relicBoxHeight  // レリック行の下端
+    : blockBoxY + boxHeight                                      // ブロック行の下端
+  const buttonY = contentBottomY + leaveButtonGap
 
   ctx.fillStyle = leaveButtonColor
   ctx.beginPath()

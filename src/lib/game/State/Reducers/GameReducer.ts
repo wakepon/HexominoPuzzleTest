@@ -2,11 +2,30 @@
  * ゲームReducer
  */
 
-import type { GameState, PieceSlot, DeckState, Piece, Board } from '../../Domain'
+import type {
+  GameState,
+  PieceSlot,
+  DeckState,
+  Piece,
+  Board,
+  ScoreBreakdown,
+} from '../../Domain'
+import { toGridPosition } from '../../Domain/Core/Position'
 import type { GameAction } from '../Actions/GameActions'
 import type { RelicEffectContext } from '../../Domain/Effect/RelicEffectTypes'
+import type { ScoreBonus } from '../../Events/GameEvent'
 import { isBlockShopItem, isRelicShopItem } from '../../Domain/Shop/ShopTypes'
 import { addRelic, addGold, subtractGold } from './PlayerReducer'
+import {
+  emitPiecePlaced,
+  emitLinesCompleted,
+  emitLinesCleared,
+  emitScoreCalculated,
+  emitGoldGained,
+  emitRoundCleared,
+  emitRoundStarted,
+  emitRelicTriggered,
+} from '../../Events/GameEventBus'
 import {
   initialDragState,
   createInitialState,
@@ -59,6 +78,57 @@ function getPieceBlockCount(piece: Piece): number {
     }
   }
   return count
+}
+
+/**
+ * ScoreBreakdownからScoreBonus配列を生成（イベントログ用）
+ */
+function buildScoreBonuses(breakdown: ScoreBreakdown): ScoreBonus[] {
+  const bonuses: ScoreBonus[] = []
+
+  if (breakdown.enhancedBonus > 0) {
+    bonuses.push({ source: 'pattern:enhanced', amount: breakdown.enhancedBonus })
+  }
+  if (breakdown.auraBonus > 0) {
+    bonuses.push({ source: 'pattern:aura', amount: breakdown.auraBonus })
+  }
+  if (breakdown.mossBonus > 0) {
+    bonuses.push({ source: 'pattern:moss', amount: breakdown.mossBonus })
+  }
+  if (breakdown.comboBonus > 0) {
+    bonuses.push({ source: 'pattern:combo', amount: breakdown.comboBonus })
+  }
+  if (breakdown.luckyMultiplier > 1) {
+    bonuses.push({
+      source: 'pattern:lucky',
+      amount: 0,
+      multiplier: breakdown.luckyMultiplier,
+    })
+  }
+  if (breakdown.sealScoreBonus > 0) {
+    bonuses.push({ source: 'seal:score', amount: breakdown.sealScoreBonus })
+  }
+  if (breakdown.chainMasterMultiplier > 1) {
+    bonuses.push({
+      source: 'relic:chain_master',
+      amount: 0,
+      multiplier: breakdown.chainMasterMultiplier,
+    })
+  }
+  if (breakdown.smallLuckBonus > 0) {
+    bonuses.push({
+      source: 'relic:small_luck',
+      amount: breakdown.smallLuckBonus,
+    })
+  }
+  if (breakdown.fullClearBonus > 0) {
+    bonuses.push({
+      source: 'relic:full_clear_bonus',
+      amount: breakdown.fullClearBonus,
+    })
+  }
+
+  return bonuses
 }
 
 /**
@@ -159,6 +229,11 @@ function createNextRoundState(currentState: GameState): GameState {
     board = placeObstacleOnBoard(board, rng)
   }
 
+  const targetScore = calculateTargetScore(nextRound)
+
+  // イベント発火: ラウンド開始
+  emitRoundStarted(nextRound, targetScore)
+
   return {
     board,
     pieceSlots: slots,
@@ -171,7 +246,7 @@ function createNextRoundState(currentState: GameState): GameState {
     round: nextRound,
     roundInfo,
     player: currentState.player,
-    targetScore: calculateTargetScore(nextRound),
+    targetScore,
     shopState: null,
     comboCount: 0,
   }
@@ -241,6 +316,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         // ブロックを配置（Piece全体を渡す）
         const newBoard = placePieceOnBoard(state.board, slot.piece, boardPos)
 
+        // イベント発火: ピース配置
+        emitPiecePlaced(slot.piece, toGridPosition(boardPos), newBoard)
+
         // スロットからブロックを削除
         const newSlots = state.pieceSlots.map((s, i) =>
           i === slotIndex ? { ...s, piece: null } : s
@@ -262,6 +340,16 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         if (totalLines > 0) {
           // 石シールを除いた消去対象セルを取得
           const cells = getCellsToRemoveWithFilter(newBoard, completedLines)
+
+          // イベント発火: ライン完成
+          emitLinesCompleted(
+            completedLines.rows,
+            completedLines.columns,
+            cells.map((c) => ({
+              position: { row: c.row, col: c.col },
+              cell: newBoard[c.row][c.col],
+            }))
+          )
 
           // 消去後の盤面を先に計算（全消し判定用）
           const boardAfterClear = clearLines(newBoard, cells)
@@ -292,9 +380,29 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             finalDeck.remainingHands
           )
 
+          // イベント発火: スコア計算
+          emitScoreCalculated(
+            scoreBreakdown.baseScore,
+            buildScoreBonuses(scoreBreakdown),
+            scoreGain
+          )
+
+          // イベント発火: ゴールド獲得（シール効果）
+          emitGoldGained(goldGain, 'seal:gold')
+
           // レリック発動アニメーション（scoreBreakdownから直接取得し、重複計算を回避）
           const activatedRelics =
             getActivatedRelicsFromScoreBreakdown(scoreBreakdown)
+
+          // イベント発火: レリック発動
+          for (const relic of activatedRelics) {
+            emitRelicTriggered(
+              relic.relicId,
+              relic.relicId,
+              typeof relic.bonusValue === 'number' ? relic.bonusValue : 0
+            )
+          }
+
           const relicAnimation =
             activatedRelics.length > 0
               ? createRelicActivationAnimation(
@@ -397,6 +505,15 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
       const clearedBoard = clearLines(state.board, state.clearingAnimation.cells)
 
+      // イベント発火: ライン消去完了
+      emitLinesCleared(
+        state.clearingAnimation.cells.map((c) => ({
+          position: { row: c.row, col: c.col },
+          cell: state.board[c.row][c.col],
+        })),
+        isBoardEmpty(clearedBoard)
+      )
+
       return {
         ...state,
         board: clearedBoard,
@@ -418,6 +535,11 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       // 最終ラウンドならゲームクリア（ショップをスキップ）
       if (isFinalRound(state.round)) {
         const goldReward = calculateGoldReward(state.deck.remainingHands)
+
+        // イベント発火: ラウンドクリア + ゴールド獲得
+        emitRoundCleared(state.round, state.score, goldReward)
+        emitGoldGained(goldReward, 'round_clear')
+
         return {
           ...state,
           phase: 'game_clear',
@@ -429,6 +551,11 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       // ショップへ遷移（デバッグ用の確率オーバーライドを適用）
       const rng = new DefaultRandom()
       const goldReward = calculateGoldReward(state.deck.remainingHands)
+
+      // イベント発火: ラウンドクリア + ゴールド獲得
+      emitRoundCleared(state.round, state.score, goldReward)
+      emitGoldGained(goldReward, 'round_clear')
+
       return {
         ...state,
         phase: 'shopping',

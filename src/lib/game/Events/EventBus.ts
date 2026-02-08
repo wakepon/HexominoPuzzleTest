@@ -1,8 +1,9 @@
 /**
- * イベントバス（スケルトン）
+ * イベントバス
  *
- * 将来のローグライト機能（パターン・シール・レリック効果）で使用予定。
- * 現在は基本実装のみで、実際には使用されていない。
+ * ゲーム内のアクション（ピース配置、ライン消去、スコア計算など）を
+ * イベントとして発火・ログ記録するシステム。
+ * 主にデバッグ・ログ用途で使用。
  */
 
 import type { GameEvent } from './GameEvent'
@@ -22,15 +23,17 @@ interface HandlerEntry {
 }
 
 /**
- * イベントバス（シングルトンではなく、インスタンスとして使用）
+ * イベントバス
  */
 export class EventBus {
   private handlers: HandlerEntry[] = []
   private eventLog: GameEvent[] = []
   private readonly maxLogSize: number
+  private readonly enableLogging: boolean
 
-  constructor(maxLogSize: number = 100) {
+  constructor(maxLogSize: number = 100, enableLogging: boolean = false) {
     this.maxLogSize = maxLogSize
+    this.enableLogging = enableLogging
   }
 
   /**
@@ -64,6 +67,11 @@ export class EventBus {
    * イベントを発火
    */
   emit<T extends GameEvent>(event: T): void {
+    // コンソールログ出力（開発環境用）
+    if (this.enableLogging) {
+      console.log(`[GameEvent] ${event.type}`, event)
+    }
+
     // ログに追加
     this.eventLog.push(event)
     if (this.eventLog.length > this.maxLogSize) {

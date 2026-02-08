@@ -203,9 +203,9 @@ export const SHOP_STYLE = {
   leaveButtonColor: '#8B7355',
   leaveButtonTextColor: '#FFFFFF',
   leaveButtonFontSize: 20,
+  leaveButtonGap: 30,             // 商品とボタンの間隔
   titleOffsetY: -180,
   itemsOffsetY: -50,
-  leaveButtonOffsetY: 180,
   goldDisplayOffsetY: -220,
   cellSizeRatio: 0.6,
   shapeVerticalOffset: 15,      // ミノ形状の垂直オフセット

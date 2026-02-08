@@ -10,6 +10,7 @@ import { getPatternDefinition } from '../Domain/Effect/Pattern'
 import { getSealDefinition } from '../Domain/Effect/Seal'
 import { LAYOUT, SHOP_STYLE, GRID_SIZE } from '../Data/Constants'
 import { BlockDataMapUtils } from '../Domain/Piece/BlockData'
+import { isBlockShopItem } from '../Domain/Shop/ShopTypes'
 
 
 /**
@@ -179,17 +180,18 @@ function hitTestShop(
   const boxWidth = SHOP_BOX_CELLS * shopCellSize + SHOP_STYLE.itemBoxPadding * 2
   const boxHeight = SHOP_BOX_CELLS * shopCellSize + SHOP_STYLE.itemBoxPadding * 2 + SHOP_BOX_PRICE_HEIGHT
 
-  // shopRenderer.tsと同じレイアウト計算
-  const itemCount = shopState.items.length
-  const totalWidth = boxWidth * itemCount + SHOP_STYLE.itemBoxGap * (itemCount - 1)
-  const startX = centerX - totalWidth / 2
+  // shopRenderer.tsと同じレイアウト計算（ブロックアイテムのみをフィルタ）
+  const blockItems = shopState.items.filter(isBlockShopItem)
+  const blockTotalWidth = boxWidth * blockItems.length + SHOP_STYLE.itemBoxGap * (blockItems.length - 1)
+  const startX = centerX - blockTotalWidth / 2
   const boxY = centerY + SHOP_STYLE.itemsOffsetY - boxHeight / 2
 
-  for (let i = 0; i < shopState.items.length; i++) {
-    const item = shopState.items[i]
-    if (item.type !== 'block' || !item.piece) continue
+  // フィルタ後のインデックスで座標計算
+  for (let blockIndex = 0; blockIndex < blockItems.length; blockIndex++) {
+    const item = blockItems[blockIndex]
+    if (!item.piece) continue
 
-    const boxX = startX + i * (boxWidth + SHOP_STYLE.itemBoxGap)
+    const boxX = startX + blockIndex * (boxWidth + SHOP_STYLE.itemBoxGap)
 
     const shape = item.piece.shape
     const rows = shape.length
