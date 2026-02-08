@@ -5,7 +5,7 @@ import {
   getCellsToRemove,
   clearLines
 } from './lineLogic'
-import { createEmptyBoard } from './boardLogic'
+import { createEmptyBoard } from './Services/BoardService'
 import { Board, CompletedLines, Cell } from './types'
 
 // テスト用ヘルパー関数: 埋まったセルを作成
