@@ -10,7 +10,7 @@ import { INITIAL_TOOLTIP_STATE } from '../Domain/Tooltip'
 import { getPatternDefinition } from '../Domain/Effect/Pattern'
 import { getSealDefinition } from '../Domain/Effect/Seal'
 import { getRelicDefinition } from '../Domain/Effect/Relic'
-import { LAYOUT, SHOP_STYLE, GRID_SIZE, RELIC_PANEL_STYLE } from '../Data/Constants'
+import { HD_LAYOUT, SHOP_STYLE, GRID_SIZE, RELIC_PANEL_STYLE } from '../Data/Constants'
 import { BlockDataMapUtils } from '../Domain/Piece/BlockData'
 import { isBlockShopItem, isRelicShopItem } from '../Domain/Shop/ShopTypes'
 
@@ -118,7 +118,7 @@ function hitTestSlots(
   slots: readonly PieceSlot[],
   layout: CanvasLayout
 ): EffectInfo[] {
-  const slotCellSize = layout.cellSize * LAYOUT.slotCellSizeRatio
+  const slotCellSize = layout.cellSize * HD_LAYOUT.slotCellSizeRatio
 
   for (let i = 0; i < slots.length; i++) {
     const slot = slots[i]
@@ -126,6 +126,9 @@ function hitTestSlots(
 
     // layout.slotPositionsから実際の描画位置を取得
     const slotPos = layout.slotPositions[i]
+    // レイアウト再計算中にslotPositionsとslotsの数が一致しない場合はスキップ
+    if (!slotPos) continue
+
     const shape = slot.piece.shape
 
     // ピースの各セルをチェック
@@ -239,7 +242,7 @@ function hitTestShop(
 
 /**
  * レリックパネル領域のヒットテスト
- * relicPanelRenderer.tsと同じ座標計算を使用
+ * relicPanelRenderer.tsと同じ座標計算を使用（HDレイアウト対応）
  */
 function hitTestRelicPanel(
   pos: Position,
@@ -247,22 +250,26 @@ function hitTestRelicPanel(
 ): EffectInfo[] {
   if (ownedRelics.length === 0) return []
 
-  const { iconSize, iconGap, paddingLeft, paddingTop } = RELIC_PANEL_STYLE
+  const { iconSize, iconGap } = RELIC_PANEL_STYLE
+  const panelX = HD_LAYOUT.relicAreaX
+  const startY = HD_LAYOUT.relicAreaY
+  const panelWidth = HD_LAYOUT.relicAreaWidth
 
   for (let i = 0; i < ownedRelics.length; i++) {
     const relicId = ownedRelics[i]
     const def = getRelicDefinition(relicId)
     if (!def) continue
 
-    const x = paddingLeft + i * (iconSize + iconGap)
-    const y = paddingTop
+    // relicPanelRenderer.tsと同じ計算
+    const iconX = panelX + panelWidth / 2 - (iconSize + 8) / 2
+    const iconY = startY + 30 + i * (iconSize + iconGap + 10)
 
     // アイコン領域内かチェック
     if (
-      pos.x >= x &&
-      pos.x < x + iconSize &&
-      pos.y >= y &&
-      pos.y < y + iconSize
+      pos.x >= iconX &&
+      pos.x < iconX + iconSize + 8 &&
+      pos.y >= iconY &&
+      pos.y < iconY + iconSize + 8
     ) {
       return [{ name: def.name, description: def.description }]
     }

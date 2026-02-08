@@ -48,6 +48,38 @@ export const LAYOUT = {
   slotCellSizeRatio: 0.8,        // スロット内ブロックのサイズ比率
 }
 
+// HD画面用レイアウト設定（1280x720固定）
+export const HD_LAYOUT = {
+  // 固定画面サイズ
+  canvasWidth: 1280,
+  canvasHeight: 720,
+
+  // 左右分割
+  leftPanelWidth: 380,           // 左側ステータスパネルの幅
+  rightPanelStartX: 380,         // 右側パネルの開始位置
+
+  // 左側パネル（ステータス情報）
+  statusPadding: 30,             // ステータスエリアの内側パディング
+  statusGroupGap: 25,            // グループ間のギャップ
+  statusItemGap: 8,              // アイテム間のギャップ
+
+  // 右側パネル（ゲームボード + スロット）
+  boardOffsetX: 570,             // ボードのX位置
+  boardOffsetY: 50,              // ボードのY位置（上部余白）
+  cellSize: 70,                  // セルサイズ（6x6グリッドで420px）
+
+  // スロットエリア
+  slotAreaY: 530,                // スロットエリアのY位置（ボード下）
+  slotCellSizeRatio: 0.7,        // スロット内ブロックのサイズ比率
+  slotGap: 15,                   // スロット間の隙間
+
+  // レリック置き場（ボードの左側）
+  relicAreaX: 470,               // レリック置き場のX位置
+  relicAreaY: 20,                // レリック置き場のY位置
+  relicAreaWidth: 80,            // レリック置き場の幅
+  relicAreaHeight: 490,          // レリック置き場の高さ
+}
+
 // セル描画スタイル
 export const CELL_STYLE = {
   padding: 2,                    // セル内パディング
@@ -73,6 +105,49 @@ export const SCORE_STYLE = {
   shadowColor: '#000000',
   shadowBlur: 4,
   paddingTop: 15,
+}
+
+// HDレイアウト用ステータスパネルスタイル
+export const HD_STATUS_PANEL_STYLE = {
+  // 目標セクション
+  targetFontSize: 48,
+  targetColor: '#FFFFFF',
+  targetLabelFontSize: 16,
+  targetLabelColor: '#AAAAAA',
+
+  // ラウンドスコアセクション
+  roundScoreFontSize: 28,
+  roundScoreColor: '#FFFFFF',
+  roundScoreLabelFontSize: 16,
+  roundScoreLabelColor: '#AAAAAA',
+
+  // 獲得得点表示
+  earnedScoreFontSize: 22,
+  earnedScoreColor: '#FFFFFF',
+
+  // 得点計算式
+  scoringFontSize: 18,
+  scoringColor: '#AAAAAA',
+
+  // ゴールド表示
+  goldFontSize: 24,
+  goldColor: '#FFD700',
+
+  // ラウンド表示
+  roundFontSize: 20,
+  roundColor: '#FFFFFF',
+
+  // ハンド表示
+  handFontSize: 24,
+  handColor: '#FFFFFF',
+  handLabelFontSize: 16,
+  handLabelColor: '#AAAAAA',
+
+  // 共通スタイル
+  fontFamily: 'Arial, sans-serif',
+  fontWeight: 'bold',
+  shadowColor: '#000000',
+  shadowBlur: 4,
 }
 
 // デッキ設定

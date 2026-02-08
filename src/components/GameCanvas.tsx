@@ -1,13 +1,11 @@
 import { useRef, useEffect, useCallback, useState } from 'react'
 import { GameState, CanvasLayout, Position } from '../lib/game/types'
-import { COLORS, LAYOUT, ROUND_CLEAR_STYLE, DEBUG_PROBABILITY_SETTINGS } from '../lib/game/Data/Constants'
+import { COLORS, HD_LAYOUT, ROUND_CLEAR_STYLE, DEBUG_PROBABILITY_SETTINGS } from '../lib/game/Data/Constants'
 import { renderBoard } from './renderer/boardRenderer'
 import { renderPieceSlots, renderDraggingPiece } from './renderer/pieceRenderer'
 import { renderPlacementPreview } from './renderer/previewRenderer'
 import { renderClearAnimation } from './renderer/clearAnimationRenderer'
-import { renderScore } from './renderer/scoreRenderer'
-import { renderRemainingHands, renderGold } from './renderer/uiRenderer'
-import { renderRoundInfo } from './renderer/roundRenderer'
+import { renderStatusPanel } from './renderer/statusPanelRenderer'
 import { renderRoundClear, renderGameOver, renderGameClear } from './renderer/overlayRenderer'
 import { renderShop, ShopRenderResult } from './renderer/shopRenderer'
 import { renderDebugWindow, DebugWindowRenderResult } from './renderer/debugRenderer'
@@ -83,20 +81,17 @@ export function GameCanvas({
     ctx.fillStyle = COLORS.boardBackground
     ctx.fillRect(0, 0, layout.canvasWidth, layout.canvasHeight)
 
-    // ゴールド描画
-    renderGold(ctx, state.player.gold)
+    // 左側ステータスパネル描画
+    renderStatusPanel(ctx, {
+      targetScore: state.targetScore,
+      roundScore: state.score,
+      gold: state.player.gold,
+      roundInfo: state.roundInfo,
+      remainingHands: state.deck.remainingHands,
+    }, layout)
 
-    // レリックパネル描画（ゴールドの右隣）
-    renderRelicPanel(ctx, state.player.ownedRelics)
-
-    // スコア描画
-    renderScore(ctx, state.score, layout)
-
-    // 残りハンド・目標描画（中央）
-    renderRemainingHands(ctx, state.deck.remainingHands, state.targetScore, layout)
-
-    // ラウンド情報描画（右上）
-    renderRoundInfo(ctx, state.roundInfo, layout)
+    // レリックパネル描画（ボードの左側）
+    renderRelicPanel(ctx, state.player.ownedRelics, layout)
 
     // ボード描画（消去アニメーション中のセルは除外）
     const clearingCells = state.clearingAnimation?.isAnimating
@@ -291,8 +286,11 @@ export function GameCanvas({
         if (!slot.piece) continue
 
         const slotPos = layout.slotPositions[i]
+        // レイアウト再計算中にslotPositionsとpieceSlotsの数が一致しない場合はスキップ
+        if (!slotPos) continue
+
         const pieceSize = getPieceSize(slot.piece.shape)
-        const slotCellSize = layout.cellSize * LAYOUT.slotCellSizeRatio
+        const slotCellSize = layout.cellSize * HD_LAYOUT.slotCellSizeRatio
 
         const slotWidth = pieceSize.width * slotCellSize
         const slotHeight = pieceSize.height * slotCellSize

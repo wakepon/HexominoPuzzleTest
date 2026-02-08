@@ -1,5 +1,5 @@
 import type { PieceSlot, DragState, CanvasLayout, PieceShape, Piece } from '../../lib/game/types'
-import { ANIMATION, LAYOUT } from '../../lib/game/Data/Constants'
+import { ANIMATION, HD_LAYOUT } from '../../lib/game/Data/Constants'
 import { drawWoodenCellWithBorder } from './cellRenderer'
 import { BlockDataMapUtils } from '../../lib/game/Domain/Piece/BlockData'
 
@@ -17,12 +17,15 @@ export function renderPieceSlots(
     if (dragState.isDragging && dragState.slotIndex === index) return // ドラッグ中のブロックは別で描画
 
     const slotPos = layout.slotPositions[index]
+    // レイアウト再計算中にslotPositionsとpieceSlotsの数が一致しない場合はスキップ
+    if (!slotPos) return
+
     renderPiece(
       ctx,
       slot.piece,
       slotPos.x,
       slotPos.y,
-      layout.cellSize * LAYOUT.slotCellSizeRatio,
+      layout.cellSize * HD_LAYOUT.slotCellSizeRatio,
       1.0
     )
   })
