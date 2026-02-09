@@ -267,16 +267,46 @@ export function calculateScoreBreakdown(
   const relicEffects = relicContext
     ? calculateRelicEffects(relicContext)
     : DEFAULT_RELIC_EFFECTS
-  const { chainMasterMultiplier, smallLuckBonus, fullClearBonus } = relicEffects
+  const {
+    chainMasterMultiplier,
+    smallLuckBonus,
+    fullClearBonus,
+    singleLineMultiplier,
+    takenokoMultiplier,
+    kaniMultiplier,
+    nobiTakenokoMultiplier,
+    nobiKaniMultiplier,
+    renshaMultiplier,
+  } = relicEffects
 
-  // 最終スコア計算（仕様書の順序に従う）
+  // 最終スコア計算（仕様書の効果適用順序に従う）
   // 1. 基本スコア（パターン+シール効果込み）
+  let score = scoreBeforeRelics
+
   // 2. 連鎖の達人（×1.5、切り捨て）
-  const scoreAfterChainMaster = Math.floor(
-    scoreBeforeRelics * chainMasterMultiplier
-  )
-  // 3. 小さな幸運（+20）+ 全消しボーナス（+20）
-  const finalScore = scoreAfterChainMaster + smallLuckBonus + fullClearBonus
+  score = Math.floor(score * chainMasterMultiplier)
+
+  // 3. シングルライン（×3）
+  score = Math.floor(score * singleLineMultiplier)
+
+  // 4. タケノコ（×縦列数）
+  score = Math.floor(score * takenokoMultiplier)
+
+  // 5. カニ（×横列数）
+  score = Math.floor(score * kaniMultiplier)
+
+  // 6. のびのびタケノコ（×倍率、切り捨て）
+  score = Math.floor(score * nobiTakenokoMultiplier)
+
+  // 7. のびのびカニ（×倍率、切り捨て）
+  score = Math.floor(score * nobiKaniMultiplier)
+
+  // 8. 連射（×倍率、切り捨て）
+  score = Math.floor(score * renshaMultiplier)
+
+  // 10. 小さな幸運（+20）
+  // 11. 全消しボーナス（+20）
+  const finalScore = score + smallLuckBonus + fullClearBonus
 
   return {
     baseBlocks,
@@ -295,6 +325,13 @@ export function calculateScoreBreakdown(
     smallLuckBonus,
     fullClearBonus,
     relicBonusTotal: smallLuckBonus + fullClearBonus,
+    // 新レリック倍率
+    singleLineMultiplier,
+    takenokoMultiplier,
+    kaniMultiplier,
+    nobiTakenokoMultiplier,
+    nobiKaniMultiplier,
+    renshaMultiplier,
     finalScore,
   }
 }

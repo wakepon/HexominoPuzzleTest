@@ -138,6 +138,13 @@ export function calculateScoreWithEffects(
       smallLuckBonus: 0,
       fullClearBonus: 0,
       relicBonusTotal: 0,
+      // 新レリック倍率（デフォルト値）
+      singleLineMultiplier: 1,
+      takenokoMultiplier: 1,
+      kaniMultiplier: 1,
+      nobiTakenokoMultiplier: 1.0,
+      nobiKaniMultiplier: 1.0,
+      renshaMultiplier: 1.0,
       finalScore: 0,
     }
   }
