@@ -23,7 +23,13 @@ export { RELIC_DEFINITIONS, getRelicDefinition, RELIC_EFFECT_VALUES } from './Re
 
 // レリック状態
 export type { RelicMultiplierState } from './RelicState'
-export { INITIAL_RELIC_MULTIPLIER_STATE } from './RelicState'
+export {
+  INITIAL_RELIC_MULTIPLIER_STATE,
+  updateRenshaMultiplier,
+  updateNobiTakenokoMultiplier,
+  updateNobiKaniMultiplier,
+  resetAllMultipliers,
+} from './RelicState'
 
 // パターン効果
 export type {

@@ -189,14 +189,40 @@ export function calculatePatternEffects(
  */
 const DEFAULT_RELIC_EFFECTS: RelicEffectResult = {
   activations: {
+    // 既存レリック
     chainMasterActive: false,
     smallLuckActive: false,
     fullClearActive: false,
+    // 2-A: シングルライン
+    singleLineActive: false,
+    // 2-B: タケノコ
+    takenokoActive: false,
+    takenokoCols: 0,
+    // 2-C: カニ
+    kaniActive: false,
+    kaniRows: 0,
+    // 2-D: 連射
+    renshaActive: false,
+    renshaMultiplier: 1.0,
+    // 2-E: のびのびタケノコ
+    nobiTakenokoActive: false,
+    nobiTakenokoMultiplier: 1.0,
+    // 2-F: のびのびカニ
+    nobiKaniActive: false,
+    nobiKaniMultiplier: 1.0,
   },
+  // 既存レリック
   chainMasterMultiplier: 1.0,
   smallLuckBonus: 0,
   fullClearBonus: 0,
   totalRelicBonus: 0,
+  // 新レリック
+  singleLineMultiplier: 1,
+  takenokoMultiplier: 1,
+  kaniMultiplier: 1,
+  renshaMultiplier: 1.0,
+  nobiTakenokoMultiplier: 1.0,
+  nobiKaniMultiplier: 1.0,
 }
 
 /**
