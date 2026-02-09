@@ -140,6 +140,7 @@ export function calculateScoreWithEffects(
       relicBonusTotal: 0,
       singleLineMultiplier: 1,
       takenokoMultiplier: 1,
+      kaniMultiplier: 1,
       finalScore: 0,
     }
   }

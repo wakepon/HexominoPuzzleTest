@@ -273,6 +273,7 @@ export function calculateScoreBreakdown(
     fullClearBonus,
     singleLineMultiplier,
     takenokoMultiplier,
+    kaniMultiplier,
   } = relicEffects
 
   // 最終スコア計算（仕様書の順序に従う）
@@ -289,8 +290,10 @@ export function calculateScoreBreakdown(
   const scoreAfterTakenoko = Math.floor(
     scoreAfterSingleLine * takenokoMultiplier
   )
-  // 5. 小さな幸運（+20）+ 全消しボーナス（+20）
-  const finalScore = scoreAfterTakenoko + smallLuckBonus + fullClearBonus
+  // 5. カニ（×行数）- 横列のみ消去時に発動
+  const scoreAfterKani = Math.floor(scoreAfterTakenoko * kaniMultiplier)
+  // 6. 小さな幸運（+20）+ 全消しボーナス（+20）
+  const finalScore = scoreAfterKani + smallLuckBonus + fullClearBonus
 
   return {
     baseBlocks,
@@ -311,6 +314,7 @@ export function calculateScoreBreakdown(
     relicBonusTotal: smallLuckBonus + fullClearBonus,
     singleLineMultiplier,
     takenokoMultiplier,
+    kaniMultiplier,
     finalScore,
   }
 }

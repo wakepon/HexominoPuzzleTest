@@ -36,6 +36,8 @@ export interface ScoreBreakdown {
   readonly singleLineMultiplier: number // シングルライン倍率（1 or 3）
   // 2-B: タケノコ
   readonly takenokoMultiplier: number // タケノコ倍率（縦列数、発動時は1以上）
+  // 2-C: カニ
+  readonly kaniMultiplier: number // カニ倍率（行数、発動時は1以上）
   readonly finalScore: number // 最終スコア
 }
 
