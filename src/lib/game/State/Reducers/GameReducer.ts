@@ -15,7 +15,7 @@ import type { GameAction } from '../Actions/GameActions'
 import type { RelicEffectContext } from '../../Domain/Effect/RelicEffectTypes'
 import type { ScoreBonus } from '../../Events/GameEvent'
 import { isBlockShopItem, isRelicShopItem } from '../../Domain/Shop/ShopTypes'
-import { addRelic, addGold, subtractGold } from './PlayerReducer'
+import { addRelic, removeRelic, addGold, subtractGold } from './PlayerReducer'
 import {
   emitPiecePlaced,
   emitLinesCompleted,
@@ -858,6 +858,43 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         deck: { ...state.deck, stockSlot: slot.piece },
         dragState: initialDragState,
       }
+    }
+
+    // デバッグアクション
+    case 'DEBUG/ADD_RELIC': {
+      const relicId = action.relicType as RelicId
+      const newPlayer = addRelic(state.player, relicId)
+      const newState = { ...state, player: newPlayer }
+      saveGameState(newState)
+      return newState
+    }
+
+    case 'DEBUG/REMOVE_RELIC': {
+      const relicId = action.relicType as RelicId
+      const newPlayer = removeRelic(state.player, relicId)
+      // hand_stockを削除した場合、ストック枠もクリア
+      let newDeck = state.deck
+      if (action.relicType === 'hand_stock' && state.deck.stockSlot) {
+        newDeck = { ...state.deck, stockSlot: null }
+      }
+      const newState = { ...state, player: newPlayer, deck: newDeck }
+      saveGameState(newState)
+      return newState
+    }
+
+    case 'DEBUG/ADD_GOLD': {
+      const newGold = Math.max(0, state.player.gold + action.amount)
+      const newPlayer = { ...state.player, gold: newGold }
+      const newState = { ...state, player: newPlayer }
+      saveGameState(newState)
+      return newState
+    }
+
+    case 'DEBUG/ADD_SCORE': {
+      const newScore = Math.max(0, state.score + action.amount)
+      const newState = { ...state, score: newScore }
+      saveGameState(newState)
+      return newState
     }
 
     default:

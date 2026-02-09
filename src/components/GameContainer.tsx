@@ -1,10 +1,23 @@
+import { useCallback } from 'react'
 import { useGame } from '../hooks/useGame'
 import { useCanvasLayout } from '../hooks/useCanvasLayout'
 import { GameCanvas } from './GameCanvas'
+import type { RelicType } from '../lib/game/Domain/Effect/Relic'
+import type { RelicId } from '../lib/game/Domain/Core/Id'
 
 export function GameContainer() {
   const { state, debugSettings, actions } = useGame()
   const layout = useCanvasLayout(state.pieceSlots, state.player.ownedRelics)
+
+  // レリックのトグル（所持していれば削除、していなければ追加）
+  const handleDebugToggleRelic = useCallback((relicType: RelicType) => {
+    const isOwned = state.player.ownedRelics.includes(relicType as RelicId)
+    if (isOwned) {
+      actions.debugRemoveRelic(relicType)
+    } else {
+      actions.debugAddRelic(relicType)
+    }
+  }, [state.player.ownedRelics, actions])
 
   if (!layout) {
     return (
@@ -43,6 +56,9 @@ export function GameContainer() {
         onMoveToStock={actions.moveToStock}
         onMoveFromStock={actions.moveFromStock}
         onSwapWithStock={actions.swapWithStock}
+        onDebugToggleRelic={handleDebugToggleRelic}
+        onDebugAddGold={actions.debugAddGold}
+        onDebugAddScore={actions.debugAddScore}
       />
     </div>
   )

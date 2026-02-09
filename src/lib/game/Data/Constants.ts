@@ -350,6 +350,35 @@ export const DEBUG_WINDOW_STYLE = {
     valueWidth: 40,         // 値表示の幅
     buttonGap: 4,           // ボタン間のギャップ
   },
+  // レリックセクション（デバッグ用）
+  relicSection: {
+    sectionMarginTop: 12,   // セクション間のマージン
+    iconSize: 22,           // レリックアイコンのサイズ
+    iconGap: 4,             // アイコン間のギャップ
+    iconsPerRow: 5,         // 1行あたりのアイコン数
+    ownedOpacity: 1.0,      // 所持時の不透明度
+    unownedOpacity: 0.3,    // 未所持時の不透明度
+    ownedBgColor: 'rgba(255, 215, 0, 0.3)', // 所持時の背景
+    labelFontSize: 11,      // ラベルのフォントサイズ
+    labelColor: '#AAAAAA',  // ラベルの色
+  },
+  // 値調整セクション（ゴールド/スコア用）
+  valueSection: {
+    sectionMarginTop: 8,    // セクション間のマージン
+    buttonWidth: 26,        // ボタン幅（-50, -10, +10, +50）
+    buttonHeight: 18,       // ボタン高さ
+    buttonGap: 3,           // ボタン間のギャップ
+    rowHeight: 24,          // 各行の高さ
+    labelWidth: 45,         // ラベル幅
+    valueWidth: 45,         // 値表示幅
+    labelFontSize: 11,      // ラベルのフォントサイズ
+    labelColor: '#AAAAAA',  // ラベルの色
+    valueFontSize: 12,      // 値表示のフォントサイズ
+    valueColor: '#00FF00',  // 値の色
+    buttonColor: '#4CAF50', // ボタンの色
+    buttonTextColor: '#FFFFFF', // ボタンテキストの色
+    buttonFontSize: 10,     // ボタンテキストのフォントサイズ
+  },
 }
 
 // レアリティ別カラー定義

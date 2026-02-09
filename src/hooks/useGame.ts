@@ -2,6 +2,7 @@ import { useReducer, useCallback, useState } from 'react'
 import type { Position } from '../lib/game/Domain'
 import { gameReducer, createInitialState } from '../lib/game/State'
 import { type DebugSettings, DEFAULT_DEBUG_SETTINGS } from '../lib/game/Domain/Debug'
+import type { RelicType } from '../lib/game/Domain/Effect/Relic'
 
 /**
  * ゲーム状態管理フック
@@ -90,6 +91,26 @@ export function useGame() {
     dispatch({ type: 'GAME/RESET' })
   }, [])
 
+  // デバッグ用: レリック追加
+  const debugAddRelic = useCallback((relicType: RelicType) => {
+    dispatch({ type: 'DEBUG/ADD_RELIC', relicType })
+  }, [])
+
+  // デバッグ用: レリック削除
+  const debugRemoveRelic = useCallback((relicType: RelicType) => {
+    dispatch({ type: 'DEBUG/REMOVE_RELIC', relicType })
+  }, [])
+
+  // デバッグ用: ゴールド増減
+  const debugAddGold = useCallback((amount: number) => {
+    dispatch({ type: 'DEBUG/ADD_GOLD', amount })
+  }, [])
+
+  // デバッグ用: スコア増減
+  const debugAddScore = useCallback((amount: number) => {
+    dispatch({ type: 'DEBUG/ADD_SCORE', amount })
+  }, [])
+
   return {
     state,
     debugSettings,
@@ -112,6 +133,10 @@ export function useGame() {
       moveToStock,
       moveFromStock,
       swapWithStock,
+      debugAddRelic,
+      debugRemoveRelic,
+      debugAddGold,
+      debugAddScore,
     },
   }
 }

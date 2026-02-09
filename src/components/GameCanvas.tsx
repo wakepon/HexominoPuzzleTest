@@ -18,6 +18,7 @@ import { renderStockSlot, StockSlotRenderResult } from './renderer/StockSlotRend
 import { drawWoodenCellWithBorder } from './renderer/cellRenderer'
 import { BlockDataMapUtils } from '../lib/game/Domain/Piece/BlockData'
 import type { DebugSettings } from '../lib/game/Domain/Debug'
+import type { RelicType } from '../lib/game/Domain/Effect/Relic'
 import type { TooltipState } from '../lib/game/Domain/Tooltip'
 import { INITIAL_TOOLTIP_STATE } from '../lib/game/Domain/Tooltip'
 import { calculateTooltipState } from '../lib/game/Services/TooltipService'
@@ -47,6 +48,10 @@ interface GameCanvasProps {
   onMoveToStock: (slotIndex: number) => void
   onMoveFromStock: (targetSlotIndex: number) => void
   onSwapWithStock: (slotIndex: number) => void
+  // デバッグ用
+  onDebugToggleRelic: (relicType: RelicType) => void
+  onDebugAddGold: (amount: number) => void
+  onDebugAddScore: (amount: number) => void
 }
 
 export function GameCanvas({
@@ -71,6 +76,9 @@ export function GameCanvas({
   onMoveToStock,
   onMoveFromStock,
   onSwapWithStock,
+  onDebugToggleRelic,
+  onDebugAddGold,
+  onDebugAddScore,
 }: GameCanvasProps) {
   const [canvas, setCanvas] = useState<HTMLCanvasElement | null>(null)
   const [showDebugWindow, setShowDebugWindow] = useState(false)
@@ -220,7 +228,14 @@ export function GameCanvas({
 
     // デバッグウィンドウ描画
     if (showDebugWindow) {
-      debugWindowResultRef.current = renderDebugWindow(ctx, state.deck, debugSettings)
+      debugWindowResultRef.current = renderDebugWindow(
+        ctx,
+        state.deck,
+        debugSettings,
+        state.player.gold,
+        state.score,
+        state.player.ownedRelics
+      )
     } else {
       debugWindowResultRef.current = null
     }
@@ -517,6 +532,50 @@ export function GameCanvas({
         onUpdateDebugSettings({
           sealProbability: Math.min(MAX, debugSettings.sealProbability + STEP),
         })
+        return true
+      }
+
+      // レリックボタンのクリック判定
+      for (const relicButton of debugResult.relicButtons) {
+        if (isPointInArea(pos, relicButton)) {
+          onDebugToggleRelic(relicButton.relicType)
+          return true
+        }
+      }
+
+      // ゴールド調整ボタン
+      if (isPointInArea(pos, debugResult.goldMinus50Button)) {
+        onDebugAddGold(-50)
+        return true
+      }
+      if (isPointInArea(pos, debugResult.goldMinus10Button)) {
+        onDebugAddGold(-10)
+        return true
+      }
+      if (isPointInArea(pos, debugResult.goldPlus10Button)) {
+        onDebugAddGold(10)
+        return true
+      }
+      if (isPointInArea(pos, debugResult.goldPlus50Button)) {
+        onDebugAddGold(50)
+        return true
+      }
+
+      // スコア調整ボタン
+      if (isPointInArea(pos, debugResult.scoreMinus50Button)) {
+        onDebugAddScore(-50)
+        return true
+      }
+      if (isPointInArea(pos, debugResult.scoreMinus10Button)) {
+        onDebugAddScore(-10)
+        return true
+      }
+      if (isPointInArea(pos, debugResult.scorePlus10Button)) {
+        onDebugAddScore(10)
+        return true
+      }
+      if (isPointInArea(pos, debugResult.scorePlus50Button)) {
+        onDebugAddScore(50)
         return true
       }
 
