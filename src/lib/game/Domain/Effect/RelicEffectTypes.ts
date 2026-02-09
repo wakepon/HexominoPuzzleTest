@@ -3,15 +3,19 @@
  */
 
 import type { RelicId } from '../Core/Id'
+import type { RelicMultiplierState } from './RelicState'
 
 /**
  * レリック効果計算に必要なコンテキスト
  */
 export interface RelicEffectContext {
   readonly ownedRelics: readonly RelicId[]
-  readonly totalLines: number // 消去ライン数
-  readonly placedBlockSize: number // 配置したピースのブロック数
+  readonly totalLines: number          // 消去ライン数
+  readonly rowLines: number            // 消去した行数
+  readonly colLines: number            // 消去した列数
+  readonly placedBlockSize: number     // 配置したピースのブロック数
   readonly isBoardEmptyAfterClear: boolean // 消去後に盤面が空か
+  readonly relicMultiplierState: RelicMultiplierState  // 倍率状態
 }
 
 /**

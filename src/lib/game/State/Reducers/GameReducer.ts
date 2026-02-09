@@ -48,6 +48,7 @@ import {
 } from '../../Services/LineService'
 import { hasComboPattern } from '../../Domain/Effect/PatternEffectHandler'
 import { getActivatedRelicsFromScoreBreakdown } from '../../Domain/Effect/RelicEffectHandler'
+import { INITIAL_RELIC_MULTIPLIER_STATE } from '../../Domain/Effect/RelicState'
 import { createRelicActivationAnimation } from '../../Domain/Animation/AnimationState'
 import { decrementRemainingHands } from '../../Services/DeckService'
 import {
@@ -216,6 +217,7 @@ function createNextRoundState(currentState: GameState): GameState {
     allMinos: currentState.deck.allMinos,
     remainingHands: maxHands,
     purchasedPieces: currentState.deck.purchasedPieces,
+    stockSlot: null, // ラウンド開始時にストックをクリア
   }
 
   const { slots, newDeck } = generateNewPieceSlotsFromDeckWithCount(
@@ -250,6 +252,7 @@ function createNextRoundState(currentState: GameState): GameState {
     targetScore,
     shopState: null,
     comboCount: 0,
+    relicMultiplierState: INITIAL_RELIC_MULTIPLIER_STATE, // ラウンド開始時に倍率をリセット
   }
 }
 
@@ -359,8 +362,11 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           const relicContext: RelicEffectContext = {
             ownedRelics: state.player.ownedRelics,
             totalLines,
+            rowLines: completedLines.rows.length,
+            colLines: completedLines.columns.length,
             placedBlockSize: getPieceBlockCount(slot.piece),
             isBoardEmptyAfterClear: isBoardEmpty(boardAfterClear),
+            relicMultiplierState: state.relicMultiplierState,
           }
 
           const scoreBreakdown = calculateScoreWithEffects(

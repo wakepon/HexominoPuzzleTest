@@ -20,6 +20,7 @@ import { DefaultRandom } from '../Utils/Random'
 import { ROUND_CONFIG } from '../Data/Constants'
 import { createInitialPlayerState } from '../Domain/Player/PlayerState'
 import { loadGameState, restoreGameState, clearGameState } from '../Services/StorageService'
+import { INITIAL_RELIC_MULTIPLIER_STATE } from '../Domain/Effect/RelicState'
 
 /**
  * 初期ドラッグ状態
@@ -103,6 +104,7 @@ function createNewGameState(): GameState {
     targetScore: calculateTargetScore(initialRound),
     shopState: null,
     comboCount: 0,
+    relicMultiplierState: INITIAL_RELIC_MULTIPLIER_STATE,
   }
 }
 
