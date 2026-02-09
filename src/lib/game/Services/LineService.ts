@@ -139,6 +139,7 @@ export function calculateScoreWithEffects(
       fullClearBonus: 0,
       relicBonusTotal: 0,
       singleLineMultiplier: 1,
+      takenokoMultiplier: 1,
       finalScore: 0,
     }
   }

@@ -34,6 +34,8 @@ export interface ScoreBreakdown {
   readonly relicBonusTotal: number // レリック加算ボーナス合計
   // 2-A: シングルライン
   readonly singleLineMultiplier: number // シングルライン倍率（1 or 3）
+  // 2-B: タケノコ
+  readonly takenokoMultiplier: number // タケノコ倍率（縦列数、発動時は1以上）
   readonly finalScore: number // 最終スコア
 }
 
