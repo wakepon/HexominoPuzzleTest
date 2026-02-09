@@ -20,6 +20,7 @@ import { DefaultRandom } from '../Utils/Random'
 import { ROUND_CONFIG } from '../Data/Constants'
 import { createInitialPlayerState } from '../Domain/Player/PlayerState'
 import { loadGameState, restoreGameState, clearGameState } from '../Services/StorageService'
+import { INITIAL_RELIC_MULTIPLIER_STATE } from '../Domain/Effect/RelicState'
 
 /**
  * 初期ドラッグ状態
@@ -28,6 +29,7 @@ export const initialDragState: DragState = {
   isDragging: false,
   pieceId: null,
   slotIndex: null,
+  dragSource: null,
   currentPos: null,
   startPos: null,
   boardPos: null,
@@ -96,13 +98,15 @@ function createNewGameState(): GameState {
     clearingAnimation: null,
     relicActivationAnimation: null,
     deck: newDeck,
-    phase: 'playing',
+    phase: 'round_progress',
     round: initialRound,
     roundInfo,
     player: createInitialPlayerState(ROUND_CONFIG.initialGold),
     targetScore: calculateTargetScore(initialRound),
     shopState: null,
     comboCount: 0,
+    relicMultiplierState: INITIAL_RELIC_MULTIPLIER_STATE,
+    deckViewOpen: false,
   }
 }
 

@@ -16,6 +16,7 @@ import type { BlockData, BlockDataMap } from '../Domain/Piece/BlockData'
 import type { MinoId, RelicId, BlockSetId } from '../Domain/Core/Id'
 import type { PieceShape } from '../Domain/Piece/PieceShape'
 import type { Position } from '../Domain/Core/Position'
+import { INITIAL_RELIC_MULTIPLIER_STATE } from '../Domain/Effect/RelicState'
 
 // ========================================
 // 定数
@@ -54,6 +55,7 @@ interface SerializedDeckState {
   readonly allMinos: readonly MinoId[]
   readonly remainingHands: number
   readonly purchasedPieces: ReadonlyArray<readonly [MinoId, SerializedPiece]>
+  readonly stockSlot?: SerializedPiece | null  // 追加（マイグレーション対応でオプショナル）
 }
 
 /**
@@ -111,6 +113,13 @@ interface SavedGameState {
 
   // ショップ関連
   readonly shopState: SerializedShopState | null
+
+  // レリック倍率状態（追加、マイグレーション対応でオプショナル）
+  readonly relicMultiplierState?: {
+    readonly nobiTakenokoMultiplier: number
+    readonly nobiKaniMultiplier: number
+    readonly renshaMultiplier: number
+  }
 }
 
 // ========================================
@@ -153,6 +162,7 @@ function serializeDeckState(deck: DeckState): SerializedDeckState {
     allMinos: deck.allMinos,
     remainingHands: deck.remainingHands,
     purchasedPieces: purchasedPiecesArray,
+    stockSlot: deck.stockSlot ? serializePiece(deck.stockSlot) : null,
   }
 }
 
@@ -203,6 +213,7 @@ function serializeState(state: GameState): SavedGameState {
     board: state.board,
     pieceSlots: state.pieceSlots.map(serializePieceSlot),
     shopState: serializeShopState(state.shopState),
+    relicMultiplierState: state.relicMultiplierState,
   }
 }
 
@@ -246,6 +257,8 @@ function deserializeDeckState(serialized: SerializedDeckState): DeckState {
     allMinos: serialized.allMinos,
     remainingHands: serialized.remainingHands,
     purchasedPieces: purchasedPiecesMap,
+    // マイグレーション対応: 古いセーブデータにはstockSlotがない
+    stockSlot: serialized.stockSlot ? deserializePiece(serialized.stockSlot) : null,
   }
 }
 
@@ -416,5 +429,9 @@ export function restoreGameState(
     targetScore: saved.targetScore,
     shopState: deserializeShopState(saved.shopState),
     comboCount: saved.comboCount,
+    // マイグレーション対応: 古いセーブデータにはrelicMultiplierStateがない
+    relicMultiplierState: saved.relicMultiplierState ?? INITIAL_RELIC_MULTIPLIER_STATE,
+    // UI状態は常にリセット
+    deckViewOpen: false,
   }
 }

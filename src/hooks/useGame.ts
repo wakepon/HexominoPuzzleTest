@@ -2,6 +2,7 @@ import { useReducer, useCallback, useState } from 'react'
 import type { Position } from '../lib/game/Domain'
 import { gameReducer, createInitialState } from '../lib/game/State'
 import { type DebugSettings, DEFAULT_DEBUG_SETTINGS } from '../lib/game/Domain/Debug'
+import type { RelicType } from '../lib/game/Domain/Effect/Relic'
 
 /**
  * ゲーム状態管理フック
@@ -12,6 +13,10 @@ export function useGame() {
 
   const startDrag = useCallback((slotIndex: number, startPos: Position) => {
     dispatch({ type: 'UI/START_DRAG', slotIndex, startPos })
+  }, [])
+
+  const startDragFromStock = useCallback((startPos: Position) => {
+    dispatch({ type: 'UI/START_DRAG_FROM_STOCK', startPos })
   }, [])
 
   const updateDrag = useCallback((currentPos: Position, boardPos: Position | null) => {
@@ -52,6 +57,30 @@ export function useGame() {
     dispatch({ type: 'SHOP/LEAVE' })
   }, [])
 
+  const startRound = useCallback(() => {
+    dispatch({ type: 'ROUND/START' })
+  }, [])
+
+  const openDeckView = useCallback(() => {
+    dispatch({ type: 'UI/OPEN_DECK_VIEW' })
+  }, [])
+
+  const closeDeckView = useCallback(() => {
+    dispatch({ type: 'UI/CLOSE_DECK_VIEW' })
+  }, [])
+
+  const moveToStock = useCallback((slotIndex: number) => {
+    dispatch({ type: 'STOCK/MOVE_TO_STOCK', slotIndex })
+  }, [])
+
+  const moveFromStock = useCallback((targetSlotIndex: number) => {
+    dispatch({ type: 'STOCK/MOVE_FROM_STOCK', targetSlotIndex })
+  }, [])
+
+  const swapWithStock = useCallback((slotIndex: number) => {
+    dispatch({ type: 'STOCK/SWAP', slotIndex })
+  }, [])
+
   const updateDebugSettings = useCallback((updates: Partial<DebugSettings>) => {
     setDebugSettings((prev) => ({ ...prev, ...updates }))
   }, [])
@@ -62,11 +91,32 @@ export function useGame() {
     dispatch({ type: 'GAME/RESET' })
   }, [])
 
+  // デバッグ用: レリック追加
+  const debugAddRelic = useCallback((relicType: RelicType) => {
+    dispatch({ type: 'DEBUG/ADD_RELIC', relicType })
+  }, [])
+
+  // デバッグ用: レリック削除
+  const debugRemoveRelic = useCallback((relicType: RelicType) => {
+    dispatch({ type: 'DEBUG/REMOVE_RELIC', relicType })
+  }, [])
+
+  // デバッグ用: ゴールド増減
+  const debugAddGold = useCallback((amount: number) => {
+    dispatch({ type: 'DEBUG/ADD_GOLD', amount })
+  }, [])
+
+  // デバッグ用: スコア増減
+  const debugAddScore = useCallback((amount: number) => {
+    dispatch({ type: 'DEBUG/ADD_SCORE', amount })
+  }, [])
+
   return {
     state,
     debugSettings,
     actions: {
       startDrag,
+      startDragFromStock,
       updateDrag,
       endDrag,
       resetGame,
@@ -77,6 +127,16 @@ export function useGame() {
       leaveShop,
       updateDebugSettings,
       deleteSave,
+      startRound,
+      openDeckView,
+      closeDeckView,
+      moveToStock,
+      moveFromStock,
+      swapWithStock,
+      debugAddRelic,
+      debugRemoveRelic,
+      debugAddGold,
+      debugAddScore,
     },
   }
 }

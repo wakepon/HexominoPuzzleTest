@@ -32,6 +32,18 @@ export interface ScoreBreakdown {
   readonly smallLuckBonus: number // 小さな幸運ボーナス（0 or 20）
   readonly fullClearBonus: number // 全消しボーナス（0 or 20）
   readonly relicBonusTotal: number // レリック加算ボーナス合計
+  // 2-A: シングルライン
+  readonly singleLineMultiplier: number // シングルライン倍率（1 or 3）
+  // 2-B: タケノコ
+  readonly takenokoMultiplier: number // タケノコ倍率（縦列数、発動時は1以上）
+  // 2-C: カニ
+  readonly kaniMultiplier: number // カニ倍率（行数、発動時は1以上）
+  // 2-D: 連射
+  readonly renshaMultiplier: number // 連射倍率（累積、1.0から+0.5ずつ増加）
+  // 2-E: のびのびタケノコ
+  readonly nobiTakenokoMultiplier: number // のびのびタケノコ倍率（累積、1.0から+0.5ずつ増加）
+  // 2-F: のびのびカニ
+  readonly nobiKaniMultiplier: number // のびのびカニ倍率（累積、1.0から+0.5ずつ増加）
   readonly finalScore: number // 最終スコア
 }
 

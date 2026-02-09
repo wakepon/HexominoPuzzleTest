@@ -9,6 +9,7 @@ import type {
   RelicActivationAnimationState,
 } from './Animation/AnimationState'
 import type { PlayerState } from './Player/PlayerState'
+import type { RelicMultiplierState } from './Effect/RelicState'
 
 /**
  * ゲーム全体の状態（不変）
@@ -39,4 +40,10 @@ export interface GameState {
 
   // コンボ状態（combo効果用）
   readonly comboCount: number
+
+  // レリック倍率状態
+  readonly relicMultiplierState: RelicMultiplierState
+
+  // UI状態
+  readonly deckViewOpen: boolean
 }

@@ -11,4 +11,6 @@ export interface CanvasLayout {
   readonly cellSize: number
   readonly slotAreaY: number
   readonly slotPositions: readonly Position[]
+  /** ストック枠の位置（hand_stockレリック所持時のみ設定） */
+  readonly stockSlotPosition: Position | null
 }

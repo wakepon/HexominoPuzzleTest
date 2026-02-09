@@ -11,6 +11,9 @@ export const RELIC_EFFECT_VALUES = {
   CHAIN_MASTER_MULTIPLIER: 1.5,
   SMALL_LUCK_BONUS: 20,
   FULL_CLEAR_BONUS: 20,
+  SINGLE_LINE_MULTIPLIER: 3,     // シングルライン: ×3
+  RENSHA_INCREMENT: 0.5,         // 連射: +0.5ずつ
+  NOBI_INCREMENT: 0.5,           // のびのび系: +0.5ずつ
 } as const
 
 /**
@@ -22,9 +25,16 @@ export type RelicRarity = 'common' | 'uncommon' | 'rare' | 'epic'
  * レリックの種類
  */
 export type RelicType =
-  | 'full_clear_bonus' // 全消しボーナス
-  | 'small_luck' // 小さな幸運
-  | 'chain_master' // 連鎖の達人
+  | 'full_clear_bonus'  // 全消しボーナス
+  | 'small_luck'        // 小さな幸運
+  | 'chain_master'      // 連鎖の達人
+  | 'single_line'       // シングルライン
+  | 'takenoko'          // タケノコ
+  | 'kani'              // カニ
+  | 'rensha'            // 連射
+  | 'nobi_takenoko'     // のびのびタケノコ
+  | 'nobi_kani'         // のびのびカニ
+  | 'hand_stock'        // 手札ストック
 
 /**
  * レリック定義
@@ -69,6 +79,69 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     rarity: 'rare',
     price: 30,
     icon: '⛓️',
+  },
+  single_line: {
+    id: 'single_line' as RelicId,
+    type: 'single_line',
+    name: 'シングルライン',
+    description: '1行または1列のみ消した時、スコア×3',
+    rarity: 'uncommon',
+    price: 20,
+    icon: '➖',
+  },
+  takenoko: {
+    id: 'takenoko' as RelicId,
+    type: 'takenoko',
+    name: 'タケノコ',
+    description: '縦列のみ揃った時、スコア×揃った列数',
+    rarity: 'uncommon',
+    price: 25,
+    icon: '🎋',
+  },
+  kani: {
+    id: 'kani' as RelicId,
+    type: 'kani',
+    name: 'カニ',
+    description: '横列のみ揃った時、スコア×揃った行数',
+    rarity: 'uncommon',
+    price: 25,
+    icon: '🦀',
+  },
+  rensha: {
+    id: 'rensha' as RelicId,
+    type: 'rensha',
+    name: '連射',
+    description: 'ライン揃うたびにスコア倍率+0.5（揃わないとリセット）',
+    rarity: 'rare',
+    price: 35,
+    icon: '🔫',
+  },
+  nobi_takenoko: {
+    id: 'nobi_takenoko' as RelicId,
+    type: 'nobi_takenoko',
+    name: 'のびのびタケノコ',
+    description: '縦列のみ揃えるたびに倍率+0.5（横列消しでリセット）',
+    rarity: 'rare',
+    price: 35,
+    icon: '🌱',
+  },
+  nobi_kani: {
+    id: 'nobi_kani' as RelicId,
+    type: 'nobi_kani',
+    name: 'のびのびカニ',
+    description: '横列のみ揃えるたびに倍率+0.5（縦列消しでリセット）',
+    rarity: 'rare',
+    price: 35,
+    icon: '🦞',
+  },
+  hand_stock: {
+    id: 'hand_stock' as RelicId,
+    type: 'hand_stock',
+    name: '手札ストック',
+    description: 'ストック枠が出現し、ブロックを1つ保管可能',
+    rarity: 'epic',
+    price: 40,
+    icon: '📦',
   },
 }
 

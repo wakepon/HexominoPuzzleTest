@@ -54,6 +54,7 @@ export function drawFromDeck(
         cards: remaining,
         allMinos,
         purchasedPieces: deck.purchasedPieces,
+        stockSlot: deck.stockSlot,
       },
     }
   }
@@ -77,6 +78,7 @@ export function drawFromDeck(
       cards: remaining,
       allMinos,
       purchasedPieces: deck.purchasedPieces,
+      stockSlot: deck.stockSlot,
     },
   }
 }
@@ -118,6 +120,7 @@ export function createInitialDeckState(rng: RandomGenerator): DeckState {
     remainingHands: DECK_CONFIG.totalHands,
     allMinos: [...cards],
     purchasedPieces: new Map(),
+    stockSlot: null,
   }
 }
 
@@ -136,6 +139,7 @@ export function createInitialDeckStateWithParams(
     remainingHands: totalHands,
     allMinos: [...cards],
     purchasedPieces: new Map(),
+    stockSlot: null,
   }
 }
 

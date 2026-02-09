@@ -350,6 +350,35 @@ export const DEBUG_WINDOW_STYLE = {
     valueWidth: 40,         // 値表示の幅
     buttonGap: 4,           // ボタン間のギャップ
   },
+  // レリックセクション（デバッグ用）
+  relicSection: {
+    sectionMarginTop: 12,   // セクション間のマージン
+    iconSize: 22,           // レリックアイコンのサイズ
+    iconGap: 4,             // アイコン間のギャップ
+    iconsPerRow: 5,         // 1行あたりのアイコン数
+    ownedOpacity: 1.0,      // 所持時の不透明度
+    unownedOpacity: 0.3,    // 未所持時の不透明度
+    ownedBgColor: 'rgba(255, 215, 0, 0.3)', // 所持時の背景
+    labelFontSize: 11,      // ラベルのフォントサイズ
+    labelColor: '#AAAAAA',  // ラベルの色
+  },
+  // 値調整セクション（ゴールド/スコア用）
+  valueSection: {
+    sectionMarginTop: 8,    // セクション間のマージン
+    buttonWidth: 26,        // ボタン幅（-50, -10, +10, +50）
+    buttonHeight: 18,       // ボタン高さ
+    buttonGap: 3,           // ボタン間のギャップ
+    rowHeight: 24,          // 各行の高さ
+    labelWidth: 45,         // ラベル幅
+    valueWidth: 45,         // 値表示幅
+    labelFontSize: 11,      // ラベルのフォントサイズ
+    labelColor: '#AAAAAA',  // ラベルの色
+    valueFontSize: 12,      // 値表示のフォントサイズ
+    valueColor: '#00FF00',  // 値の色
+    buttonColor: '#4CAF50', // ボタンの色
+    buttonTextColor: '#FFFFFF', // ボタンテキストの色
+    buttonFontSize: 10,     // ボタンテキストのフォントサイズ
+  },
 }
 
 // レアリティ別カラー定義
@@ -468,4 +497,129 @@ export const RELIC_EFFECT_STYLE = {
   fontFamily: 'Arial, sans-serif',
   glowColor: 'rgba(255, 215, 0, 0.5)',
   glowRadius: 20,
+}
+
+// ラウンド進行画面スタイル
+export const ROUND_PROGRESS_STYLE = {
+  backgroundColor: 'rgba(0, 0, 0, 0.85)',
+
+  // セット表示
+  setFontSize: 20,
+  setColor: '#AAAAAA',
+  setOffsetY: -200,
+
+  // カード設定
+  cardWidth: 180,
+  cardHeight: 240,
+  cardGap: 30,
+  cardBorderRadius: 12,
+  cardBorderWidth: 3,
+
+  // カード状態別の色
+  cardColors: {
+    current: {
+      background: 'rgba(76, 175, 80, 0.3)',
+      border: '#4CAF50',
+    },
+    cleared: {
+      background: 'rgba(100, 100, 100, 0.5)',
+      border: '#666666',
+    },
+    locked: {
+      background: 'rgba(50, 50, 50, 0.5)',
+      border: '#333333',
+    },
+  },
+
+  // ラウンドタイプ別の色
+  typeColors: {
+    normal: '#FFFFFF',
+    elite: '#FFD700',
+    boss: '#FF4444',
+  },
+
+  // カード内テキスト
+  typeFontSize: 24,
+  typeOffsetY: 40,
+  roundFontSize: 18,
+  roundOffsetY: 80,
+  conditionFontSize: 14,
+  conditionColor: '#FF6666',
+  conditionOffsetY: 120,
+
+  // クリア済みマーク
+  clearedMarkFontSize: 48,
+  clearedMarkColor: '#4CAF50',
+
+  // ロックマーク
+  lockedMarkFontSize: 32,
+  lockedMarkColor: '#666666',
+
+  // 開始ボタン
+  buttonWidth: 200,
+  buttonHeight: 60,
+  buttonColor: '#4CAF50',
+  buttonTextColor: '#FFFFFF',
+  buttonFontSize: 24,
+  buttonOffsetY: 150,
+}
+
+// デッキ一覧画面スタイル
+export const DECK_VIEW_STYLE = {
+  backgroundColor: 'rgba(0, 0, 0, 0.9)',
+
+  // タイトル
+  titleFontSize: 24,
+  titleColor: '#FFFFFF',
+  titleOffsetY: 40,
+
+  // カード表示エリア
+  areaWidth: 800,
+  areaHeight: 500,
+  cardCellSize: 8,
+  cardGap: 10,
+  cardsPerRow: 8,
+  maxCardWidth: 48, // 6 * cardCellSize
+
+  // セクションラベル
+  sectionFontSize: 16,
+  sectionColor: '#AAAAAA',
+  deckSectionY: 80,
+  usedSectionY: 300,
+
+  // 使用中カードのグレーアウト
+  usedOpacity: 0.4,
+  usedOverlayColor: 'rgba(100, 100, 100, 0.6)',
+
+  // 閉じるボタン
+  closeButtonWidth: 120,
+  closeButtonHeight: 40,
+  closeButtonColor: '#8B7355',
+  closeButtonTextColor: '#FFFFFF',
+  closeButtonFontSize: 16,
+  closeButtonOffsetY: -50,
+}
+
+// ステータスパネル用デッキボタン
+export const DECK_BUTTON_STYLE = {
+  width: 80,
+  height: 36,
+  backgroundColor: '#8B7355',
+  textColor: '#FFFFFF',
+  fontSize: 14,
+  borderRadius: 6,
+  offsetY: 350,
+}
+
+// ストック枠スタイル（ボードの左側、レリックパネルの下）
+export const STOCK_SLOT_STYLE = {
+  x: 470,                           // ストック枠のX位置（relicAreaXと同じ）
+  y: 520,                           // ストック枠のY位置（レリックパネルの下）
+  width: 80,                        // ストック枠の幅
+  height: 80,                       // ストック枠の高さ
+  borderWidth: 3,                   // 枠線の太さ
+  borderColor: '#8B7355',           // 枠線の色
+  backgroundColor: 'rgba(210, 180, 140, 0.2)',  // 背景色（半透明）
+  labelFontSize: 12,                // ラベルのフォントサイズ
+  labelColor: '#AAAAAA',            // ラベルの色
 }

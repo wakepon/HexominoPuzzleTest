@@ -15,7 +15,7 @@ import type { GameAction } from '../Actions/GameActions'
 import type { RelicEffectContext } from '../../Domain/Effect/RelicEffectTypes'
 import type { ScoreBonus } from '../../Events/GameEvent'
 import { isBlockShopItem, isRelicShopItem } from '../../Domain/Shop/ShopTypes'
-import { addRelic, addGold, subtractGold } from './PlayerReducer'
+import { addRelic, removeRelic, addGold, subtractGold } from './PlayerReducer'
 import {
   emitPiecePlaced,
   emitLinesCompleted,
@@ -47,7 +47,16 @@ import {
   calculateScoreWithEffects,
 } from '../../Services/LineService'
 import { hasComboPattern } from '../../Domain/Effect/PatternEffectHandler'
-import { getActivatedRelicsFromScoreBreakdown } from '../../Domain/Effect/RelicEffectHandler'
+import {
+  getActivatedRelicsFromScoreBreakdown,
+  hasRelic,
+} from '../../Domain/Effect/RelicEffectHandler'
+import {
+  INITIAL_RELIC_MULTIPLIER_STATE,
+  updateRenshaMultiplier,
+  updateNobiTakenokoMultiplier,
+  updateNobiKaniMultiplier,
+} from '../../Domain/Effect/RelicState'
 import { createRelicActivationAnimation } from '../../Domain/Animation/AnimationState'
 import { decrementRemainingHands } from '../../Services/DeckService'
 import {
@@ -67,6 +76,39 @@ import {
 import { DefaultRandom } from '../../Utils/Random'
 import { CLEAR_ANIMATION, RELIC_EFFECT_STYLE } from '../../Data/Constants'
 import { saveGameState, clearGameState } from '../../Services/StorageService'
+import type { RelicMultiplierState } from '../../Domain/Effect/RelicState'
+import type { RelicId } from '../../Domain/Core/Id'
+
+/**
+ * レリック倍率状態を更新
+ * ピース配置後に呼び出し、消去ライン数に基づいて各倍率を更新
+ */
+function updateRelicMultipliers(
+  currentState: RelicMultiplierState,
+  ownedRelics: readonly RelicId[],
+  totalLines: number,
+  rowLines: number,
+  colLines: number
+): RelicMultiplierState {
+  let newState = currentState
+
+  // 2-D: 連射倍率の更新
+  if (hasRelic(ownedRelics, 'rensha')) {
+    newState = updateRenshaMultiplier(newState, totalLines)
+  }
+
+  // 2-E: のびのびタケノコ倍率の更新
+  if (hasRelic(ownedRelics, 'nobi_takenoko')) {
+    newState = updateNobiTakenokoMultiplier(newState, rowLines, colLines)
+  }
+
+  // 2-F: のびのびカニ倍率の更新
+  if (hasRelic(ownedRelics, 'nobi_kani')) {
+    newState = updateNobiKaniMultiplier(newState, rowLines, colLines)
+  }
+
+  return newState
+}
 
 /**
  * ピースのブロック数を取得
@@ -168,6 +210,143 @@ function handlePlacement(
 }
 
 /**
+ * ボードにピースを配置し、ライン消去とスコア計算を行う共通処理
+ * 手札からの配置とストックからの配置で共通して使用
+ */
+interface PlacementResult {
+  readonly newState: GameState
+  readonly success: boolean
+}
+
+function processPiecePlacement(
+  state: GameState,
+  piece: Piece,
+  boardPos: { x: number; y: number },
+  newSlots: PieceSlot[],
+  newDeck: DeckState,
+  comboCount: number
+): PlacementResult {
+  // ブロックを配置
+  const newBoard = placePieceOnBoard(state.board, piece, boardPos)
+  emitPiecePlaced(piece, toGridPosition(boardPos), newBoard)
+
+  // 配置後の状態を計算
+  const { finalSlots, finalDeck } = handlePlacement(newSlots, newDeck)
+
+  // ライン消去判定
+  const completedLines = findCompletedLines(newBoard)
+  const totalLines = completedLines.rows.length + completedLines.columns.length
+
+  if (totalLines > 0) {
+    // 石シールを除いた消去対象セルを取得
+    const cells = getCellsToRemoveWithFilter(newBoard, completedLines)
+
+    emitLinesCompleted(
+      completedLines.rows,
+      completedLines.columns,
+      cells.map((c) => ({
+        position: { row: c.row, col: c.col },
+        cell: newBoard[c.row][c.col],
+      }))
+    )
+
+    // 消去後の盤面を先に計算（全消し判定用）
+    const boardAfterClear = clearLines(newBoard, cells)
+
+    // レリック効果コンテキストを作成
+    const relicContext: RelicEffectContext = {
+      ownedRelics: state.player.ownedRelics,
+      totalLines,
+      rowLines: completedLines.rows.length,
+      colLines: completedLines.columns.length,
+      placedBlockSize: getPieceBlockCount(piece),
+      isBoardEmptyAfterClear: isBoardEmpty(boardAfterClear),
+      relicMultiplierState: state.relicMultiplierState,
+    }
+
+    const scoreBreakdown = calculateScoreWithEffects(
+      newBoard,
+      completedLines,
+      comboCount,
+      relicContext,
+      Math.random
+    )
+    const scoreGain = scoreBreakdown.finalScore
+    const newScore = state.score + scoreGain
+    const goldGain = scoreBreakdown.goldCount
+    const newPlayer = addGold(state.player, goldGain)
+    const newPhase = determinePhase(newScore, state.targetScore, finalDeck.remainingHands)
+
+    emitScoreCalculated(scoreBreakdown.baseScore, buildScoreBonuses(scoreBreakdown), scoreGain)
+    emitGoldGained(goldGain, 'seal:gold')
+
+    const activatedRelics = getActivatedRelicsFromScoreBreakdown(scoreBreakdown)
+    for (const relic of activatedRelics) {
+      emitRelicTriggered(relic.relicId, relic.relicId, typeof relic.bonusValue === 'number' ? relic.bonusValue : 0)
+    }
+
+    const relicAnimation = activatedRelics.length > 0
+      ? createRelicActivationAnimation(activatedRelics, RELIC_EFFECT_STYLE.duration)
+      : null
+
+    const newRelicMultiplierState = updateRelicMultipliers(
+      state.relicMultiplierState,
+      state.player.ownedRelics,
+      totalLines,
+      completedLines.rows.length,
+      completedLines.columns.length
+    )
+
+    return {
+      success: true,
+      newState: {
+        ...state,
+        board: newBoard,
+        pieceSlots: finalSlots,
+        dragState: initialDragState,
+        clearingAnimation: {
+          isAnimating: true,
+          cells,
+          startTime: Date.now(),
+          duration: CLEAR_ANIMATION.duration,
+        },
+        relicActivationAnimation: relicAnimation,
+        score: newScore,
+        player: newPlayer,
+        deck: finalDeck,
+        phase: newPhase,
+        comboCount,
+        relicMultiplierState: newRelicMultiplierState,
+      },
+    }
+  }
+
+  // ライン消去なし
+  const newPhase = determinePhase(state.score, state.targetScore, finalDeck.remainingHands)
+  const newRelicMultiplierState = updateRelicMultipliers(
+    state.relicMultiplierState,
+    state.player.ownedRelics,
+    0,
+    0,
+    0
+  )
+
+  return {
+    success: true,
+    newState: {
+      ...state,
+      board: newBoard,
+      pieceSlots: finalSlots,
+      dragState: initialDragState,
+      deck: finalDeck,
+      phase: newPhase,
+      comboCount,
+      relicMultiplierState: newRelicMultiplierState,
+    },
+  }
+}
+
+/**
  * 購入したPieceをデッキに追加
  * minoIdをallMinosに追加し、パターン/シール情報をpurchasedPiecesに保存
  */
@@ -216,6 +395,7 @@ function createNextRoundState(currentState: GameState): GameState {
     allMinos: currentState.deck.allMinos,
     remainingHands: maxHands,
     purchasedPieces: currentState.deck.purchasedPieces,
+    stockSlot: null, // ラウンド開始時にストックをクリア
   }
 
   const { slots, newDeck } = generateNewPieceSlotsFromDeckWithCount(
@@ -243,13 +423,15 @@ function createNextRoundState(currentState: GameState): GameState {
     clearingAnimation: null,
     relicActivationAnimation: null,
     deck: newDeck,
-    phase: 'playing',
+    phase: 'round_progress',
     round: nextRound,
     roundInfo,
     player: currentState.player,
     targetScore,
     shopState: null,
     comboCount: 0,
+    relicMultiplierState: INITIAL_RELIC_MULTIPLIER_STATE, // ラウンド開始時に倍率をリセット
+    deckViewOpen: false,
   }
 }
 
@@ -268,6 +450,25 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           isDragging: true,
           pieceId: slot.piece.id,
           slotIndex: action.slotIndex,
+          dragSource: 'hand',
+          currentPos: action.startPos,
+          startPos: action.startPos,
+          boardPos: null,
+        },
+      }
+    }
+
+    case 'UI/START_DRAG_FROM_STOCK': {
+      const stockPiece = state.deck.stockSlot
+      if (!stockPiece) return state
+
+      return {
+        ...state,
+        dragState: {
+          isDragging: true,
+          pieceId: stockPiece.id,
+          slotIndex: null,
+          dragSource: 'stock',
           currentPos: action.startPos,
           startPos: action.startPos,
           boardPos: null,
@@ -289,19 +490,46 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     }
 
     case 'UI/END_DRAG': {
-      if (!state.dragState.isDragging || state.dragState.slotIndex === null) {
-        return {
-          ...state,
-          dragState: initialDragState,
+      if (!state.dragState.isDragging) {
+        return { ...state, dragState: initialDragState }
+      }
+
+      // ストックからのドラッグの場合
+      if (state.dragState.dragSource === 'stock') {
+        const stockPiece = state.deck.stockSlot
+        if (!stockPiece) {
+          return { ...state, dragState: initialDragState }
         }
+
+        const boardPos = state.dragState.boardPos
+
+        // ボードへの配置（配置回数を消費）
+        if (
+          state.phase === 'playing' &&
+          boardPos &&
+          canPlacePiece(state.board, stockPiece.shape, boardPos)
+        ) {
+          // ストックをクリアした新しいデッキを作成
+          const newDeck: DeckState = { ...state.deck, stockSlot: null }
+          const newSlots = [...state.pieceSlots]
+          const newComboCount = hasComboPattern(stockPiece) ? state.comboCount + 1 : 0
+
+          const result = processPiecePlacement(state, stockPiece, boardPos, newSlots, newDeck, newComboCount)
+          return result.newState
+        }
+
+        // ボードへの配置ができなかった場合は元に戻す（ストックに残る）
+        return { ...state, dragState: initialDragState }
+      }
+
+      // 手札からのドラッグの場合
+      if (state.dragState.slotIndex === null) {
+        return { ...state, dragState: initialDragState }
       }
 
       // ゲーム終了状態では配置不可
       if (state.phase !== 'playing') {
-        return {
-          ...state,
-          dragState: initialDragState,
-        }
+        return { ...state, dragState: initialDragState }
       }
 
       const slotIndex = state.dragState.slotIndex
@@ -314,147 +542,18 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         boardPos &&
         canPlacePiece(state.board, slot.piece.shape, boardPos)
       ) {
-        // ブロックを配置（Piece全体を渡す）
-        const newBoard = placePieceOnBoard(state.board, slot.piece, boardPos)
-
-        // イベント発火: ピース配置
-        emitPiecePlaced(slot.piece, toGridPosition(boardPos), newBoard)
-
         // スロットからブロックを削除
         const newSlots = state.pieceSlots.map((s, i) =>
           i === slotIndex ? { ...s, piece: null } : s
         )
+        const newComboCount = hasComboPattern(slot.piece) ? state.comboCount + 1 : 0
 
-        // 配置後の状態を計算
-        const { finalSlots, finalDeck } = handlePlacement(newSlots, state.deck)
-
-        // comboCount更新（配置したピースがcomboパターンを持つか）
-        const newComboCount = hasComboPattern(slot.piece)
-          ? state.comboCount + 1
-          : 0
-
-        // ライン消去判定
-        const completedLines = findCompletedLines(newBoard)
-        const totalLines =
-          completedLines.rows.length + completedLines.columns.length
-
-        if (totalLines > 0) {
-          // 石シールを除いた消去対象セルを取得
-          const cells = getCellsToRemoveWithFilter(newBoard, completedLines)
-
-          // イベント発火: ライン完成
-          emitLinesCompleted(
-            completedLines.rows,
-            completedLines.columns,
-            cells.map((c) => ({
-              position: { row: c.row, col: c.col },
-              cell: newBoard[c.row][c.col],
-            }))
-          )
-
-          // 消去後の盤面を先に計算（全消し判定用）
-          const boardAfterClear = clearLines(newBoard, cells)
-
-          // レリック効果コンテキストを作成
-          const relicContext: RelicEffectContext = {
-            ownedRelics: state.player.ownedRelics,
-            totalLines,
-            placedBlockSize: getPieceBlockCount(slot.piece),
-            isBoardEmptyAfterClear: isBoardEmpty(boardAfterClear),
-          }
-
-          const scoreBreakdown = calculateScoreWithEffects(
-            newBoard,
-            completedLines,
-            newComboCount,
-            relicContext,
-            Math.random
-          )
-          const scoreGain = scoreBreakdown.finalScore
-          const newScore = state.score + scoreGain
-          // ゴールドシール効果: 消去されたゴールドシール数分ゴールドを加算
-          const goldGain = scoreBreakdown.goldCount
-          const newPlayer = addGold(state.player, goldGain)
-          const newPhase = determinePhase(
-            newScore,
-            state.targetScore,
-            finalDeck.remainingHands
-          )
-
-          // イベント発火: スコア計算
-          emitScoreCalculated(
-            scoreBreakdown.baseScore,
-            buildScoreBonuses(scoreBreakdown),
-            scoreGain
-          )
-
-          // イベント発火: ゴールド獲得（シール効果）
-          emitGoldGained(goldGain, 'seal:gold')
-
-          // レリック発動アニメーション（scoreBreakdownから直接取得し、重複計算を回避）
-          const activatedRelics =
-            getActivatedRelicsFromScoreBreakdown(scoreBreakdown)
-
-          // イベント発火: レリック発動
-          for (const relic of activatedRelics) {
-            emitRelicTriggered(
-              relic.relicId,
-              relic.relicId,
-              typeof relic.bonusValue === 'number' ? relic.bonusValue : 0
-            )
-          }
-
-          const relicAnimation =
-            activatedRelics.length > 0
-              ? createRelicActivationAnimation(
-                  activatedRelics,
-                  RELIC_EFFECT_STYLE.duration
-                )
-              : null
-
-          return {
-            ...state,
-            board: newBoard,
-            pieceSlots: finalSlots,
-            dragState: initialDragState,
-            clearingAnimation: {
-              isAnimating: true,
-              cells,
-              startTime: Date.now(),
-              duration: CLEAR_ANIMATION.duration,
-            },
-            relicActivationAnimation: relicAnimation,
-            score: newScore,
-            player: newPlayer,
-            deck: finalDeck,
-            phase: newPhase,
-            comboCount: newComboCount,
-          }
-        }
-
-        // ライン消去なしでもフェーズ判定
-        const newPhase = determinePhase(
-          state.score,
-          state.targetScore,
-          finalDeck.remainingHands
-        )
-
-        return {
-          ...state,
-          board: newBoard,
-          pieceSlots: finalSlots,
-          dragState: initialDragState,
-          deck: finalDeck,
-          phase: newPhase,
-          comboCount: newComboCount,
-        }
+        const result = processPiecePlacement(state, slot.piece, boardPos, newSlots, state.deck, newComboCount)
+        return result.newState
       }
 
       // 配置不可の場合は元に戻す
-      return {
-        ...state,
-        dragState: initialDragState,
-      }
+      return { ...state, dragState: initialDragState }
     }
 
     case 'BOARD/PLACE_PIECE': {
@@ -629,6 +728,173 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       saveGameState(nextRoundState)
 
       return nextRoundState
+    }
+
+    case 'ROUND/START': {
+      // round_progress状態でのみプレイ開始可能
+      if (state.phase !== 'round_progress') return state
+
+      const playingState = {
+        ...state,
+        phase: 'playing' as const,
+      }
+
+      // プレイ開始時に保存
+      saveGameState(playingState)
+
+      return playingState
+    }
+
+    case 'ROUND/SHOW_PROGRESS': {
+      // shopping状態からのみラウンド進行画面へ遷移可能
+      if (state.phase !== 'shopping') return state
+
+      const progressState = {
+        ...state,
+        phase: 'round_progress' as const,
+        shopState: null,
+      }
+
+      saveGameState(progressState)
+
+      return progressState
+    }
+
+    case 'UI/OPEN_DECK_VIEW': {
+      // オーバーレイ表示中は開けない
+      if (
+        state.phase === 'round_clear' ||
+        state.phase === 'game_over' ||
+        state.phase === 'game_clear' ||
+        state.phase === 'shopping'
+      ) {
+        return state
+      }
+      return {
+        ...state,
+        deckViewOpen: true,
+      }
+    }
+
+    case 'UI/CLOSE_DECK_VIEW': {
+      return {
+        ...state,
+        deckViewOpen: false,
+      }
+    }
+
+    // ストック操作（配置回数を消費しない）
+    case 'STOCK/MOVE_TO_STOCK': {
+      // playing状態でのみ操作可能
+      if (state.phase !== 'playing') return state
+
+      // 境界チェック
+      if (action.slotIndex < 0 || action.slotIndex >= state.pieceSlots.length) return state
+
+      const slot = state.pieceSlots[action.slotIndex]
+      if (!slot?.piece) return state
+
+      const pieceToStock = slot.piece
+      const currentStock = state.deck.stockSlot
+
+      // 手札スロットを更新（既存ストックがあればスワップ）
+      const newSlots = state.pieceSlots.map((s, i) =>
+        i === action.slotIndex ? { ...s, piece: currentStock } : s
+      )
+
+      return {
+        ...state,
+        pieceSlots: newSlots,
+        deck: { ...state.deck, stockSlot: pieceToStock },
+        dragState: initialDragState,
+      }
+    }
+
+    case 'STOCK/MOVE_FROM_STOCK': {
+      // playing状態でのみ操作可能
+      if (state.phase !== 'playing') return state
+
+      // 境界チェック
+      if (action.targetSlotIndex < 0 || action.targetSlotIndex >= state.pieceSlots.length) return state
+
+      const stockPiece = state.deck.stockSlot
+      if (!stockPiece) return state
+
+      const targetSlot = state.pieceSlots[action.targetSlotIndex]
+      if (targetSlot?.piece) return state  // 空きスロットがなければ失敗
+
+      const newSlots = state.pieceSlots.map((s, i) =>
+        i === action.targetSlotIndex ? { ...s, piece: stockPiece } : s
+      )
+
+      return {
+        ...state,
+        pieceSlots: newSlots,
+        deck: { ...state.deck, stockSlot: null },
+        dragState: initialDragState,
+      }
+    }
+
+    case 'STOCK/SWAP': {
+      // playing状態でのみ操作可能
+      if (state.phase !== 'playing') return state
+
+      // 境界チェック
+      if (action.slotIndex < 0 || action.slotIndex >= state.pieceSlots.length) return state
+
+      const slot = state.pieceSlots[action.slotIndex]
+      if (!slot?.piece) return state
+
+      const stockPiece = state.deck.stockSlot
+      if (!stockPiece) return state
+
+      const newSlots = state.pieceSlots.map((s, i) =>
+        i === action.slotIndex ? { ...s, piece: stockPiece } : s
+      )
+
+      return {
+        ...state,
+        pieceSlots: newSlots,
+        deck: { ...state.deck, stockSlot: slot.piece },
+        dragState: initialDragState,
+      }
+    }
+
+    // デバッグアクション
+    case 'DEBUG/ADD_RELIC': {
+      const relicId = action.relicType as RelicId
+      const newPlayer = addRelic(state.player, relicId)
+      const newState = { ...state, player: newPlayer }
+      saveGameState(newState)
+      return newState
+    }
+
+    case 'DEBUG/REMOVE_RELIC': {
+      const relicId = action.relicType as RelicId
+      const newPlayer = removeRelic(state.player, relicId)
+      // hand_stockを削除した場合、ストック枠もクリア
+      let newDeck = state.deck
+      if (action.relicType === 'hand_stock' && state.deck.stockSlot) {
+        newDeck = { ...state.deck, stockSlot: null }
+      }
+      const newState = { ...state, player: newPlayer, deck: newDeck }
+      saveGameState(newState)
+      return newState
+    }
+
+    case 'DEBUG/ADD_GOLD': {
+      const newGold = Math.max(0, state.player.gold + action.amount)
+      const newPlayer = { ...state.player, gold: newGold }
+      const newState = { ...state, player: newPlayer }
+      saveGameState(newState)
+      return newState
+    }
+
+    case 'DEBUG/ADD_SCORE': {
+      const newScore = Math.max(0, state.score + action.amount)
+      const newState = { ...state, score: newScore }
+      saveGameState(newState)
+      return newState
     }
 
     default:

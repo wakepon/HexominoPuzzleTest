@@ -189,14 +189,40 @@ export function calculatePatternEffects(
  */
 const DEFAULT_RELIC_EFFECTS: RelicEffectResult = {
   activations: {
+    // 既存レリック
     chainMasterActive: false,
     smallLuckActive: false,
     fullClearActive: false,
+    // 2-A: シングルライン
+    singleLineActive: false,
+    // 2-B: タケノコ
+    takenokoActive: false,
+    takenokoCols: 0,
+    // 2-C: カニ
+    kaniActive: false,
+    kaniRows: 0,
+    // 2-D: 連射
+    renshaActive: false,
+    renshaMultiplier: 1.0,
+    // 2-E: のびのびタケノコ
+    nobiTakenokoActive: false,
+    nobiTakenokoMultiplier: 1.0,
+    // 2-F: のびのびカニ
+    nobiKaniActive: false,
+    nobiKaniMultiplier: 1.0,
   },
+  // 既存レリック
   chainMasterMultiplier: 1.0,
   smallLuckBonus: 0,
   fullClearBonus: 0,
   totalRelicBonus: 0,
+  // 新レリック
+  singleLineMultiplier: 1,
+  takenokoMultiplier: 1,
+  kaniMultiplier: 1,
+  renshaMultiplier: 1.0,
+  nobiTakenokoMultiplier: 1.0,
+  nobiKaniMultiplier: 1.0,
 }
 
 /**
@@ -241,7 +267,17 @@ export function calculateScoreBreakdown(
   const relicEffects = relicContext
     ? calculateRelicEffects(relicContext)
     : DEFAULT_RELIC_EFFECTS
-  const { chainMasterMultiplier, smallLuckBonus, fullClearBonus } = relicEffects
+  const {
+    chainMasterMultiplier,
+    smallLuckBonus,
+    fullClearBonus,
+    singleLineMultiplier,
+    takenokoMultiplier,
+    kaniMultiplier,
+    renshaMultiplier,
+    nobiTakenokoMultiplier,
+    nobiKaniMultiplier,
+  } = relicEffects
 
   // 最終スコア計算（仕様書の順序に従う）
   // 1. 基本スコア（パターン+シール効果込み）
@@ -249,8 +285,28 @@ export function calculateScoreBreakdown(
   const scoreAfterChainMaster = Math.floor(
     scoreBeforeRelics * chainMasterMultiplier
   )
-  // 3. 小さな幸運（+20）+ 全消しボーナス（+20）
-  const finalScore = scoreAfterChainMaster + smallLuckBonus + fullClearBonus
+  // 3. シングルライン（×3）- 注: シングルラインと連鎖の達人は排他的（1ライン vs 2ライン以上）
+  const scoreAfterSingleLine = Math.floor(
+    scoreAfterChainMaster * singleLineMultiplier
+  )
+  // 4. タケノコ（×縦列数）- 縦列のみ消去時に発動
+  const scoreAfterTakenoko = Math.floor(
+    scoreAfterSingleLine * takenokoMultiplier
+  )
+  // 5. カニ（×行数）- 横列のみ消去時に発動
+  const scoreAfterKani = Math.floor(scoreAfterTakenoko * kaniMultiplier)
+  // 6. のびのびタケノコ（×倍率、切り捨て）
+  const scoreAfterNobiTakenoko = Math.floor(
+    scoreAfterKani * nobiTakenokoMultiplier
+  )
+  // 7. のびのびカニ（×倍率、切り捨て）
+  const scoreAfterNobiKani = Math.floor(
+    scoreAfterNobiTakenoko * nobiKaniMultiplier
+  )
+  // 8. 連射（×倍率、切り捨て）
+  const scoreAfterRensha = Math.floor(scoreAfterNobiKani * renshaMultiplier)
+  // 9. 小さな幸運（+20）+ 全消しボーナス（+20）
+  const finalScore = scoreAfterRensha + smallLuckBonus + fullClearBonus
 
   return {
     baseBlocks,
@@ -269,6 +325,12 @@ export function calculateScoreBreakdown(
     smallLuckBonus,
     fullClearBonus,
     relicBonusTotal: smallLuckBonus + fullClearBonus,
+    singleLineMultiplier,
+    takenokoMultiplier,
+    kaniMultiplier,
+    renshaMultiplier,
+    nobiTakenokoMultiplier,
+    nobiKaniMultiplier,
     finalScore,
   }
 }

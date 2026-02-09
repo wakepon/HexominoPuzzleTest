@@ -6,6 +6,8 @@ import { DeckState, PieceShape } from '../../lib/game/types'
 import { DEBUG_WINDOW_STYLE, COLORS } from '../../lib/game/Data/Constants'
 import { getMinoById } from '../../lib/game/minoDefinitions'
 import type { DebugSettings } from '../../lib/game/Domain/Debug'
+import { RELIC_DEFINITIONS, type RelicType } from '../../lib/game/Domain/Effect/Relic'
+import type { RelicId } from '../../lib/game/Domain/Core/Id'
 
 /**
  * ボタン領域の型定義
@@ -18,6 +20,14 @@ export interface ButtonArea {
 }
 
 /**
+ * レリックボタン領域の型定義
+ */
+export interface RelicButtonArea extends ButtonArea {
+  relicType: RelicType
+  isOwned: boolean
+}
+
+/**
  * デバッグウィンドウの描画結果
  */
 export interface DebugWindowRenderResult {
@@ -27,6 +37,18 @@ export interface DebugWindowRenderResult {
   sealMinusButton: ButtonArea
   deleteSaveButton: ButtonArea
   windowBounds: ButtonArea
+  // レリック操作ボタン
+  relicButtons: RelicButtonArea[]
+  // ゴールド操作ボタン
+  goldMinus50Button: ButtonArea
+  goldMinus10Button: ButtonArea
+  goldPlus10Button: ButtonArea
+  goldPlus50Button: ButtonArea
+  // スコア操作ボタン
+  scoreMinus50Button: ButtonArea
+  scoreMinus10Button: ButtonArea
+  scorePlus10Button: ButtonArea
+  scorePlus50Button: ButtonArea
 }
 
 /**
@@ -168,13 +190,148 @@ function drawProbabilityRow(
 }
 
 /**
+ * 値調整行を描画（4ボタン: -50, -10, +10, +50）
+ */
+function drawValueAdjustRow(
+  ctx: CanvasRenderingContext2D,
+  label: string,
+  value: number,
+  x: number,
+  y: number,
+  _windowWidth: number,
+  padding: number
+): { minus50: ButtonArea; minus10: ButtonArea; plus10: ButtonArea; plus50: ButtonArea } {
+  const vs = DEBUG_WINDOW_STYLE.valueSection
+
+  // ラベル
+  ctx.fillStyle = vs.labelColor
+  ctx.font = `${vs.labelFontSize}px ${DEBUG_WINDOW_STYLE.fontFamily}`
+  ctx.textAlign = 'left'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(label, x + padding, y + vs.rowHeight / 2)
+
+  // 値表示
+  const valueCenterX = x + padding + vs.labelWidth + vs.valueWidth / 2
+  ctx.fillStyle = vs.valueColor
+  ctx.font = `bold ${vs.valueFontSize}px ${DEBUG_WINDOW_STYLE.fontFamily}`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(`${value}`, valueCenterX, y + vs.rowHeight / 2)
+
+  // ボタン配置（値の右側に4つ）
+  const buttonsStartX = x + padding + vs.labelWidth + vs.valueWidth + vs.buttonGap
+  const buttonY = y + (vs.rowHeight - vs.buttonHeight) / 2
+  const buttons = [
+    { text: '-50', delta: -50 },
+    { text: '-10', delta: -10 },
+    { text: '+10', delta: 10 },
+    { text: '+50', delta: 50 },
+  ]
+
+  const buttonAreas: ButtonArea[] = []
+  let btnX = buttonsStartX
+
+  for (const btn of buttons) {
+    const color = btn.delta < 0 ? '#CC6666' : '#4CAF50'
+    drawProbabilityButton(
+      ctx, btnX, buttonY, vs.buttonWidth, vs.buttonHeight,
+      btn.text, color, vs.buttonTextColor, vs.buttonFontSize
+    )
+    buttonAreas.push({ x: btnX, y: buttonY, width: vs.buttonWidth, height: vs.buttonHeight })
+    btnX += vs.buttonWidth + vs.buttonGap
+  }
+
+  return {
+    minus50: buttonAreas[0],
+    minus10: buttonAreas[1],
+    plus10: buttonAreas[2],
+    plus50: buttonAreas[3],
+  }
+}
+
+/**
+ * レリックセクションを描画
+ */
+function drawRelicSection(
+  ctx: CanvasRenderingContext2D,
+  ownedRelics: readonly RelicId[],
+  x: number,
+  y: number,
+  _windowWidth: number,
+  padding: number
+): { relicButtons: RelicButtonArea[]; sectionHeight: number } {
+  const rs = DEBUG_WINDOW_STYLE.relicSection
+  const allRelicTypes = Object.keys(RELIC_DEFINITIONS) as RelicType[]
+
+  // セクションラベル
+  ctx.fillStyle = rs.labelColor
+  ctx.font = `${rs.labelFontSize}px ${DEBUG_WINDOW_STYLE.fontFamily}`
+  ctx.textAlign = 'left'
+  ctx.textBaseline = 'top'
+  ctx.fillText('Relics (click to toggle)', x + padding, y)
+
+  const iconsY = y + rs.labelFontSize + 4
+  const relicButtons: RelicButtonArea[] = []
+
+  // レリックアイコンをグリッド配置
+  for (let i = 0; i < allRelicTypes.length; i++) {
+    const relicType = allRelicTypes[i]
+    const relic = RELIC_DEFINITIONS[relicType]
+    const row = Math.floor(i / rs.iconsPerRow)
+    const col = i % rs.iconsPerRow
+
+    const iconX = x + padding + col * (rs.iconSize + rs.iconGap)
+    const iconY = iconsY + row * (rs.iconSize + rs.iconGap)
+
+    const isOwned = ownedRelics.includes(relicType as RelicId)
+
+    // 背景（所持時はハイライト）
+    if (isOwned) {
+      ctx.fillStyle = rs.ownedBgColor
+      ctx.fillRect(iconX - 1, iconY - 1, rs.iconSize + 2, rs.iconSize + 2)
+    }
+
+    // アイコン描画
+    ctx.globalAlpha = isOwned ? rs.ownedOpacity : rs.unownedOpacity
+    ctx.font = `${rs.iconSize - 4}px Arial`
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillStyle = '#FFFFFF'
+    ctx.fillText(relic.icon, iconX + rs.iconSize / 2, iconY + rs.iconSize / 2)
+    ctx.globalAlpha = 1.0
+
+    // 枠線
+    ctx.strokeStyle = isOwned ? '#FFD700' : '#666666'
+    ctx.lineWidth = 1
+    ctx.strokeRect(iconX, iconY, rs.iconSize, rs.iconSize)
+
+    relicButtons.push({
+      x: iconX,
+      y: iconY,
+      width: rs.iconSize,
+      height: rs.iconSize,
+      relicType,
+      isOwned,
+    })
+  }
+
+  const totalRows = Math.ceil(allRelicTypes.length / rs.iconsPerRow)
+  const sectionHeight = rs.labelFontSize + 4 + totalRows * (rs.iconSize + rs.iconGap)
+
+  return { relicButtons, sectionHeight }
+}
+
+/**
  * デバッグウィンドウを描画
  * デッキの中身をストックに登場する順（先頭から）にブロック形状で表示する
  */
 export function renderDebugWindow(
   ctx: CanvasRenderingContext2D,
   deck: DeckState,
-  debugSettings: DebugSettings
+  debugSettings: DebugSettings,
+  gold: number,
+  score: number,
+  ownedRelics: readonly RelicId[]
 ): DebugWindowRenderResult {
   const {
     backgroundColor,
@@ -229,11 +386,24 @@ export function renderDebugWindow(
   const ps = DEBUG_WINDOW_STYLE.probabilitySection
   const probabilitySectionHeight = ps.sectionMarginTop + ps.rowHeight * 2 + padding
 
+  // レリックセクションの高さ
+  const rs = DEBUG_WINDOW_STYLE.relicSection
+  const allRelicTypes = Object.keys(RELIC_DEFINITIONS) as RelicType[]
+  const relicRows = Math.ceil(allRelicTypes.length / rs.iconsPerRow)
+  const relicSectionHeight = rs.sectionMarginTop + rs.labelFontSize + 4 + relicRows * (rs.iconSize + rs.iconGap) + padding
+
+  // 値調整セクションの高さ（ゴールド + スコア）
+  const vs = DEBUG_WINDOW_STYLE.valueSection
+  const valueSectionHeight = vs.sectionMarginTop + vs.rowHeight * 2 + padding
+
   // 削除ボタン用の高さ
   const deleteSaveButtonSectionHeight = 30 + padding
 
-  const windowWidth = Math.max(maxMinoWidth + padding * 2 + numberColumnWidth + 5, minWindowWidth, 130)
-  const windowHeight = headerHeight + totalMinoHeight + ellipsisHeight + probabilitySectionHeight + deleteSaveButtonSectionHeight + padding
+  // ウィンドウ幅を計算（値調整ボタン4つ分を考慮）
+  const valueRowWidth = vs.labelWidth + vs.valueWidth + (vs.buttonWidth + vs.buttonGap) * 4 + padding * 2
+  const relicRowWidth = rs.iconsPerRow * (rs.iconSize + rs.iconGap) + padding * 2
+  const windowWidth = Math.max(maxMinoWidth + padding * 2 + numberColumnWidth + 5, minWindowWidth, 130, valueRowWidth, relicRowWidth)
+  const windowHeight = headerHeight + totalMinoHeight + ellipsisHeight + probabilitySectionHeight + relicSectionHeight + valueSectionHeight + deleteSaveButtonSectionHeight + padding
 
   ctx.save()
 
@@ -326,8 +496,20 @@ export function renderDebugWindow(
   )
   y += ps.rowHeight
 
-  // セーブデータ削除ボタン
+  // セパレータライン
   y += padding / 2
+  ctx.strokeStyle = titleColor
+  ctx.lineWidth = 1
+  ctx.beginPath()
+  ctx.moveTo(offsetX + padding, y)
+  ctx.lineTo(offsetX + windowWidth - padding, y)
+  ctx.stroke()
+  y += padding / 2
+
+  // レリックセクション
+  y += rs.sectionMarginTop
+  const relicResult = drawRelicSection(ctx, ownedRelics, offsetX, y, windowWidth, padding)
+  y += relicResult.sectionHeight
 
   // セパレータライン
   ctx.strokeStyle = titleColor
@@ -336,9 +518,30 @@ export function renderDebugWindow(
   ctx.moveTo(offsetX + padding, y)
   ctx.lineTo(offsetX + windowWidth - padding, y)
   ctx.stroke()
-
   y += padding / 2
 
+  // 値調整セクション（ゴールド/スコア）
+  y += vs.sectionMarginTop
+
+  // ゴールド調整
+  const goldButtons = drawValueAdjustRow(ctx, 'Gold', gold, offsetX, y, windowWidth, padding)
+  y += vs.rowHeight
+
+  // スコア調整
+  const scoreButtons = drawValueAdjustRow(ctx, 'Score', score, offsetX, y, windowWidth, padding)
+  y += vs.rowHeight
+
+  // セパレータライン
+  y += padding / 2
+  ctx.strokeStyle = titleColor
+  ctx.lineWidth = 1
+  ctx.beginPath()
+  ctx.moveTo(offsetX + padding, y)
+  ctx.lineTo(offsetX + windowWidth - padding, y)
+  ctx.stroke()
+  y += padding / 2
+
+  // セーブデータ削除ボタン
   const deleteButtonWidth = windowWidth - padding * 2
   const deleteButtonHeight = 22
   const deleteButtonX = offsetX + padding
@@ -358,5 +561,14 @@ export function renderDebugWindow(
     sealMinusButton: sealButtons.minusButton,
     deleteSaveButton: { x: deleteButtonX, y: deleteButtonY, width: deleteButtonWidth, height: deleteButtonHeight },
     windowBounds: { x: offsetX, y: offsetY, width: windowWidth, height: windowHeight },
+    relicButtons: relicResult.relicButtons,
+    goldMinus50Button: goldButtons.minus50,
+    goldMinus10Button: goldButtons.minus10,
+    goldPlus10Button: goldButtons.plus10,
+    goldPlus50Button: goldButtons.plus50,
+    scoreMinus50Button: scoreButtons.minus50,
+    scoreMinus10Button: scoreButtons.minus10,
+    scorePlus10Button: scoreButtons.plus10,
+    scorePlus50Button: scoreButtons.plus50,
   }
 }
