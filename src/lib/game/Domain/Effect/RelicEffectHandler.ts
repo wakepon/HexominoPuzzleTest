@@ -14,7 +14,7 @@ import type {
 /**
  * レリックを所持しているか判定
  */
-function hasRelic(
+export function hasRelic(
   ownedRelics: readonly RelicId[],
   relicType: RelicType
 ): boolean {

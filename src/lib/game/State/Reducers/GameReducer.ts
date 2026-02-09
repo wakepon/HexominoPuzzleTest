@@ -47,7 +47,10 @@ import {
   calculateScoreWithEffects,
 } from '../../Services/LineService'
 import { hasComboPattern } from '../../Domain/Effect/PatternEffectHandler'
-import { getActivatedRelicsFromScoreBreakdown } from '../../Domain/Effect/RelicEffectHandler'
+import {
+  getActivatedRelicsFromScoreBreakdown,
+  hasRelic,
+} from '../../Domain/Effect/RelicEffectHandler'
 import {
   INITIAL_RELIC_MULTIPLIER_STATE,
   updateRenshaMultiplier,
@@ -75,17 +78,6 @@ import { CLEAR_ANIMATION, RELIC_EFFECT_STYLE } from '../../Data/Constants'
 import { saveGameState, clearGameState } from '../../Services/StorageService'
 import type { RelicMultiplierState } from '../../Domain/Effect/RelicState'
 import type { RelicId } from '../../Domain/Core/Id'
-import type { RelicType } from '../../Domain/Effect/Relic'
-
-/**
- * レリックを所持しているか判定
- */
-function hasRelic(
-  ownedRelics: readonly RelicId[],
-  relicType: RelicType
-): boolean {
-  return ownedRelics.includes(relicType as RelicId)
-}
 
 /**
  * レリック倍率状態を更新
