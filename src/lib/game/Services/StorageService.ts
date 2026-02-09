@@ -431,5 +431,7 @@ export function restoreGameState(
     comboCount: saved.comboCount,
     // マイグレーション対応: 古いセーブデータにはrelicMultiplierStateがない
     relicMultiplierState: saved.relicMultiplierState ?? INITIAL_RELIC_MULTIPLIER_STATE,
+    // UI状態は常にリセット
+    deckViewOpen: false,
   }
 }

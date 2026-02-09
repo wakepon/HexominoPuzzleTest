@@ -8,7 +8,8 @@
  */
 
 import type { CanvasLayout, RoundInfo } from '../../lib/game/types'
-import { HD_LAYOUT, HD_STATUS_PANEL_STYLE, ROUND_CONFIG } from '../../lib/game/Data/Constants'
+import { HD_LAYOUT, HD_STATUS_PANEL_STYLE, ROUND_CONFIG, DECK_BUTTON_STYLE } from '../../lib/game/Data/Constants'
+import type { ButtonArea } from './overlayRenderer'
 
 interface StatusPanelData {
   targetScore: number
@@ -19,13 +20,20 @@ interface StatusPanelData {
 }
 
 /**
+ * ステータスパネルの描画結果
+ */
+export interface StatusPanelRenderResult {
+  deckButtonArea: ButtonArea
+}
+
+/**
  * 左側ステータスパネルを描画
  */
 export function renderStatusPanel(
   ctx: CanvasRenderingContext2D,
   data: StatusPanelData,
   _layout: CanvasLayout
-): void {
+): StatusPanelRenderResult {
   const style = HD_STATUS_PANEL_STYLE
   const padding = HD_LAYOUT.statusPadding
   const groupGap = HD_LAYOUT.statusGroupGap
@@ -84,5 +92,30 @@ export function renderStatusPanel(
   ctx.fillStyle = style.handColor
   ctx.fillText(`${data.remainingHands}`, padding + 175, bottomY + 25)
 
+  // === デッキボタン ===
+  const btnStyle = DECK_BUTTON_STYLE
+  const buttonX = padding
+  const buttonY = btnStyle.offsetY
+
+  ctx.fillStyle = btnStyle.backgroundColor
+  ctx.beginPath()
+  ctx.roundRect(buttonX, buttonY, btnStyle.width, btnStyle.height, btnStyle.borderRadius)
+  ctx.fill()
+
+  ctx.font = `bold ${btnStyle.fontSize}px Arial, sans-serif`
+  ctx.fillStyle = btnStyle.textColor
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText('デッキ', buttonX + btnStyle.width / 2, buttonY + btnStyle.height / 2)
+
   ctx.restore()
+
+  return {
+    deckButtonArea: {
+      x: buttonX,
+      y: buttonY,
+      width: btnStyle.width,
+      height: btnStyle.height,
+    },
+  }
 }

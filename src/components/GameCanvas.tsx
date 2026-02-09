@@ -5,13 +5,15 @@ import { renderBoard } from './renderer/boardRenderer'
 import { renderPieceSlots, renderDraggingPiece } from './renderer/pieceRenderer'
 import { renderPlacementPreview } from './renderer/previewRenderer'
 import { renderClearAnimation } from './renderer/clearAnimationRenderer'
-import { renderStatusPanel } from './renderer/statusPanelRenderer'
+import { renderStatusPanel, StatusPanelRenderResult } from './renderer/statusPanelRenderer'
 import { renderRoundClear, renderGameOver, renderGameClear } from './renderer/overlayRenderer'
 import { renderShop, ShopRenderResult } from './renderer/shopRenderer'
 import { renderDebugWindow, DebugWindowRenderResult } from './renderer/debugRenderer'
 import { renderTooltip } from './renderer/tooltipRenderer'
 import { renderRelicPanel } from './renderer/relicPanelRenderer'
 import { renderRelicEffect } from './renderer/relicEffectRenderer'
+import { renderRoundProgress, RoundProgressRenderResult } from './renderer/RoundProgressRenderer'
+import { renderDeckView, DeckViewRenderResult } from './renderer/DeckViewRenderer'
 import type { DebugSettings } from '../lib/game/Domain/Debug'
 import type { TooltipState } from '../lib/game/Domain/Tooltip'
 import { INITIAL_TOOLTIP_STATE } from '../lib/game/Domain/Tooltip'
@@ -35,6 +37,9 @@ interface GameCanvasProps {
   onLeaveShop: () => void
   onUpdateDebugSettings: (updates: Partial<DebugSettings>) => void
   onDeleteSave: () => void
+  onStartRound: () => void
+  onOpenDeckView: () => void
+  onCloseDeckView: () => void
 }
 
 export function GameCanvas({
@@ -52,6 +57,9 @@ export function GameCanvas({
   onLeaveShop,
   onUpdateDebugSettings,
   onDeleteSave,
+  onStartRound,
+  onOpenDeckView,
+  onCloseDeckView,
 }: GameCanvasProps) {
   const [canvas, setCanvas] = useState<HTMLCanvasElement | null>(null)
   const [showDebugWindow, setShowDebugWindow] = useState(false)
@@ -63,6 +71,9 @@ export function GameCanvas({
   const roundClearTimeRef = useRef<number | null>(null)
   const shopRenderResultRef = useRef<ShopRenderResult | null>(null)
   const debugWindowResultRef = useRef<DebugWindowRenderResult | null>(null)
+  const roundProgressResultRef = useRef<RoundProgressRenderResult | null>(null)
+  const deckViewResultRef = useRef<DeckViewRenderResult | null>(null)
+  const statusPanelResultRef = useRef<StatusPanelRenderResult | null>(null)
 
   // callback ref でcanvasを取得
   const canvasRefCallback = useCallback((node: HTMLCanvasElement | null) => {
@@ -84,7 +95,7 @@ export function GameCanvas({
     ctx.fillRect(0, 0, layout.canvasWidth, layout.canvasHeight)
 
     // 左側ステータスパネル描画
-    renderStatusPanel(ctx, {
+    statusPanelResultRef.current = renderStatusPanel(ctx, {
       targetScore: state.targetScore,
       roundScore: state.score,
       gold: state.player.gold,
@@ -122,23 +133,45 @@ export function GameCanvas({
     }
 
     // オーバーレイ描画
-    if (state.phase === 'round_clear') {
+    if (state.phase === 'round_progress') {
+      roundProgressResultRef.current = renderRoundProgress(
+        ctx,
+        state.round,
+        state.roundInfo,
+        state.targetScore,
+        layout
+      )
+      buttonAreaRef.current = null
+      shopRenderResultRef.current = null
+    } else if (state.phase === 'round_clear') {
       const goldReward = state.deck.remainingHands
       renderRoundClear(ctx, state.round, goldReward, layout)
       buttonAreaRef.current = null
       shopRenderResultRef.current = null
+      roundProgressResultRef.current = null
     } else if (state.phase === 'shopping' && state.shopState) {
       shopRenderResultRef.current = renderShop(ctx, state.shopState, state.player.gold, layout)
       buttonAreaRef.current = null
+      roundProgressResultRef.current = null
     } else if (state.phase === 'game_over') {
       buttonAreaRef.current = renderGameOver(ctx, state.round, state.score, state.player.gold, layout)
       shopRenderResultRef.current = null
+      roundProgressResultRef.current = null
     } else if (state.phase === 'game_clear') {
       buttonAreaRef.current = renderGameClear(ctx, state.player.gold, layout)
       shopRenderResultRef.current = null
+      roundProgressResultRef.current = null
     } else {
       buttonAreaRef.current = null
       shopRenderResultRef.current = null
+      roundProgressResultRef.current = null
+    }
+
+    // デッキ一覧画面（他のオーバーレイより上に描画）
+    if (state.deckViewOpen) {
+      deckViewResultRef.current = renderDeckView(ctx, state.deck, state.pieceSlots, layout)
+    } else {
+      deckViewResultRef.current = null
     }
 
     // デバッグウィンドウ描画
@@ -425,12 +458,61 @@ export function GameCanvas({
       return false
     }
 
+    // ラウンド進行画面のクリック処理
+    const handleRoundProgressClick = (pos: Position): boolean => {
+      const result = roundProgressResultRef.current
+      if (!result) return false
+
+      if (isPointInArea(pos, result.startButtonArea)) {
+        onStartRound()
+        return true
+      }
+      return false
+    }
+
+    // デッキ一覧画面のクリック処理
+    const handleDeckViewClick = (pos: Position): boolean => {
+      const result = deckViewResultRef.current
+      if (!result || !state.deckViewOpen) return false
+
+      if (isPointInArea(pos, result.closeButtonArea)) {
+        onCloseDeckView()
+        return true
+      }
+      // 画面内クリックはイベントを消費
+      return true
+    }
+
+    // デッキボタンのクリック処理
+    const handleDeckButtonClick = (pos: Position): boolean => {
+      const result = statusPanelResultRef.current
+      if (!result) return false
+
+      if (isPointInArea(pos, result.deckButtonArea)) {
+        onOpenDeckView()
+        return true
+      }
+      return false
+    }
+
     const handleMouseDown = (e: MouseEvent) => {
       e.preventDefault()
       const pos = getCanvasPosition(e)
 
       // デバッグウィンドウのクリック判定（最優先）
       if (handleDebugWindowClick(pos)) {
+        return
+      }
+
+      // デッキ一覧が開いている場合
+      if (state.deckViewOpen) {
+        handleDeckViewClick(pos)
+        return
+      }
+
+      // ラウンド進行画面
+      if (state.phase === 'round_progress') {
+        handleRoundProgressClick(pos)
         return
       }
 
@@ -450,6 +532,13 @@ export function GameCanvas({
 
       // アニメーション中またはラウンドクリア中は操作をブロック
       if (state.clearingAnimation?.isAnimating || state.phase === 'round_clear') return
+
+      // デッキボタンのクリック判定（playing 時のみ）
+      if (state.phase === 'playing') {
+        if (handleDeckButtonClick(pos)) {
+          return
+        }
+      }
 
       const slotIndex = findSlotAtPosition(pos)
 
@@ -518,6 +607,18 @@ export function GameCanvas({
         return
       }
 
+      // デッキ一覧が開いている場合
+      if (state.deckViewOpen) {
+        handleDeckViewClick(pos)
+        return
+      }
+
+      // ラウンド進行画面
+      if (state.phase === 'round_progress') {
+        handleRoundProgressClick(pos)
+        return
+      }
+
       // レリックのタップトグル処理（ショッピングフェーズ以外で優先）
       // ショッピングフェーズではショップ購入処理を優先
       if (state.phase !== 'shopping') {
@@ -553,6 +654,13 @@ export function GameCanvas({
 
       // アニメーション中またはラウンドクリア中は操作をブロック
       if (state.clearingAnimation?.isAnimating || state.phase === 'round_clear') return
+
+      // デッキボタンのクリック判定（playing 時のみ）
+      if (state.phase === 'playing') {
+        if (handleDeckButtonClick(pos)) {
+          return
+        }
+      }
 
       const slotIndex = findSlotAtPosition(pos)
 
@@ -634,7 +742,7 @@ export function GameCanvas({
       window.removeEventListener('touchend', handleTouchEnd)
       window.removeEventListener('touchcancel', handleTouchEnd)
     }
-  }, [canvas, layout, state.pieceSlots, state.clearingAnimation, state.phase, state.shopState, state.player, state.board, state.dragState, onDragStart, onDragMove, onDragEnd, onReset, onBuyItem, onLeaveShop, showDebugWindow, debugSettings, onUpdateDebugSettings])
+  }, [canvas, layout, state.pieceSlots, state.clearingAnimation, state.phase, state.shopState, state.player, state.board, state.dragState, state.deckViewOpen, onDragStart, onDragMove, onDragEnd, onReset, onBuyItem, onLeaveShop, onStartRound, onOpenDeckView, onCloseDeckView, showDebugWindow, debugSettings, onUpdateDebugSettings])
 
   return (
     <canvas

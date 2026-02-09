@@ -97,7 +97,7 @@ function createNewGameState(): GameState {
     clearingAnimation: null,
     relicActivationAnimation: null,
     deck: newDeck,
-    phase: 'playing',
+    phase: 'round_progress',
     round: initialRound,
     roundInfo,
     player: createInitialPlayerState(ROUND_CONFIG.initialGold),
@@ -105,6 +105,7 @@ function createNewGameState(): GameState {
     shopState: null,
     comboCount: 0,
     relicMultiplierState: INITIAL_RELIC_MULTIPLIER_STATE,
+    deckViewOpen: false,
   }
 }
 

@@ -245,7 +245,7 @@ function createNextRoundState(currentState: GameState): GameState {
     clearingAnimation: null,
     relicActivationAnimation: null,
     deck: newDeck,
-    phase: 'playing',
+    phase: 'round_progress',
     round: nextRound,
     roundInfo,
     player: currentState.player,
@@ -253,6 +253,7 @@ function createNextRoundState(currentState: GameState): GameState {
     shopState: null,
     comboCount: 0,
     relicMultiplierState: INITIAL_RELIC_MULTIPLIER_STATE, // ラウンド開始時に倍率をリセット
+    deckViewOpen: false,
   }
 }
 
@@ -635,6 +636,59 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       saveGameState(nextRoundState)
 
       return nextRoundState
+    }
+
+    case 'ROUND/START': {
+      // round_progress状態でのみプレイ開始可能
+      if (state.phase !== 'round_progress') return state
+
+      const playingState = {
+        ...state,
+        phase: 'playing' as const,
+      }
+
+      // プレイ開始時に保存
+      saveGameState(playingState)
+
+      return playingState
+    }
+
+    case 'ROUND/SHOW_PROGRESS': {
+      // shopping状態からのみラウンド進行画面へ遷移可能
+      if (state.phase !== 'shopping') return state
+
+      const progressState = {
+        ...state,
+        phase: 'round_progress' as const,
+        shopState: null,
+      }
+
+      saveGameState(progressState)
+
+      return progressState
+    }
+
+    case 'UI/OPEN_DECK_VIEW': {
+      // オーバーレイ表示中は開けない
+      if (
+        state.phase === 'round_clear' ||
+        state.phase === 'game_over' ||
+        state.phase === 'game_clear' ||
+        state.phase === 'shopping'
+      ) {
+        return state
+      }
+      return {
+        ...state,
+        deckViewOpen: true,
+      }
+    }
+
+    case 'UI/CLOSE_DECK_VIEW': {
+      return {
+        ...state,
+        deckViewOpen: false,
+      }
     }
 
     default:

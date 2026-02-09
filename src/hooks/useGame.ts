@@ -52,6 +52,18 @@ export function useGame() {
     dispatch({ type: 'SHOP/LEAVE' })
   }, [])
 
+  const startRound = useCallback(() => {
+    dispatch({ type: 'ROUND/START' })
+  }, [])
+
+  const openDeckView = useCallback(() => {
+    dispatch({ type: 'UI/OPEN_DECK_VIEW' })
+  }, [])
+
+  const closeDeckView = useCallback(() => {
+    dispatch({ type: 'UI/CLOSE_DECK_VIEW' })
+  }, [])
+
   const updateDebugSettings = useCallback((updates: Partial<DebugSettings>) => {
     setDebugSettings((prev) => ({ ...prev, ...updates }))
   }, [])
@@ -77,6 +89,9 @@ export function useGame() {
       leaveShop,
       updateDebugSettings,
       deleteSave,
+      startRound,
+      openDeckView,
+      closeDeckView,
     },
   }
 }

@@ -43,4 +43,7 @@ export interface GameState {
 
   // レリック倍率状態
   readonly relicMultiplierState: RelicMultiplierState
+
+  // UI状態
+  readonly deckViewOpen: boolean
 }

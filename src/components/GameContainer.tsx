@@ -36,6 +36,9 @@ export function GameContainer() {
         onLeaveShop={actions.leaveShop}
         onUpdateDebugSettings={actions.updateDebugSettings}
         onDeleteSave={actions.deleteSave}
+        onStartRound={actions.startRound}
+        onOpenDeckView={actions.openDeckView}
+        onCloseDeckView={actions.closeDeckView}
       />
     </div>
   )

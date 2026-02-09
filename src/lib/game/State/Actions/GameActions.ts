@@ -22,6 +22,8 @@ export type UIAction =
   | { type: 'UI/START_DRAG'; slotIndex: number; startPos: Position }
   | { type: 'UI/UPDATE_DRAG'; currentPos: Position; boardPos: Position | null }
   | { type: 'UI/END_DRAG' }
+  | { type: 'UI/OPEN_DECK_VIEW' }
+  | { type: 'UI/CLOSE_DECK_VIEW' }
 
 // ゲームアクション
 export type GameCoreAction =
@@ -35,6 +37,8 @@ export type AnimationAction =
 // ラウンドアクション
 export type RoundAction =
   | { type: 'ROUND/ADVANCE'; probabilityOverride?: ProbabilityOverride }
+  | { type: 'ROUND/SHOW_PROGRESS' }
+  | { type: 'ROUND/START' }
 
 // ショップアクション
 export type ShopAction =
