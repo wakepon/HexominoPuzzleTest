@@ -581,3 +581,16 @@ export const DECK_BUTTON_STYLE = {
   borderRadius: 6,
   offsetY: 350,
 }
+
+// ストック枠スタイル（ボードの左側、レリックパネルの下）
+export const STOCK_SLOT_STYLE = {
+  x: 470,                           // ストック枠のX位置（relicAreaXと同じ）
+  y: 520,                           // ストック枠のY位置（レリックパネルの下）
+  width: 80,                        // ストック枠の幅
+  height: 80,                       // ストック枠の高さ
+  borderWidth: 3,                   // 枠線の太さ
+  borderColor: '#8B7355',           // 枠線の色
+  backgroundColor: 'rgba(210, 180, 140, 0.2)',  // 背景色（半透明）
+  labelFontSize: 12,                // ラベルのフォントサイズ
+  labelColor: '#AAAAAA',            // ラベルの色
+}

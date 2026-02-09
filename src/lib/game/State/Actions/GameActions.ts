@@ -8,6 +8,7 @@
  * - ANIMATION/: アニメーション
  * - ROUND/: ラウンド進行
  * - SHOP/: ショップ操作
+ * - STOCK/: ストック操作
  */
 
 import type { Position } from '../../Domain'
@@ -20,6 +21,7 @@ export type BoardAction =
 // UIアクション
 export type UIAction =
   | { type: 'UI/START_DRAG'; slotIndex: number; startPos: Position }
+  | { type: 'UI/START_DRAG_FROM_STOCK'; startPos: Position }
   | { type: 'UI/UPDATE_DRAG'; currentPos: Position; boardPos: Position | null }
   | { type: 'UI/END_DRAG' }
   | { type: 'UI/OPEN_DECK_VIEW' }
@@ -45,6 +47,12 @@ export type ShopAction =
   | { type: 'SHOP/BUY_ITEM'; itemIndex: number }
   | { type: 'SHOP/LEAVE' }
 
+// ストックアクション
+export type StockAction =
+  | { type: 'STOCK/MOVE_TO_STOCK'; slotIndex: number }      // 手札→ストック
+  | { type: 'STOCK/MOVE_FROM_STOCK'; targetSlotIndex: number }  // ストック→手札
+  | { type: 'STOCK/SWAP'; slotIndex: number }               // 手札とストック交換
+
 /**
  * 全アクション型（判別可能なUnion型）
  */
@@ -55,3 +63,4 @@ export type GameAction =
   | AnimationAction
   | RoundAction
   | ShopAction
+  | StockAction

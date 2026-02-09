@@ -14,6 +14,10 @@ export function useGame() {
     dispatch({ type: 'UI/START_DRAG', slotIndex, startPos })
   }, [])
 
+  const startDragFromStock = useCallback((startPos: Position) => {
+    dispatch({ type: 'UI/START_DRAG_FROM_STOCK', startPos })
+  }, [])
+
   const updateDrag = useCallback((currentPos: Position, boardPos: Position | null) => {
     dispatch({ type: 'UI/UPDATE_DRAG', currentPos, boardPos })
   }, [])
@@ -64,6 +68,18 @@ export function useGame() {
     dispatch({ type: 'UI/CLOSE_DECK_VIEW' })
   }, [])
 
+  const moveToStock = useCallback((slotIndex: number) => {
+    dispatch({ type: 'STOCK/MOVE_TO_STOCK', slotIndex })
+  }, [])
+
+  const moveFromStock = useCallback((targetSlotIndex: number) => {
+    dispatch({ type: 'STOCK/MOVE_FROM_STOCK', targetSlotIndex })
+  }, [])
+
+  const swapWithStock = useCallback((slotIndex: number) => {
+    dispatch({ type: 'STOCK/SWAP', slotIndex })
+  }, [])
+
   const updateDebugSettings = useCallback((updates: Partial<DebugSettings>) => {
     setDebugSettings((prev) => ({ ...prev, ...updates }))
   }, [])
@@ -79,6 +95,7 @@ export function useGame() {
     debugSettings,
     actions: {
       startDrag,
+      startDragFromStock,
       updateDrag,
       endDrag,
       resetGame,
@@ -92,6 +109,9 @@ export function useGame() {
       startRound,
       openDeckView,
       closeDeckView,
+      moveToStock,
+      moveFromStock,
+      swapWithStock,
     },
   }
 }

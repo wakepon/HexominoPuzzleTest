@@ -1,13 +1,19 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import type { CanvasLayout, Position, PieceSlot } from '../lib/game/Domain'
-import { HD_LAYOUT } from '../lib/game/Data/Constants'
+import type { RelicId } from '../lib/game/Domain/Core/Id'
+import { HD_LAYOUT, STOCK_SLOT_STYLE } from '../lib/game/Data/Constants'
 import { getPieceSize } from '../lib/game/Services/PieceService'
+import { hasRelic } from '../lib/game/Domain/Effect/RelicEffectHandler'
 
 /**
  * Canvasレイアウト計算フック（HD 1280x720固定レイアウト）
  * @param pieceSlots 現在のピーススロット（動的にスロット位置を計算するため）
+ * @param ownedRelics 所持レリック（ストック枠表示判定用）
  */
-export function useCanvasLayout(pieceSlots: readonly PieceSlot[]): CanvasLayout | null {
+export function useCanvasLayout(
+  pieceSlots: readonly PieceSlot[],
+  ownedRelics: readonly RelicId[] = []
+): CanvasLayout | null {
   const [layout, setLayout] = useState<CanvasLayout | null>(null)
 
   // pieceSlots の参照が変わるたびに再計算されないよう、形状のみを比較するキーを生成
@@ -23,6 +29,9 @@ export function useCanvasLayout(pieceSlots: readonly PieceSlot[]): CanvasLayout 
   // pieceSlotsKey を使って形状が変わったときのみ再計算
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const stablePieceSlots = useMemo(() => pieceSlots, [pieceSlotsKey])
+
+  // hand_stockレリックを所持しているか
+  const hasHandStock = hasRelic(ownedRelics, 'hand_stock')
 
   const calculateLayout = useCallback(() => {
     // HD固定サイズ
@@ -48,6 +57,11 @@ export function useCanvasLayout(pieceSlots: readonly PieceSlot[]): CanvasLayout 
       stablePieceSlots
     )
 
+    // ストック枠位置（hand_stockレリック所持時のみ）
+    const stockSlotPosition = hasHandStock
+      ? { x: STOCK_SLOT_STYLE.x, y: STOCK_SLOT_STYLE.y }
+      : null
+
     setLayout({
       canvasWidth,
       canvasHeight,
@@ -56,8 +70,9 @@ export function useCanvasLayout(pieceSlots: readonly PieceSlot[]): CanvasLayout 
       cellSize,
       slotAreaY,
       slotPositions,
+      stockSlotPosition,
     })
-  }, [stablePieceSlots])
+  }, [stablePieceSlots, hasHandStock])
 
   useEffect(() => {
     calculateLayout()

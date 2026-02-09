@@ -29,6 +29,7 @@ export const initialDragState: DragState = {
   isDragging: false,
   pieceId: null,
   slotIndex: null,
+  dragSource: null,
   currentPos: null,
   startPos: null,
   boardPos: null,

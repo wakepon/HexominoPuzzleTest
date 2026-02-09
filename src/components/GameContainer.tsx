@@ -4,7 +4,7 @@ import { GameCanvas } from './GameCanvas'
 
 export function GameContainer() {
   const { state, debugSettings, actions } = useGame()
-  const layout = useCanvasLayout(state.pieceSlots)
+  const layout = useCanvasLayout(state.pieceSlots, state.player.ownedRelics)
 
   if (!layout) {
     return (
@@ -26,6 +26,7 @@ export function GameContainer() {
         layout={layout}
         debugSettings={debugSettings}
         onDragStart={actions.startDrag}
+        onDragStartFromStock={actions.startDragFromStock}
         onDragMove={actions.updateDrag}
         onDragEnd={actions.endDrag}
         onClearAnimationEnd={actions.endClearAnimation}
@@ -39,6 +40,9 @@ export function GameContainer() {
         onStartRound={actions.startRound}
         onOpenDeckView={actions.openDeckView}
         onCloseDeckView={actions.closeDeckView}
+        onMoveToStock={actions.moveToStock}
+        onMoveFromStock={actions.moveFromStock}
+        onSwapWithStock={actions.swapWithStock}
       />
     </div>
   )
