@@ -48,7 +48,12 @@ import {
 } from '../../Services/LineService'
 import { hasComboPattern } from '../../Domain/Effect/PatternEffectHandler'
 import { getActivatedRelicsFromScoreBreakdown } from '../../Domain/Effect/RelicEffectHandler'
-import { INITIAL_RELIC_MULTIPLIER_STATE } from '../../Domain/Effect/RelicState'
+import {
+  INITIAL_RELIC_MULTIPLIER_STATE,
+  updateRenshaMultiplier,
+  updateNobiTakenokoMultiplier,
+  updateNobiKaniMultiplier,
+} from '../../Domain/Effect/RelicState'
 import { createRelicActivationAnimation } from '../../Domain/Animation/AnimationState'
 import { decrementRemainingHands } from '../../Services/DeckService'
 import {
@@ -68,6 +73,50 @@ import {
 import { DefaultRandom } from '../../Utils/Random'
 import { CLEAR_ANIMATION, RELIC_EFFECT_STYLE } from '../../Data/Constants'
 import { saveGameState, clearGameState } from '../../Services/StorageService'
+import type { RelicMultiplierState } from '../../Domain/Effect/RelicState'
+import type { RelicId } from '../../Domain/Core/Id'
+import type { RelicType } from '../../Domain/Effect/Relic'
+
+/**
+ * レリックを所持しているか判定
+ */
+function hasRelic(
+  ownedRelics: readonly RelicId[],
+  relicType: RelicType
+): boolean {
+  return ownedRelics.includes(relicType as RelicId)
+}
+
+/**
+ * レリック倍率状態を更新
+ * ピース配置後に呼び出し、消去ライン数に基づいて各倍率を更新
+ */
+function updateRelicMultipliers(
+  currentState: RelicMultiplierState,
+  ownedRelics: readonly RelicId[],
+  totalLines: number,
+  rowLines: number,
+  colLines: number
+): RelicMultiplierState {
+  let newState = currentState
+
+  // 2-D: 連射倍率の更新
+  if (hasRelic(ownedRelics, 'rensha')) {
+    newState = updateRenshaMultiplier(newState, totalLines)
+  }
+
+  // 2-E: のびのびタケノコ倍率の更新
+  if (hasRelic(ownedRelics, 'nobi_takenoko')) {
+    newState = updateNobiTakenokoMultiplier(newState, rowLines, colLines)
+  }
+
+  // 2-F: のびのびカニ倍率の更新
+  if (hasRelic(ownedRelics, 'nobi_kani')) {
+    newState = updateNobiKaniMultiplier(newState, rowLines, colLines)
+  }
+
+  return newState
+}
 
 /**
  * ピースのブロック数を取得
@@ -419,6 +468,15 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
                 )
               : null
 
+          // レリック倍率状態を更新（ライン消去あり）
+          const newRelicMultiplierState = updateRelicMultipliers(
+            state.relicMultiplierState,
+            state.player.ownedRelics,
+            totalLines,
+            completedLines.rows.length,
+            completedLines.columns.length
+          )
+
           return {
             ...state,
             board: newBoard,
@@ -436,6 +494,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             deck: finalDeck,
             phase: newPhase,
             comboCount: newComboCount,
+            relicMultiplierState: newRelicMultiplierState,
           }
         }
 
@@ -446,6 +505,15 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           finalDeck.remainingHands
         )
 
+        // レリック倍率状態を更新（ライン消去なし）
+        const newRelicMultiplierState = updateRelicMultipliers(
+          state.relicMultiplierState,
+          state.player.ownedRelics,
+          0, // totalLines
+          0, // rowLines
+          0  // colLines
+        )
+
         return {
           ...state,
           board: newBoard,
@@ -454,6 +522,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           deck: finalDeck,
           phase: newPhase,
           comboCount: newComboCount,
+          relicMultiplierState: newRelicMultiplierState,
         }
       }
 

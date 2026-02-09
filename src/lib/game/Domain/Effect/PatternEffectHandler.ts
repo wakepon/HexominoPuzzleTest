@@ -274,6 +274,9 @@ export function calculateScoreBreakdown(
     singleLineMultiplier,
     takenokoMultiplier,
     kaniMultiplier,
+    renshaMultiplier,
+    nobiTakenokoMultiplier,
+    nobiKaniMultiplier,
   } = relicEffects
 
   // 最終スコア計算（仕様書の順序に従う）
@@ -292,8 +295,18 @@ export function calculateScoreBreakdown(
   )
   // 5. カニ（×行数）- 横列のみ消去時に発動
   const scoreAfterKani = Math.floor(scoreAfterTakenoko * kaniMultiplier)
-  // 6. 小さな幸運（+20）+ 全消しボーナス（+20）
-  const finalScore = scoreAfterKani + smallLuckBonus + fullClearBonus
+  // 6. のびのびタケノコ（×倍率、切り捨て）
+  const scoreAfterNobiTakenoko = Math.floor(
+    scoreAfterKani * nobiTakenokoMultiplier
+  )
+  // 7. のびのびカニ（×倍率、切り捨て）
+  const scoreAfterNobiKani = Math.floor(
+    scoreAfterNobiTakenoko * nobiKaniMultiplier
+  )
+  // 8. 連射（×倍率、切り捨て）
+  const scoreAfterRensha = Math.floor(scoreAfterNobiKani * renshaMultiplier)
+  // 9. 小さな幸運（+20）+ 全消しボーナス（+20）
+  const finalScore = scoreAfterRensha + smallLuckBonus + fullClearBonus
 
   return {
     baseBlocks,
@@ -315,6 +328,9 @@ export function calculateScoreBreakdown(
     singleLineMultiplier,
     takenokoMultiplier,
     kaniMultiplier,
+    renshaMultiplier,
+    nobiTakenokoMultiplier,
+    nobiKaniMultiplier,
     finalScore,
   }
 }
