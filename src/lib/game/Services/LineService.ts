@@ -138,6 +138,7 @@ export function calculateScoreWithEffects(
       smallLuckBonus: 0,
       fullClearBonus: 0,
       relicBonusTotal: 0,
+      singleLineMultiplier: 1,
       finalScore: 0,
     }
   }

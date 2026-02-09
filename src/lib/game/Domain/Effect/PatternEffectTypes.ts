@@ -32,6 +32,8 @@ export interface ScoreBreakdown {
   readonly smallLuckBonus: number // 小さな幸運ボーナス（0 or 20）
   readonly fullClearBonus: number // 全消しボーナス（0 or 20）
   readonly relicBonusTotal: number // レリック加算ボーナス合計
+  // 2-A: シングルライン
+  readonly singleLineMultiplier: number // シングルライン倍率（1 or 3）
   readonly finalScore: number // 最終スコア
 }
 

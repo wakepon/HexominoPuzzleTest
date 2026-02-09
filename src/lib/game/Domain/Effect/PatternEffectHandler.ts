@@ -267,7 +267,12 @@ export function calculateScoreBreakdown(
   const relicEffects = relicContext
     ? calculateRelicEffects(relicContext)
     : DEFAULT_RELIC_EFFECTS
-  const { chainMasterMultiplier, smallLuckBonus, fullClearBonus } = relicEffects
+  const {
+    chainMasterMultiplier,
+    smallLuckBonus,
+    fullClearBonus,
+    singleLineMultiplier,
+  } = relicEffects
 
   // 最終スコア計算（仕様書の順序に従う）
   // 1. 基本スコア（パターン+シール効果込み）
@@ -275,8 +280,12 @@ export function calculateScoreBreakdown(
   const scoreAfterChainMaster = Math.floor(
     scoreBeforeRelics * chainMasterMultiplier
   )
-  // 3. 小さな幸運（+20）+ 全消しボーナス（+20）
-  const finalScore = scoreAfterChainMaster + smallLuckBonus + fullClearBonus
+  // 3. シングルライン（×3）- 注: シングルラインと連鎖の達人は排他的（1ライン vs 2ライン以上）
+  const scoreAfterSingleLine = Math.floor(
+    scoreAfterChainMaster * singleLineMultiplier
+  )
+  // 4. 小さな幸運（+20）+ 全消しボーナス（+20）
+  const finalScore = scoreAfterSingleLine + smallLuckBonus + fullClearBonus
 
   return {
     baseBlocks,
@@ -295,6 +304,7 @@ export function calculateScoreBreakdown(
     smallLuckBonus,
     fullClearBonus,
     relicBonusTotal: smallLuckBonus + fullClearBonus,
+    singleLineMultiplier,
     finalScore,
   }
 }
