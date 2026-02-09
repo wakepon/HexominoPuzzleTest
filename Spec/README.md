@@ -14,10 +14,11 @@
 5. [レリックシステム](./relic-system.md) - 恒久的なパッシブ効果アイテム（全消しボーナス、連鎖の達人等）
 
 ### 技術仕様
-6. [データ構造](./data-structures.md) - 型定義とデータモデル（DeckState、GamePhase、ShopState、RelicState等）
-7. [状態管理](./state-management.md) - ゲーム状態とアクション（ADVANCE_ROUND、BUY_ITEM、START_ROUND等）
+6. [データ構造](./data-structures.md) - 型定義とデータモデル（DeckState、GamePhase、ShopState、PlayerState等）
+7. [状態管理](./state-management.md) - ゲーム状態とアクション（ROUND/ADVANCE、SHOP/BUY_ITEM、SHOP/LEAVE等）
 8. [UI・描画システム](./ui-rendering.md) - Canvas描画とユーザーインタラクション
-9. [レイアウトシステム](./layout-system.md) - レスポンシブレイアウト計算
+9. [レイアウトシステム](./layout-system.md) - HD固定レイアウト計算（1280x720）
+10. [アーキテクチャ](./Architecture.md) - コード構造とDomain/Service/State層の設計
 
 ## 仕様書の管理方針
 
@@ -36,3 +37,13 @@ doc-updater エージェントを使用してコードから仕様書を生成�
 - 2026-02-01: ミノシステム、ライン消去、スコアシステム、消去アニメーションを追加
 - 2026-02-02: デッキシステム、ラウンド制、ゴールド、ショップ、ゲームフェーズ、デバッグウィンドウに関する仕様を追加・更新
 - 2026-02-06: ローグライト要素追加（パターン・シールシステム、レリックシステム、ラウンドセット構成、ボス条件、ショップ拡張）
+- 2026-02-09: コードベース大幅リファクタリングを反映
+  - Domain/Service/State層への構造変更
+  - HD固定レイアウト（1280x720）への移行
+  - アクション型プレフィックス化（UI/、BOARD/、GAME/、ANIMATION/、ROUND/、SHOP/）
+  - PlayerState統合（ゴールド・レリックを一元管理）
+  - BlockDataMap導入（パターン・シール情報の管理強化）
+  - イベントシステム追加（GameEventBus）
+  - セーブデータシステム追加（StorageService）
+  - ツールチップシステム追加
+  - レリック発動アニメーション追加

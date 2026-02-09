@@ -222,13 +222,15 @@ Wooden Puzzle 風デッキ構築パズルブラウザゲーム。プレイヤー
 
 ## 関連ファイル
 
-- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/constants.ts` - ゲーム定数（グリッドサイズ、色定義、ラウンド設定等）
-- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/types.ts` - 型定義（GameState、GamePhase等）
-- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/minoDefinitions.ts` - ミノ形状定義（全307種類）
-- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/deckLogic.ts` - デッキ管理ロジック
-- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/roundLogic.ts` - ラウンド・ゴールド計算
-- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/shopLogic.ts` - ショップロジック
-- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/lineLogic.ts` - ライン消去とスコア計算
+- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/Data/Constants.ts` - ゲーム定数（グリッドサイズ、色定義、ラウンド設定等）
+- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/Domain/GameState.ts` - ゲーム状態型定義
+- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/Domain/Round/GamePhase.ts` - ゲームフェーズ定義
+- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/Data/MinoDefinitions.ts` - ミノ形状定義（全307種類）
+- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/Services/DeckService.ts` - デッキ管理ロジック
+- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/Services/RoundService.ts` - ラウンド・ゴールド計算
+- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/Services/ShopService.ts` - ショップロジック
+- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/Services/LineService.ts` - ライン消去とスコア計算
+- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/Data/BossConditions.ts` - ボス条件定義
 - `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/hooks/useGame.ts` - ゲーム状態管理
 - `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/components/GameContainer.tsx` - ゲームコンテナコンポーネント
 - `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/components/GameCanvas.tsx` - Canvas描画コンポーネント
@@ -239,3 +241,4 @@ Wooden Puzzle 風デッキ構築パズルブラウザゲーム。プレイヤー
 - 2026-02-01: ミノシステム、ライン消去、スコアシステムを追加
 - 2026-02-02: デッキシステム、ラウンド制、ゴールド、ショップ、ゲームフェーズ、デバッグウィンドウを追加
 - 2026-02-06: ローグライト要素追加（ラウンドセット、ボス条件、パターン・シール・レリック概要、ショップ拡張）
+- 2026-02-09: ファイルパス更新（Domain/Service/State層への構造変更を反映）

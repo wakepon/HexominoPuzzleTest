@@ -2,16 +2,16 @@
 
 ## 概要
 
-画面サイズに応じた動的レイアウト計算システムについて説明する。デスクトップからモバイルまで、あらゆる画面サイズに対応したレスポンシブレイアウトを実現している。
+HD固定レイアウト（1280x720）を採用したレイアウト計算システムについて説明する。左側にステータスパネル、右側にゲームボードとスロットを配置する二分割レイアウトを実現している。
 
 ## useCanvasLayout Hook
 
 ### 役割
 
-- 画面サイズに基づいたレイアウト計算
+- HD固定レイアウト（1280x720）の計算
 - ボード位置とサイズの決定
-- スロット位置の計算
-- レスポンシブ対応（リサイズ・回転検知）
+- スロット位置の動的計算（ピース形状に基づく）
+- pieceSlots変更時の再計算対応
 
 ### 計算タイミング
 
@@ -19,75 +19,48 @@
 - Hook初回マウント時に計算実行
 
 **更新:**
-- ウィンドウリサイズ（`resize` イベント）
-- 画面向き変更（`orientationchange` イベント）
+- `pieceSlots`の形状が変化した時（形状キーを比較）
+- リサイズイベント（将来拡張用にリスナーは残存）
 
 ### 戻り値
 
 `CanvasLayout` オブジェクト、または計算中は `null`。
 
-## レイアウト計算フロー
+## レイアウト計算フロー（HD固定レイアウト）
 
-### 1. 画面サイズ取得
+### 1. Canvas サイズ設定
 
-```
-window.innerWidth
-window.innerHeight
-```
-
-### 2. 利用可能領域計算
-
-- 水平パディングを除いた幅
-- 垂直パディングを除いた高さ
-
-### 3. セルサイズ決定
-
-**制約条件:**
-- ボードエリアの高さ比率（`boardAreaRatio`）を考慮
-- 高さ制約によるセルサイズ
-- 幅制約によるセルサイズ
-- 小さい方を採用（`Math.min`）
-- 整数に切り捨て（`Math.floor`）
-
-**計算式:**
+HD固定値を使用:
 ```typescript
-const boardAreaHeight = availableHeight * boardAreaRatio
-const maxCellSizeByHeight = boardAreaHeight / GRID_SIZE
-const maxCellSizeByWidth = availableWidth / GRID_SIZE
-const cellSize = Math.floor(Math.min(maxCellSizeByHeight, maxCellSizeByWidth))
+canvasWidth = HD_LAYOUT.canvasWidth  // 1280
+canvasHeight = HD_LAYOUT.canvasHeight  // 720
 ```
 
-### 4. ボードサイズ計算
+### 2. セルサイズ設定
 
-```
-boardSize = GRID_SIZE * cellSize
-```
-
-### 5. Canvas全体サイズ決定
-
-- 幅: ボードサイズまたは利用可能幅の大きい方
-- 高さ: 利用可能高さ
-
-### 6. ボード位置計算
-
-**水平方向:**
-- Canvas中央に配置
-- `boardOffsetX = (canvasWidth - boardSize) / 2`
-
-**垂直方向:**
-- 上部に配置（パディング分下げる）
-- `boardOffsetY = verticalPadding`
-
-### 7. スロットエリア位置計算
-
-ボード下端からパディング分下の位置:
-```
-slotAreaY = boardOffsetY + boardSize + slotAreaPadding * 2
+固定値を使用:
+```typescript
+cellSize = HD_LAYOUT.cellSize  // 70
 ```
 
-### 8. スロット位置計算
+### 3. ボード位置設定
 
-各スロットの位置を個別に計算（詳細は後述）。
+右側パネル内の固定位置:
+```typescript
+boardOffsetX = HD_LAYOUT.boardOffsetX  // 570
+boardOffsetY = HD_LAYOUT.boardOffsetY  // 50
+```
+
+### 4. スロットエリア位置設定
+
+ボード下部の固定位置:
+```typescript
+slotAreaY = HD_LAYOUT.slotAreaY  // 530
+```
+
+### 5. スロット位置計算
+
+各スロットの位置を動的に計算（詳細は後述）。
 
 ## スロット位置計算
 
@@ -95,37 +68,37 @@ slotAreaY = boardOffsetY + boardSize + slotAreaPadding * 2
 
 - 各ブロックの実際の幅に応じて配置
 - ブロック間に一定の隙間を設ける
-- 全体を中央揃え
+- ボードの中央に揃える（水平方向）
 
 ### ステップ
 
-**1. 初期ブロック取得:**
-- `getInitialPieces()` で3種類のブロックを取得
-
-**2. スロットセルサイズ計算:**
-```
-slotCellSize = cellSize * slotCellSizeRatio
+**1. スロットセルサイズ計算:**
+```typescript
+slotCellSize = cellSize * HD_LAYOUT.slotCellSizeRatio  // 70 * 0.7 = 49
 ```
 
-**3. 各ブロックの幅を計算:**
+**2. 各ブロックの幅を計算:**
 - ブロック形状のサイズを取得（`getPieceSize`）
 - 幅 = ブロックの列数 × スロットセルサイズ
+- 空スロットの場合は1セル分の幅
 
-**4. 全体幅計算:**
-```
-totalWidth = 各ブロック幅の合計 + 隙間 × (スロット数 - 1)
-```
-
-**5. 開始位置計算:**
-```
-startX = (canvasWidth - totalWidth) / 2
-```
-
-**6. 各スロット位置を順次計算:**
+**3. 全体幅計算:**
 ```typescript
-for (let i = 0; i < SLOT_COUNT; i++) {
+totalWidth = 各ブロック幅の合計 + HD_LAYOUT.slotGap × (スロット数 - 1)
+```
+
+**4. ボード中央位置を基準に開始位置を計算:**
+```typescript
+boardWidth = 6 * cellSize  // 6x6グリッド
+boardCenterX = HD_LAYOUT.boardOffsetX + boardWidth / 2
+startX = boardCenterX - totalWidth / 2
+```
+
+**5. 各スロット位置を順次計算:**
+```typescript
+for (let i = 0; i < pieceSlots.length; i++) {
   positions.push({ x: currentX, y: slotAreaY })
-  currentX += pieceWidths[i] + slotGap
+  currentX += pieceWidths[i] + HD_LAYOUT.slotGap
 }
 ```
 
@@ -135,29 +108,55 @@ for (let i = 0; i < SLOT_COUNT; i++) {
 
 ## レイアウト定数
 
-定数は `constants.ts` の `LAYOUT` オブジェクトで定義されている:
+定数は `Constants.ts` の `HD_LAYOUT` オブジェクトで定義されている:
 
-- `boardPadding`: ボード周りのパディング
-- `slotGap`: スロット間の隙間
-- `slotAreaPadding`: スロットエリアの上下パディング
-- `canvasPaddingHorizontal`: Canvas水平パディング
-- `canvasPaddingVertical`: Canvas垂直パディング
-- `boardAreaRatio`: ボードエリアの高さ比率
+**固定画面サイズ:**
+- `canvasWidth`: 1280
+- `canvasHeight`: 720
+
+**パネル分割:**
+- `leftPanelWidth`: 左側ステータスパネルの幅
+- `rightPanelStartX`: 右側パネルの開始位置
+
+**ボード配置:**
+- `boardOffsetX`: ボードのX位置
+- `boardOffsetY`: ボードのY位置
+- `cellSize`: セルサイズ（70ピクセル）
+
+**スロットエリア:**
+- `slotAreaY`: スロットエリアのY位置
 - `slotCellSizeRatio`: スロット内ブロックのサイズ比率
+- `slotGap`: スロット間の隙間
 
-## レスポンシブ動作
+**ステータスパネル:**
+- `statusPadding`: パネル内側パディング
+- `statusGroupGap`: グループ間のギャップ
+- `statusItemGap`: アイテム間のギャップ
 
-### 縦長画面（モバイル縦持ち）
+**レリックエリア:**
+- `relicAreaX`: レリック置き場のX位置
+- `relicAreaY`: レリック置き場のY位置
+- `relicAreaWidth`: レリック置き場の幅
+- `relicAreaHeight`: レリック置き場の高さ
 
-- 幅制約が支配的
-- セルサイズは画面幅に基づいて決定
-- ボードとスロットが縦に並ぶ
+## 固定レイアウトの特性
 
-### 横長画面（デスクトップ・モバイル横持ち）
+### HD固定サイズ
 
-- 高さ制約が支配的（`boardAreaRatio`）
-- セルサイズは高さに基づいて決定
-- より大きなセルサイズを確保可能
+- Canvas解像度は常に1280x720ピクセル
+- レスポンシブ計算は行わない
+- 画面サイズが異なる場合はブラウザのスケーリングに依存
+
+### パネル分割レイアウト
+
+**左側パネル（380px幅）:**
+- ステータス情報表示
+- 目標スコア、現在スコア、ゴールド、ラウンド、手札情報
+
+**右側パネル（900px幅）:**
+- ゲームボード（6x6グリッド、セルサイズ70px）
+- スロットエリア（ボード中央に揃える）
+- レリック置き場（ボード左側）
 
 ### DPR対応
 
@@ -166,10 +165,27 @@ for (let i = 0; i < SLOT_COUNT; i++) {
 
 ## 再計算の最適化
 
+### pieceSlots形状キーによる判定
+
+`pieceSlots`の参照が変わるたびに再計算されないよう、形状のみを比較するキーを生成:
+```typescript
+const pieceSlotsKey = useMemo(() => {
+  return pieceSlots.map(slot => {
+    if (!slot.piece) return 'empty'
+    return slot.piece.shape
+      .map(row => row.map(cell => cell ? '1' : '0').join(''))
+      .join('|')
+  }).join('_')
+}, [pieceSlots])
+```
+
+- 形状が同じであれば再計算をスキップ
+- スロット位置計算は形状に依存するため、形状が変わった時のみ再計算が必要
+
 ### useCallback
 
 `calculateLayout` 関数を `useCallback` でメモ化:
-- 依存配列が空なので、関数参照は常に安定
+- `stablePieceSlots`に依存
 - イベントリスナーの登録/解除が効率的
 
 ### クリーンアップ
@@ -196,22 +212,23 @@ for (let i = 0; i < SLOT_COUNT; i++) {
 
 ## エッジケース処理
 
-### 極小画面
+### 小さい画面
 
-- `Math.floor` で整数に丸めるため、セルサイズは最低1ピクセル
-- パディング設定により、極端に小さい画面でも最低限のスペースを確保
+- ブラウザのスケーリング機能でCanvasが縮小される
+- レイアウトは固定のため、計算上の特別な処理は不要
 
-### 極大画面
+### 大きい画面
 
-- `Math.max` でCanvas幅を確保
-- ボードは中央配置され、左右に余白が生じる
+- ブラウザのスケーリング機能でCanvasが拡大される
+- レイアウトは固定のため、計算上の特別な処理は不要
 
 ## 関連ファイル
 
 - `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/hooks/useCanvasLayout.ts` - レイアウト計算Hook
-- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/constants.ts` - レイアウト定数
-- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/pieceDefinitions.ts` - ブロックサイズ取得
+- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/Data/Constants.ts` - レイアウト定数（HD_LAYOUT）
+- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/Services/PieceService.ts` - ブロックサイズ取得（getPieceSize）
 
 ## 更新履歴
 
 - 2026-02-01: 初版作成
+- 2026-02-09: HD固定レイアウト（1280x720）への変更を反映、pieceSlots形状キー最適化を追加

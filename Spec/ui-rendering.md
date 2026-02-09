@@ -300,18 +300,75 @@ const pos = {
 - デバイスピクセル比をキャッシュ
 - `useRef` で再レンダリングを回避
 
+## 新規描画機能
+
+### HDステータスパネル描画
+
+**左側パネルに表示:**
+- 目標スコア（大きく強調表示）
+- 現在のラウンドスコア
+- 獲得得点表示
+- 得点計算式
+- ゴールド表示
+- ラウンド情報
+- 残りハンド数
+
+**スタイル設定:**
+`HD_STATUS_PANEL_STYLE` で各要素のフォントサイズ、色、配置を定義。
+
+### レリックパネル描画
+
+**表示位置:**
+ボードの左側（レリック置き場エリア）
+
+**内容:**
+- 所持レリックのアイコンを縦に配置
+- アイコンサイズ、間隔は `HD_LAYOUT.relicArea*` で定義
+
+### ツールチップ描画
+
+**表示条件:**
+- レリックやショップアイテムにマウスホバー時
+- タッチデバイスでは長押し時
+
+**内容:**
+- 名前（強調表示）
+- 説明文
+- 効果リスト
+
+**スタイル:**
+`TOOLTIP_STYLE` で背景色、枠線、フォント設定を定義。
+
+### レリック発動エフェクト描画
+
+**表示タイミング:**
+- レリック効果が発動した時
+- スコア計算後
+
+**内容:**
+- レリックアイコン
+- レリック名
+- ボーナス値表示
+
+**アニメーション:**
+- 一定時間表示後にフェードアウト
+- 複数同時発動時は縦に並べて表示
+
+**スタイル:**
+`RELIC_EFFECT_STYLE` で背景、枠線、グロー効果を定義。
+
 ## 関連ファイル
 
 - `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/components/GameCanvas.tsx` - Canvas管理とイベント処理
 - `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/components/GameContainer.tsx` - ゲームコンテナ
-- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/components/renderer/boardRenderer.ts` - ボード描画
-- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/components/renderer/pieceRenderer.ts` - ブロック描画
-- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/components/renderer/previewRenderer.ts` - プレビュー描画
-- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/components/renderer/cellRenderer.ts` - セル描画
-- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/components/renderer/clearAnimationRenderer.ts` - 消去アニメーション描画
-- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/components/renderer/scoreRenderer.ts` - スコア描画
+- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/Data/Constants.ts` - 描画スタイル定数
+- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/Services/TooltipService.ts` - ツールチップ処理
+
+**注意:**
+現在のコードベースには `src/components/renderer/` ディレクトリが存在しない可能性があります。描画処理は `GameCanvas.tsx` 内に統合されているか、別のディレクトリ構造になっている可能性があります。
 
 ## 更新履歴
 
 - 2026-02-01: 初版作成
 - 2026-02-01: 消去アニメーション描画、スコア描画を追加
+- 2026-02-09: HD固定レイアウトに伴う新規描画機能を追加（ステータスパネル、レリックパネル、ツールチップ、レリック発動エフェクト）
