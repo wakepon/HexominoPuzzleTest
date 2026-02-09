@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import type { CanvasLayout, Position, PieceSlot } from '../lib/game/Domain'
-import { GRID_SIZE, LAYOUT } from '../lib/game/Data/Constants'
+import { HD_LAYOUT } from '../lib/game/Data/Constants'
 import { getPieceSize } from '../lib/game/Services/PieceService'
 
 /**
- * Canvasレイアウト計算フック
+ * Canvasレイアウト計算フック（HD 1280x720固定レイアウト）
  * @param pieceSlots 現在のピーススロット（動的にスロット位置を計算するため）
  */
 export function useCanvasLayout(pieceSlots: readonly PieceSlot[]): CanvasLayout | null {
@@ -25,41 +25,23 @@ export function useCanvasLayout(pieceSlots: readonly PieceSlot[]): CanvasLayout 
   const stablePieceSlots = useMemo(() => pieceSlots, [pieceSlotsKey])
 
   const calculateLayout = useCallback(() => {
-    // 画面サイズ取得
-    const screenWidth = window.innerWidth
-    const screenHeight = window.innerHeight
+    // HD固定サイズ
+    const canvasWidth = HD_LAYOUT.canvasWidth
+    const canvasHeight = HD_LAYOUT.canvasHeight
 
-    // パディング（定数から取得）
-    const horizontalPadding = LAYOUT.canvasPaddingHorizontal
-    const verticalPadding = LAYOUT.canvasPaddingVertical
+    // セルサイズ（固定）
+    const cellSize = HD_LAYOUT.cellSize
 
-    // 利用可能な幅と高さ
-    const availableWidth = screenWidth - horizontalPadding * 2
-    const availableHeight = screenHeight - verticalPadding * 2
-
-    // ボードのセルサイズを計算
-    const boardAreaHeight = availableHeight * LAYOUT.boardAreaRatio
-    const maxCellSizeByHeight = boardAreaHeight / GRID_SIZE
-    const maxCellSizeByWidth = availableWidth / GRID_SIZE
-    const cellSize = Math.floor(Math.min(maxCellSizeByHeight, maxCellSizeByWidth))
-
-    // ボードサイズ
-    const boardSize = GRID_SIZE * cellSize
-
-    // Canvas全体サイズ
-    const canvasWidth = Math.max(boardSize + LAYOUT.boardPadding * 2, availableWidth)
-    const canvasHeight = availableHeight
-
-    // ボードの位置（中央上部、スコアとラウンド情報の下）
-    const boardOffsetX = (canvasWidth - boardSize) / 2
-    const headerHeight = 70  // スコア + ラウンド情報のスペース
-    const boardOffsetY = headerHeight
+    // ボードの位置（右側パネルの中央）
+    const boardOffsetX = HD_LAYOUT.boardOffsetX
+    const boardOffsetY = HD_LAYOUT.boardOffsetY
 
     // スロットエリアの位置
-    const slotAreaY = boardOffsetY + boardSize + LAYOUT.slotAreaPadding * 2
+    const slotAreaY = HD_LAYOUT.slotAreaY
 
-    // スロット位置を計算（実際のピースに基づいて動的に計算）
+    // スロット位置を計算（右側パネル内で中央揃え）
     const slotPositions = calculateSlotPositions(
+      HD_LAYOUT.rightPanelStartX,
       canvasWidth,
       slotAreaY,
       cellSize,
@@ -80,6 +62,8 @@ export function useCanvasLayout(pieceSlots: readonly PieceSlot[]): CanvasLayout 
   useEffect(() => {
     calculateLayout()
 
+    // HD固定レイアウトなのでリサイズイベントは不要だが、
+    // 将来的な拡張のために残しておく
     const handleResize = () => {
       calculateLayout()
     }
@@ -97,15 +81,16 @@ export function useCanvasLayout(pieceSlots: readonly PieceSlot[]): CanvasLayout 
 }
 
 /**
- * スロット位置を計算（実際のピースに基づいて動的に計算）
+ * スロット位置を計算（ボードの中央に揃える）
  */
 function calculateSlotPositions(
-  canvasWidth: number,
+  _rightPanelStartX: number,
+  _canvasWidth: number,
   slotAreaY: number,
   cellSize: number,
   pieceSlots: readonly PieceSlot[]
 ): Position[] {
-  const slotCellSize = cellSize * LAYOUT.slotCellSizeRatio
+  const slotCellSize = cellSize * HD_LAYOUT.slotCellSizeRatio
   const positions: Position[] = []
 
   // 各ブロックの幅を計算（空スロットは最小幅1セル）
@@ -118,17 +103,21 @@ function calculateSlotPositions(
   })
 
   // 全体の幅を計算
-  const totalWidth = pieceWidths.reduce((sum, w) => sum + w, 0) + LAYOUT.slotGap * Math.max(0, pieceSlots.length - 1)
+  const totalWidth = pieceWidths.reduce((sum, w) => sum + w, 0) + HD_LAYOUT.slotGap * Math.max(0, pieceSlots.length - 1)
 
-  // 開始位置（中央揃え）
-  let currentX = (canvasWidth - totalWidth) / 2
+  // ボードの幅と中央位置
+  const boardWidth = 6 * cellSize  // 6x6グリッド
+  const boardCenterX = HD_LAYOUT.boardOffsetX + boardWidth / 2
+
+  // 開始位置（ボードの中央に揃える）
+  let currentX = boardCenterX - totalWidth / 2
 
   for (let i = 0; i < pieceSlots.length; i++) {
     positions.push({
       x: currentX,
       y: slotAreaY,
     })
-    currentX += pieceWidths[i] + LAYOUT.slotGap
+    currentX += pieceWidths[i] + HD_LAYOUT.slotGap
   }
 
   return positions
