@@ -39,6 +39,22 @@ export function useGame() {
     dispatch({ type: 'ANIMATION/END_RELIC_ACTIVATION' })
   }, [])
 
+  const advanceScoreStep = useCallback(() => {
+    dispatch({ type: 'ANIMATION/ADVANCE_SCORE_STEP' })
+  }, [])
+
+  const endScoreAnimation = useCallback(() => {
+    dispatch({ type: 'ANIMATION/END_SCORE' })
+  }, [])
+
+  const setFastForward = useCallback((isFastForward: boolean) => {
+    dispatch({ type: 'ANIMATION/SET_FAST_FORWARD', isFastForward })
+  }, [])
+
+  const reorderRelic = useCallback((fromIndex: number, toIndex: number) => {
+    dispatch({ type: 'RELIC/REORDER', fromIndex, toIndex })
+  }, [])
+
   const advanceRound = useCallback(() => {
     dispatch({
       type: 'ROUND/ADVANCE',
@@ -122,6 +138,10 @@ export function useGame() {
       resetGame,
       endClearAnimation,
       endRelicActivationAnimation,
+      advanceScoreStep,
+      endScoreAnimation,
+      setFastForward,
+      reorderRelic,
       advanceRound,
       buyItem,
       leaveShop,

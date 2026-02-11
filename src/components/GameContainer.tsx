@@ -44,6 +44,9 @@ export function GameContainer() {
         onDragEnd={actions.endDrag}
         onClearAnimationEnd={actions.endClearAnimation}
         onRelicActivationAnimationEnd={actions.endRelicActivationAnimation}
+        onAdvanceScoreStep={actions.advanceScoreStep}
+        onEndScoreAnimation={actions.endScoreAnimation}
+        onSetFastForward={actions.setFastForward}
         onAdvanceRound={actions.advanceRound}
         onReset={actions.resetGame}
         onBuyItem={actions.buyItem}
@@ -56,6 +59,7 @@ export function GameContainer() {
         onMoveToStock={actions.moveToStock}
         onMoveFromStock={actions.moveFromStock}
         onSwapWithStock={actions.swapWithStock}
+        onReorderRelic={actions.reorderRelic}
         onDebugToggleRelic={handleDebugToggleRelic}
         onDebugAddGold={actions.debugAddGold}
         onDebugAddScore={actions.debugAddScore}

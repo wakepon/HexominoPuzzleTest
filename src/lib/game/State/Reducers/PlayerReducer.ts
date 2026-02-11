@@ -16,6 +16,7 @@ export function addRelic(player: PlayerState, relicId: RelicId): PlayerState {
   return {
     ...player,
     ownedRelics: [...player.ownedRelics, relicId],
+    relicDisplayOrder: [...player.relicDisplayOrder, relicId],
   }
 }
 
@@ -26,6 +27,7 @@ export function removeRelic(player: PlayerState, relicId: RelicId): PlayerState 
   return {
     ...player,
     ownedRelics: player.ownedRelics.filter((id) => id !== relicId),
+    relicDisplayOrder: player.relicDisplayOrder.filter((id) => id !== relicId),
   }
 }
 
@@ -70,5 +72,6 @@ export function resetPlayerState(initialGold: number): PlayerState {
   return {
     gold: initialGold,
     ownedRelics: [],
+    relicDisplayOrder: [],
   }
 }

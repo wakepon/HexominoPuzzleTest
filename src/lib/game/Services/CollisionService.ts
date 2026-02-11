@@ -62,6 +62,18 @@ export function screenToBoardPosition(
 }
 
 /**
+ * ピースがボード上のいずれかの位置に配置可能かチェック
+ */
+export function canPieceBePlacedAnywhere(board: Board, shape: PieceShape): boolean {
+  for (let y = 0; y < GRID_SIZE; y++) {
+    for (let x = 0; x < GRID_SIZE; x++) {
+      if (canPlacePiece(board, shape, { x, y })) return true
+    }
+  }
+  return false
+}
+
+/**
  * ボード座標がボード範囲内かチェック
  */
 export function isPositionInBoard(position: Position): boolean {

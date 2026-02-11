@@ -8,6 +8,7 @@ import type {
   ClearingAnimationState,
   RelicActivationAnimationState,
 } from './Animation/AnimationState'
+import type { ScoreAnimationState } from './Animation/ScoreAnimationState'
 import type { PlayerState } from './Player/PlayerState'
 import type { RelicMultiplierState } from './Effect/RelicState'
 
@@ -24,6 +25,7 @@ export interface GameState {
   readonly dragState: DragState
   readonly clearingAnimation: ClearingAnimationState | null
   readonly relicActivationAnimation: RelicActivationAnimationState | null
+  readonly scoreAnimation: ScoreAnimationState | null
 
   // ラウンド関連
   readonly phase: GamePhase

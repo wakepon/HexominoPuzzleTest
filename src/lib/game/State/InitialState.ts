@@ -97,6 +97,7 @@ function createNewGameState(): GameState {
     score: 0,
     clearingAnimation: null,
     relicActivationAnimation: null,
+    scoreAnimation: null,
     deck: newDeck,
     phase: 'round_progress',
     round: initialRound,

@@ -3,6 +3,7 @@
  */
 
 import type { Board, ClearingCell, ScoreBreakdown } from '../Domain'
+import type { RelicId } from '../Domain/Core/Id'
 import type { RelicEffectContext } from '../Domain/Effect/RelicEffectTypes'
 import { calculateScoreBreakdown as calculatePatternScoreBreakdown } from '../Domain/Effect/PatternEffectHandler'
 import { filterClearableCells } from '../Domain/Effect/SealEffectHandler'
@@ -117,7 +118,8 @@ export function calculateScoreWithEffects(
   completedLines: CompletedLines,
   comboCount: number,
   relicContext: RelicEffectContext | null = null,
-  luckyRandom: () => number = Math.random
+  luckyRandom: () => number = Math.random,
+  relicDisplayOrder: readonly RelicId[] = []
 ): ScoreBreakdown {
   const totalLines = completedLines.rows.length + completedLines.columns.length
   if (totalLines === 0) {
@@ -157,7 +159,8 @@ export function calculateScoreWithEffects(
     totalLines,
     comboCount,
     relicContext,
-    luckyRandom
+    luckyRandom,
+    relicDisplayOrder
   )
 }
 

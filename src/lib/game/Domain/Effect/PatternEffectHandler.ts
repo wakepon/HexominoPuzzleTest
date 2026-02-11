@@ -3,7 +3,7 @@
  */
 
 import type { Board, ClearingCell, Piece } from '..'
-import type { PatternId } from '../Core/Id'
+import type { PatternId, RelicId } from '../Core/Id'
 import type { PatternEffectResult, ScoreBreakdown } from './PatternEffectTypes'
 import type { RelicEffectContext, RelicEffectResult } from './RelicEffectTypes'
 import { calculateSealEffects } from './SealEffectHandler'
@@ -234,7 +234,8 @@ export function calculateScoreBreakdown(
   linesCleared: number,
   comboCount: number,
   relicContext: RelicEffectContext | null = null,
-  luckyRandom: () => number = Math.random
+  luckyRandom: () => number = Math.random,
+  relicDisplayOrder: readonly RelicId[] = []
 ): ScoreBreakdown {
   const baseBlocks = cellsToRemove.length
 
@@ -279,34 +280,34 @@ export function calculateScoreBreakdown(
     nobiKaniMultiplier,
   } = relicEffects
 
-  // 最終スコア計算（仕様書の順序に従う）
-  // 1. 基本スコア（パターン+シール効果込み）
-  // 2. 連鎖の達人（×1.5、切り捨て）
-  const scoreAfterChainMaster = Math.floor(
-    scoreBeforeRelics * chainMasterMultiplier
-  )
-  // 3. シングルライン（×3）- 注: シングルラインと連鎖の達人は排他的（1ライン vs 2ライン以上）
-  const scoreAfterSingleLine = Math.floor(
-    scoreAfterChainMaster * singleLineMultiplier
-  )
-  // 4. タケノコ（×縦列数）- 縦列のみ消去時に発動
-  const scoreAfterTakenoko = Math.floor(
-    scoreAfterSingleLine * takenokoMultiplier
-  )
-  // 5. カニ（×行数）- 横列のみ消去時に発動
-  const scoreAfterKani = Math.floor(scoreAfterTakenoko * kaniMultiplier)
-  // 6. のびのびタケノコ（×倍率、切り捨て）
-  const scoreAfterNobiTakenoko = Math.floor(
-    scoreAfterKani * nobiTakenokoMultiplier
-  )
-  // 7. のびのびカニ（×倍率、切り捨て）
-  const scoreAfterNobiKani = Math.floor(
-    scoreAfterNobiTakenoko * nobiKaniMultiplier
-  )
-  // 8. 連射（×倍率、切り捨て）
-  const scoreAfterRensha = Math.floor(scoreAfterNobiKani * renshaMultiplier)
-  // 9. 小さな幸運（+20）+ 全消しボーナス（+20）
-  const finalScore = scoreAfterRensha + smallLuckBonus + fullClearBonus
+  // 最終スコア計算（relicDisplayOrder に基づく動的順序）
+  // 乗算レリックの倍率マップ
+  const relicMultiplierMap: Record<string, number> = {
+    chain_master: chainMasterMultiplier,
+    single_line: singleLineMultiplier,
+    takenoko: takenokoMultiplier,
+    kani: kaniMultiplier,
+    nobi_takenoko: nobiTakenokoMultiplier,
+    nobi_kani: nobiKaniMultiplier,
+    rensha: renshaMultiplier,
+  }
+
+  // relicDisplayOrder に基づいて乗算レリックを適用
+  // relicDisplayOrder が空の場合はデフォルト順序を使用
+  const effectiveOrder: readonly string[] = relicDisplayOrder.length > 0
+    ? relicDisplayOrder
+    : ['chain_master', 'single_line', 'takenoko', 'kani', 'nobi_takenoko', 'nobi_kani', 'rensha']
+
+  let scoreAfterRelicMultipliers = scoreBeforeRelics
+  for (const relicId of effectiveOrder) {
+    const multiplier = relicMultiplierMap[relicId]
+    if (multiplier !== undefined && multiplier !== 1) {
+      scoreAfterRelicMultipliers = Math.floor(scoreAfterRelicMultipliers * multiplier)
+    }
+  }
+
+  // 加算レリック（小さな幸運 + 全消しボーナス）は最後
+  const finalScore = scoreAfterRelicMultipliers + smallLuckBonus + fullClearBonus
 
   return {
     baseBlocks,

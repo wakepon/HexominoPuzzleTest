@@ -10,6 +10,7 @@ import type { RelicId } from '../Core/Id'
 export interface PlayerState {
   readonly gold: number
   readonly ownedRelics: readonly RelicId[]
+  readonly relicDisplayOrder: readonly RelicId[]
 }
 
 /**
@@ -19,6 +20,7 @@ export function createInitialPlayerState(initialGold: number): PlayerState {
   return {
     gold: initialGold,
     ownedRelics: [],
+    relicDisplayOrder: [],
   }
 }
 

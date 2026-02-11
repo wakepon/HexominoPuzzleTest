@@ -39,7 +39,7 @@ import {
   placePieceOnBoard,
   placeObstacleOnBoard,
 } from '../../Services/BoardService'
-import { canPlacePiece } from '../../Services/CollisionService'
+import { canPlacePiece, canPieceBePlacedAnywhere } from '../../Services/CollisionService'
 import {
   findCompletedLines,
   getCellsToRemoveWithFilter,
@@ -58,6 +58,9 @@ import {
   updateNobiKaniMultiplier,
 } from '../../Domain/Effect/RelicState'
 import { createRelicActivationAnimation } from '../../Domain/Animation/AnimationState'
+import type { ScoreAnimationState } from '../../Domain/Animation/ScoreAnimationState'
+import { SCORE_ANIMATION } from '../../Domain/Animation/ScoreAnimationState'
+import { buildFormulaSteps } from '../../Domain/Animation/FormulaBuilder'
 import { decrementRemainingHands } from '../../Services/DeckService'
 import {
   calculateTargetScore,
@@ -108,6 +111,36 @@ function updateRelicMultipliers(
   }
 
   return newState
+}
+
+/**
+ * スコアアニメーション状態を作成
+ */
+function createScoreAnimation(
+  scoreBreakdown: ScoreBreakdown,
+  relicDisplayOrder: readonly RelicId[],
+  currentScore: number
+): ScoreAnimationState | null {
+  const steps = buildFormulaSteps(scoreBreakdown, relicDisplayOrder)
+  if (steps.length === 0) {
+    // ステップなし（異常系）→ アニメーションスキップ
+    return null
+  }
+  const now = Date.now()
+  return {
+    isAnimating: true,
+    steps,
+    currentStepIndex: 0,
+    stepStartTime: now,
+    stepDuration: SCORE_ANIMATION.stepDuration,
+    isFastForward: false,
+    highlightedRelicId: steps[0]?.relicId ?? null,
+    finalScore: scoreBreakdown.finalScore,
+    scoreGain: scoreBreakdown.finalScore,
+    startingScore: currentScore,
+    isCountingUp: false,
+    countStartTime: 0,
+  }
 }
 
 /**
@@ -210,6 +243,64 @@ function handlePlacement(
 }
 
 /**
+ * 手札がすべて配置不可能な場合、ハンドを消費してリドローする
+ * ストックピースが配置可能な場合はスタックとみなさない
+ */
+function resolveUnplaceableHand(
+  board: Board,
+  slots: PieceSlot[],
+  deck: DeckState,
+  score: number,
+  targetScore: number
+): { finalSlots: PieceSlot[]; finalDeck: DeckState; phase: ReturnType<typeof determinePhase> } {
+  let currentSlots = slots
+  let currentDeck = deck
+
+  while (true) {
+    // 手札にピースが残っているか確認
+    const remainingPieces = currentSlots.filter(s => s.piece !== null)
+    if (remainingPieces.length === 0) break
+
+    // 手札のいずれかがボード上に配置可能かチェック
+    const canPlaceAny = currentSlots.some(
+      s => s.piece && canPieceBePlacedAnywhere(board, s.piece.shape)
+    )
+    if (canPlaceAny) break
+
+    // ストックが配置可能ならスタックではない
+    if (currentDeck.stockSlot && canPieceBePlacedAnywhere(board, currentDeck.stockSlot.shape)) {
+      break
+    }
+
+    // 全て配置不可 → ハンドを手札枚数分減らす
+    const penaltyCount = remainingPieces.length
+    const newRemainingHands = Math.max(0, currentDeck.remainingHands - penaltyCount)
+    currentDeck = { ...currentDeck, remainingHands: newRemainingHands }
+
+    // ハンドが0以下 → 敗北
+    if (newRemainingHands <= 0) {
+      return {
+        finalSlots: currentSlots,
+        finalDeck: currentDeck,
+        phase: determinePhase(score, targetScore, 0),
+      }
+    }
+
+    // 手札をリセットして新しくドロー
+    const result = generateNewPieceSlotsFromDeck(currentDeck)
+    currentSlots = result.slots
+    currentDeck = result.newDeck
+    // ループで再チェック（新しい手札も配置不可の場合に対応）
+  }
+
+  return {
+    finalSlots: currentSlots,
+    finalDeck: currentDeck,
+    phase: determinePhase(score, targetScore, currentDeck.remainingHands),
+  }
+}
+
+/**
  * ボードにピースを配置し、ライン消去とスコア計算を行う共通処理
  * 手札からの配置とストックからの配置で共通して使用
  */
@@ -269,13 +360,21 @@ function processPiecePlacement(
       completedLines,
       comboCount,
       relicContext,
-      Math.random
+      Math.random,
+      state.player.relicDisplayOrder
     )
     const scoreGain = scoreBreakdown.finalScore
     const newScore = state.score + scoreGain
     const goldGain = scoreBreakdown.goldCount
     const newPlayer = addGold(state.player, goldGain)
     const newPhase = determinePhase(newScore, state.targetScore, finalDeck.remainingHands)
+
+    // スコアアニメーション作成
+    const scoreAnim = createScoreAnimation(
+      scoreBreakdown,
+      state.player.relicDisplayOrder,
+      state.score
+    )
 
     emitScoreCalculated(scoreBreakdown.baseScore, buildScoreBonuses(scoreBreakdown), scoreGain)
     emitGoldGained(goldGain, 'seal:gold')
@@ -311,6 +410,7 @@ function processPiecePlacement(
           duration: CLEAR_ANIMATION.duration,
         },
         relicActivationAnimation: relicAnimation,
+        scoreAnimation: scoreAnim,
         score: newScore,
         player: newPlayer,
         deck: finalDeck,
@@ -322,7 +422,6 @@ function processPiecePlacement(
   }
 
   // ライン消去なし
-  const newPhase = determinePhase(state.score, state.targetScore, finalDeck.remainingHands)
   const newRelicMultiplierState = updateRelicMultipliers(
     state.relicMultiplierState,
     state.player.ownedRelics,
@@ -331,15 +430,20 @@ function processPiecePlacement(
     0
   )
 
+  // 配置不可チェック＆リドロー
+  const resolved = resolveUnplaceableHand(
+    newBoard, finalSlots, finalDeck, state.score, state.targetScore
+  )
+
   return {
     success: true,
     newState: {
       ...state,
       board: newBoard,
-      pieceSlots: finalSlots,
+      pieceSlots: resolved.finalSlots,
       dragState: initialDragState,
-      deck: finalDeck,
-      phase: newPhase,
+      deck: resolved.finalDeck,
+      phase: resolved.phase,
       comboCount,
       relicMultiplierState: newRelicMultiplierState,
     },
@@ -422,6 +526,7 @@ function createNextRoundState(currentState: GameState): GameState {
     score: 0,
     clearingAnimation: null,
     relicActivationAnimation: null,
+    scoreAnimation: null,
     deck: newDeck,
     phase: 'round_progress',
     round: nextRound,
@@ -616,10 +721,18 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         isBoardEmpty(clearedBoard)
       )
 
+      // 配置不可チェック＆リドロー
+      const resolved = resolveUnplaceableHand(
+        clearedBoard, [...state.pieceSlots], state.deck, state.score, state.targetScore
+      )
+
       return {
         ...state,
         board: clearedBoard,
         clearingAnimation: null,
+        pieceSlots: resolved.finalSlots,
+        deck: resolved.finalDeck,
+        phase: resolved.phase,
       }
     }
 
@@ -627,6 +740,68 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       return {
         ...state,
         relicActivationAnimation: null,
+      }
+    }
+
+    case 'ANIMATION/ADVANCE_SCORE_STEP': {
+      if (!state.scoreAnimation?.isAnimating) return state
+      const nextIndex = state.scoreAnimation.currentStepIndex + 1
+      if (nextIndex >= state.scoreAnimation.steps.length) {
+        // 全ステップ完了 → カウントアップ開始
+        return {
+          ...state,
+          scoreAnimation: {
+            ...state.scoreAnimation,
+            isCountingUp: true,
+            countStartTime: Date.now(),
+          },
+        }
+      }
+      const nextStep = state.scoreAnimation.steps[nextIndex]
+      return {
+        ...state,
+        scoreAnimation: {
+          ...state.scoreAnimation,
+          currentStepIndex: nextIndex,
+          stepStartTime: Date.now(),
+          highlightedRelicId: nextStep?.relicId ?? null,
+        },
+      }
+    }
+
+    case 'ANIMATION/END_SCORE': {
+      if (!state.scoreAnimation) return state
+      return {
+        ...state,
+        scoreAnimation: null,
+      }
+    }
+
+    case 'ANIMATION/SET_FAST_FORWARD': {
+      if (!state.scoreAnimation?.isAnimating) return state
+      return {
+        ...state,
+        scoreAnimation: {
+          ...state.scoreAnimation,
+          isFastForward: action.isFastForward,
+          stepDuration: action.isFastForward
+            ? SCORE_ANIMATION.fastForwardDuration
+            : SCORE_ANIMATION.stepDuration,
+        },
+      }
+    }
+
+    case 'RELIC/REORDER': {
+      if (action.fromIndex === action.toIndex) return state
+      const source = state.player.relicDisplayOrder
+      const item = source[action.fromIndex]
+      if (!item) return state
+      // fromIndex を除外した配列に toIndex の位置に挿入
+      const without = [...source.slice(0, action.fromIndex), ...source.slice(action.fromIndex + 1)]
+      const newOrder = [...without.slice(0, action.toIndex), item, ...without.slice(action.toIndex)]
+      return {
+        ...state,
+        player: { ...state.player, relicDisplayOrder: newOrder },
       }
     }
 
