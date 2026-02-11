@@ -37,6 +37,9 @@ export type GameCoreAction =
 export type AnimationAction =
   | { type: 'ANIMATION/END_CLEAR' }
   | { type: 'ANIMATION/END_RELIC_ACTIVATION' }
+  | { type: 'ANIMATION/ADVANCE_SCORE_STEP' }
+  | { type: 'ANIMATION/END_SCORE' }
+  | { type: 'ANIMATION/SET_FAST_FORWARD'; isFastForward: boolean }
 
 // ラウンドアクション
 export type RoundAction =
@@ -54,6 +57,10 @@ export type StockAction =
   | { type: 'STOCK/MOVE_TO_STOCK'; slotIndex: number }      // 手札→ストック
   | { type: 'STOCK/MOVE_FROM_STOCK'; targetSlotIndex: number }  // ストック→手札
   | { type: 'STOCK/SWAP'; slotIndex: number }               // 手札とストック交換
+
+// レリックアクション
+export type RelicAction =
+  | { type: 'RELIC/REORDER'; fromIndex: number; toIndex: number }
 
 // デバッグアクション
 export type DebugAction =
@@ -73,4 +80,5 @@ export type GameAction =
   | RoundAction
   | ShopAction
   | StockAction
+  | RelicAction
   | DebugAction

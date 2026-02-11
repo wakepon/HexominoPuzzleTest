@@ -10,8 +10,9 @@ import { renderRoundClear, renderGameOver, renderGameClear } from './renderer/ov
 import { renderShop, ShopRenderResult } from './renderer/shopRenderer'
 import { renderDebugWindow, DebugWindowRenderResult } from './renderer/debugRenderer'
 import { renderTooltip } from './renderer/tooltipRenderer'
-import { renderRelicPanel } from './renderer/relicPanelRenderer'
+import { renderRelicPanel, type RelicPanelRenderResult } from './renderer/relicPanelRenderer'
 import { renderRelicEffect } from './renderer/relicEffectRenderer'
+import { renderScoreAnimation, type ScoreAnimationRenderResult } from './renderer/scoreAnimationRenderer'
 import { renderRoundProgress, RoundProgressRenderResult } from './renderer/RoundProgressRenderer'
 import { renderDeckView, DeckViewRenderResult } from './renderer/DeckViewRenderer'
 import { renderStockSlot, StockSlotRenderResult } from './renderer/StockSlotRenderer'
@@ -36,6 +37,9 @@ interface GameCanvasProps {
   onDragEnd: () => void
   onClearAnimationEnd: () => void
   onRelicActivationAnimationEnd: () => void
+  onAdvanceScoreStep: () => void
+  onEndScoreAnimation: () => void
+  onSetFastForward: (isFastForward: boolean) => void
   onAdvanceRound: () => void
   onReset: () => void
   onBuyItem: (itemIndex: number) => void
@@ -48,6 +52,7 @@ interface GameCanvasProps {
   onMoveToStock: (slotIndex: number) => void
   onMoveFromStock: (targetSlotIndex: number) => void
   onSwapWithStock: (slotIndex: number) => void
+  onReorderRelic: (fromIndex: number, toIndex: number) => void
   // デバッグ用
   onDebugToggleRelic: (relicType: RelicType) => void
   onDebugAddGold: (amount: number) => void
@@ -64,6 +69,9 @@ export function GameCanvas({
   onDragEnd,
   onClearAnimationEnd,
   onRelicActivationAnimationEnd,
+  onAdvanceScoreStep,
+  onEndScoreAnimation,
+  onSetFastForward,
   onAdvanceRound,
   onReset,
   onBuyItem,
@@ -76,6 +84,7 @@ export function GameCanvas({
   onMoveToStock,
   onMoveFromStock,
   onSwapWithStock,
+  onReorderRelic,
   onDebugToggleRelic,
   onDebugAddGold,
   onDebugAddScore,
@@ -94,8 +103,17 @@ export function GameCanvas({
   const deckViewResultRef = useRef<DeckViewRenderResult | null>(null)
   const statusPanelResultRef = useRef<StatusPanelRenderResult | null>(null)
   const stockSlotResultRef = useRef<StockSlotRenderResult | null>(null)
+  const scoreAnimationResultRef = useRef<ScoreAnimationRenderResult | null>(null)
+  const relicPanelResultRef = useRef<RelicPanelRenderResult | null>(null)
   // ストックからのドラッグかどうかを追跡
   const isDraggingFromStockRef = useRef(false)
+  // レリックドラッグ&ドロップ状態
+  const relicDragRef = useRef<{
+    isDragging: boolean
+    dragIndex: number | null
+    currentY: number
+    dropTargetIndex: number | null
+  }>({ isDragging: false, dragIndex: null, currentY: 0, dropTargetIndex: null })
 
   // callback ref でcanvasを取得
   const canvasRefCallback = useCallback((node: HTMLCanvasElement | null) => {
@@ -126,7 +144,14 @@ export function GameCanvas({
     }, layout)
 
     // レリックパネル描画（ボードの左側）
-    renderRelicPanel(ctx, state.player.ownedRelics, layout)
+    const highlightedRelicId = state.scoreAnimation?.highlightedRelicId ?? null
+    relicPanelResultRef.current = renderRelicPanel(
+      ctx,
+      state.player.relicDisplayOrder,
+      layout,
+      highlightedRelicId,
+      relicDragRef.current
+    )
 
     // ボード描画（消去アニメーション中のセルは除外）
     const clearingCells = state.clearingAnimation?.isAnimating
@@ -182,6 +207,13 @@ export function GameCanvas({
       if (isComplete) {
         onRelicActivationAnimationEnd()
       }
+    }
+
+    // スコアアニメーション描画
+    if (state.scoreAnimation?.isAnimating) {
+      scoreAnimationResultRef.current = renderScoreAnimation(ctx, state.scoreAnimation)
+    } else {
+      scoreAnimationResultRef.current = null
     }
 
     // オーバーレイ描画
@@ -326,6 +358,45 @@ export function GameCanvas({
     }
   }, [state.relicActivationAnimation?.isAnimating, render])
 
+  // スコアアニメーションのループ
+  useEffect(() => {
+    if (!state.scoreAnimation?.isAnimating) return
+
+    let animationId: number
+
+    const animate = () => {
+      const anim = state.scoreAnimation
+      if (!anim || !anim.isAnimating) return
+
+      const now = Date.now()
+      const stepDuration = anim.isFastForward ? 200 : anim.stepDuration
+
+      if (anim.isCountingUp) {
+        // カウントアップ完了チェック
+        const countElapsed = now - anim.countStartTime
+        if (countElapsed >= 500) {
+          onEndScoreAnimation()
+          return
+        }
+      } else {
+        // ステップ時間経過で次のステップへ
+        const elapsed = now - anim.stepStartTime
+        if (elapsed >= stepDuration) {
+          onAdvanceScoreStep()
+        }
+      }
+
+      render()
+      animationId = requestAnimationFrame(animate)
+    }
+
+    animationId = requestAnimationFrame(animate)
+
+    return () => {
+      cancelAnimationFrame(animationId)
+    }
+  }, [state.scoreAnimation?.isAnimating, state.scoreAnimation?.currentStepIndex, state.scoreAnimation?.isCountingUp, state.scoreAnimation?.isFastForward, render, onAdvanceScoreStep, onEndScoreAnimation])
+
   // ラウンドクリア演出のタイマー
   useEffect(() => {
     if (state.phase !== 'round_clear') {
@@ -354,13 +425,27 @@ export function GameCanvas({
       if (e.shiftKey && e.key === '!') {
         setShowDebugWindow(prev => !prev)
       }
+      // スペースキーで早送り開始
+      if (e.code === 'Space' && state.scoreAnimation?.isAnimating) {
+        e.preventDefault()
+        onSetFastForward(true)
+      }
+    }
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      // スペースキー離しで早送り終了
+      if (e.code === 'Space') {
+        onSetFastForward(false)
+      }
     }
 
     window.addEventListener('keydown', handleKeyDown)
+    window.addEventListener('keyup', handleKeyUp)
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
+      window.removeEventListener('keyup', handleKeyUp)
     }
-  }, [])
+  }, [state.scoreAnimation?.isAnimating, onSetFastForward])
 
   // ドラッグ&ドロップイベントリスナー
   useEffect(() => {
@@ -630,12 +715,64 @@ export function GameCanvas({
       return false
     }
 
+    // スコアアニメーション中の早送りボタンクリック処理
+    const handleScoreAnimationClick = (pos: Position): boolean => {
+      if (!state.scoreAnimation?.isAnimating) return false
+      const result = scoreAnimationResultRef.current
+      if (result?.fastForwardButton && isPointInArea(pos, result.fastForwardButton)) {
+        onSetFastForward(!state.scoreAnimation.isFastForward)
+        return true
+      }
+      // アニメーション中はクリックで次ステップ
+      onAdvanceScoreStep()
+      return true
+    }
+
+    // レリックパネル内のヒット検出
+    const findRelicAtPosition = (pos: Position): number | null => {
+      const result = relicPanelResultRef.current
+      if (!result) return null
+      for (const area of result.relicAreas) {
+        if (isPointInArea(pos, area)) {
+          return area.index
+        }
+      }
+      return null
+    }
+
+    // レリックD&D中のドロップ先インデックスを計算
+    const calculateRelicDropTarget = (pos: Position): number | null => {
+      const result = relicPanelResultRef.current
+      if (!result || result.relicAreas.length === 0) return null
+      for (const area of result.relicAreas) {
+        if (pos.y >= area.y && pos.y < area.y + area.height) {
+          return area.index
+        }
+      }
+      return null
+    }
+
+    // レリックD&Dが使えるフェーズか判定
+    const canDragRelics = (): boolean => {
+      return (
+        (state.phase === 'playing' || state.phase === 'round_progress') &&
+        !state.scoreAnimation?.isAnimating &&
+        !state.clearingAnimation?.isAnimating
+      )
+    }
+
     const handleMouseDown = (e: MouseEvent) => {
       e.preventDefault()
       const pos = getCanvasPosition(e)
 
       // デバッグウィンドウのクリック判定（最優先）
       if (handleDebugWindowClick(pos)) {
+        return
+      }
+
+      // スコアアニメーション中はクリックで進行/早送り
+      if (state.scoreAnimation?.isAnimating) {
+        handleScoreAnimationClick(pos)
         return
       }
 
@@ -647,6 +784,19 @@ export function GameCanvas({
 
       // ラウンド進行画面
       if (state.phase === 'round_progress') {
+        // レリックD&D開始判定
+        if (canDragRelics()) {
+          const relicIndex = findRelicAtPosition(pos)
+          if (relicIndex !== null) {
+            relicDragRef.current = {
+              isDragging: true,
+              dragIndex: relicIndex,
+              currentY: pos.y,
+              dropTargetIndex: relicIndex,
+            }
+            return
+          }
+        }
         handleRoundProgressClick(pos)
         return
       }
@@ -675,6 +825,20 @@ export function GameCanvas({
         }
       }
 
+      // レリックD&D開始判定（playing 時）
+      if (canDragRelics()) {
+        const relicIndex = findRelicAtPosition(pos)
+        if (relicIndex !== null) {
+          relicDragRef.current = {
+            isDragging: true,
+            dragIndex: relicIndex,
+            currentY: pos.y,
+            dropTargetIndex: relicIndex,
+          }
+          return
+        }
+      }
+
       // ストック枠からのドラッグ開始判定（playing 時のみ）
       if (state.phase === 'playing' && isPointInStockSlot(pos) && hasStockPiece()) {
         isDraggingRef.current = true
@@ -695,6 +859,20 @@ export function GameCanvas({
     }
 
     const handleMouseMove = (e: MouseEvent) => {
+      // レリックD&D中
+      if (relicDragRef.current.isDragging) {
+        e.preventDefault()
+        const pos = getCanvasPosition(e)
+        const dropTarget = calculateRelicDropTarget(pos)
+        relicDragRef.current = {
+          ...relicDragRef.current,
+          currentY: pos.y,
+          dropTargetIndex: dropTarget,
+        }
+        render()
+        return
+      }
+
       // ストックからのドラッグ中はactiveSlotRef.currentがnullになる
       if (!isDraggingRef.current) return
       if (!isDraggingFromStockRef.current && activeSlotRef.current === null) return
@@ -713,6 +891,18 @@ export function GameCanvas({
     }
 
     const handleMouseUp = (e: MouseEvent) => {
+      // レリックD&D完了
+      if (relicDragRef.current.isDragging) {
+        e.preventDefault()
+        const { dragIndex, dropTargetIndex } = relicDragRef.current
+        if (dragIndex !== null && dropTargetIndex !== null && dragIndex !== dropTargetIndex) {
+          onReorderRelic(dragIndex, dropTargetIndex)
+        }
+        relicDragRef.current = { isDragging: false, dragIndex: null, currentY: 0, dropTargetIndex: null }
+        render()
+        return
+      }
+
       if (!isDraggingRef.current) return
       e.preventDefault()
 
@@ -796,6 +986,12 @@ export function GameCanvas({
         return
       }
 
+      // スコアアニメーション中はタップで進行/早送り
+      if (state.scoreAnimation?.isAnimating) {
+        handleScoreAnimationClick(pos)
+        return
+      }
+
       // デッキ一覧が開いている場合
       if (state.deckViewOpen) {
         handleDeckViewClick(pos)
@@ -804,6 +1000,19 @@ export function GameCanvas({
 
       // ラウンド進行画面
       if (state.phase === 'round_progress') {
+        // レリックD&D開始判定
+        if (canDragRelics()) {
+          const relicIndex = findRelicAtPosition(pos)
+          if (relicIndex !== null) {
+            relicDragRef.current = {
+              isDragging: true,
+              dragIndex: relicIndex,
+              currentY: pos.y,
+              dropTargetIndex: relicIndex,
+            }
+            return
+          }
+        }
         handleRoundProgressClick(pos)
         return
       }
@@ -851,6 +1060,20 @@ export function GameCanvas({
         }
       }
 
+      // レリックD&D開始判定（playing 時）
+      if (canDragRelics()) {
+        const relicIndex = findRelicAtPosition(pos)
+        if (relicIndex !== null) {
+          relicDragRef.current = {
+            isDragging: true,
+            dragIndex: relicIndex,
+            currentY: pos.y,
+            dropTargetIndex: relicIndex,
+          }
+          return
+        }
+      }
+
       // ストック枠からのドラッグ開始判定（playing 時のみ）
       if (state.phase === 'playing' && isPointInStockSlot(pos) && hasStockPiece()) {
         isDraggingRef.current = true
@@ -871,6 +1094,20 @@ export function GameCanvas({
     }
 
     const handleTouchMove = (e: TouchEvent) => {
+      // レリックD&D中
+      if (relicDragRef.current.isDragging) {
+        e.preventDefault()
+        const pos = getCanvasPosition(e.touches[0])
+        const dropTarget = calculateRelicDropTarget(pos)
+        relicDragRef.current = {
+          ...relicDragRef.current,
+          currentY: pos.y,
+          dropTargetIndex: dropTarget,
+        }
+        render()
+        return
+      }
+
       if (!isDraggingRef.current) return
       if (!isDraggingFromStockRef.current && activeSlotRef.current === null) return
       e.preventDefault()
@@ -888,6 +1125,18 @@ export function GameCanvas({
     }
 
     const handleTouchEnd = (e: TouchEvent) => {
+      // レリックD&D完了
+      if (relicDragRef.current.isDragging) {
+        e.preventDefault()
+        const { dragIndex, dropTargetIndex } = relicDragRef.current
+        if (dragIndex !== null && dropTargetIndex !== null && dragIndex !== dropTargetIndex) {
+          onReorderRelic(dragIndex, dropTargetIndex)
+        }
+        relicDragRef.current = { isDragging: false, dragIndex: null, currentY: 0, dropTargetIndex: null }
+        render()
+        return
+      }
+
       if (!isDraggingRef.current) return
       e.preventDefault()
 
@@ -986,7 +1235,7 @@ export function GameCanvas({
       window.removeEventListener('touchend', handleTouchEnd)
       window.removeEventListener('touchcancel', handleTouchEnd)
     }
-  }, [canvas, layout, state.pieceSlots, state.clearingAnimation, state.phase, state.shopState, state.player, state.board, state.dragState, state.deckViewOpen, onDragStart, onDragMove, onDragEnd, onReset, onBuyItem, onLeaveShop, onStartRound, onOpenDeckView, onCloseDeckView, showDebugWindow, debugSettings, onUpdateDebugSettings])
+  }, [canvas, layout, state.pieceSlots, state.clearingAnimation, state.scoreAnimation, state.phase, state.shopState, state.player, state.board, state.dragState, state.deckViewOpen, onDragStart, onDragMove, onDragEnd, onReset, onBuyItem, onLeaveShop, onStartRound, onOpenDeckView, onCloseDeckView, onAdvanceScoreStep, onSetFastForward, onReorderRelic, showDebugWindow, debugSettings, onUpdateDebugSettings])
 
   return (
     <canvas

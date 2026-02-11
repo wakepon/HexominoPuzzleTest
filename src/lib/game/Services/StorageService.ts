@@ -100,6 +100,7 @@ interface SavedGameState {
   readonly player: {
     readonly gold: number
     readonly ownedRelics: readonly RelicId[]
+    readonly relicDisplayOrder?: readonly RelicId[]
   }
 
   // デッキ関連
@@ -208,6 +209,7 @@ function serializeState(state: GameState): SavedGameState {
     player: {
       gold: state.player.gold,
       ownedRelics: state.player.ownedRelics,
+      relicDisplayOrder: state.player.relicDisplayOrder,
     },
     deck: serializeDeckState(state.deck),
     board: state.board,
@@ -418,6 +420,7 @@ export function restoreGameState(
     score: saved.score,
     clearingAnimation: null,
     relicActivationAnimation: null,
+    scoreAnimation: null,
     deck: deserializeDeckState(saved.deck),
     phase: saved.phase,
     round: saved.round,
@@ -425,6 +428,10 @@ export function restoreGameState(
     player: {
       gold: saved.player.gold,
       ownedRelics: [...saved.player.ownedRelics] as RelicId[],
+      // マイグレーション対応: 古いセーブデータにはrelicDisplayOrderがない
+      relicDisplayOrder: saved.player.relicDisplayOrder
+        ? [...saved.player.relicDisplayOrder] as RelicId[]
+        : [...saved.player.ownedRelics] as RelicId[],
     },
     targetScore: saved.targetScore,
     shopState: deserializeShopState(saved.shopState),
