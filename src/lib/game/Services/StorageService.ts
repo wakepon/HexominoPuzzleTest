@@ -436,11 +436,15 @@ export function restoreGameState(
     roundInfo: saved.roundInfo,
     player: {
       gold: saved.player.gold,
-      ownedRelics: [...saved.player.ownedRelics] as RelicId[],
+      // マイグレーション対応: small_luck → size_bonus_3 にリネーム
+      ownedRelics: [...saved.player.ownedRelics].map(
+        r => r === 'small_luck' ? 'size_bonus_3' : r
+      ) as RelicId[],
       // マイグレーション対応: 古いセーブデータにはrelicDisplayOrderがない
-      relicDisplayOrder: saved.player.relicDisplayOrder
-        ? [...saved.player.relicDisplayOrder] as RelicId[]
-        : [...saved.player.ownedRelics] as RelicId[],
+      relicDisplayOrder: (saved.player.relicDisplayOrder
+        ? [...saved.player.relicDisplayOrder]
+        : [...saved.player.ownedRelics]
+      ).map(r => r === 'small_luck' ? 'size_bonus_3' : r) as RelicId[],
     },
     targetScore: saved.targetScore,
     shopState: deserializeShopState(saved.shopState),

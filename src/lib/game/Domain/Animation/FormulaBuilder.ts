@@ -45,8 +45,9 @@ function getRelicAdditiveBonus(
   breakdown: ScoreBreakdown
 ): number {
   switch (relicId) {
-    case 'small_luck':
-      return breakdown.smallLuckBonus
+    case 'size_bonus_1': case 'size_bonus_2': case 'size_bonus_3':
+    case 'size_bonus_4': case 'size_bonus_5': case 'size_bonus_6':
+      return breakdown.sizeBonusTotal
     case 'full_clear_bonus':
       return breakdown.fullClearBonus
     case 'script':
@@ -198,7 +199,7 @@ export function buildFormulaSteps(
     }
   }
 
-  // 加算レリック（小さな幸運、全消しボーナス）
+  // 加算レリック（サイズボーナス、全消しボーナス、台本）
   for (const relicId of relicDisplayOrder) {
     if (!isMultiplicativeRelic(relicId)) {
       const bonus = getRelicAdditiveBonus(relicId, breakdown)

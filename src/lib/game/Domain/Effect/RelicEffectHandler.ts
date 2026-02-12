@@ -51,17 +51,33 @@ export function checkRelicActivations(
     if (isLineCompleted(scriptRelicLines.target2)) scriptMatchCount++
   }
 
+  // サイズボーナス: 対応サイズのピースでライン消去
+  const sizeBonusRelics: { type: RelicType; size: number }[] = [
+    { type: 'size_bonus_1', size: 1 },
+    { type: 'size_bonus_2', size: 2 },
+    { type: 'size_bonus_3', size: 3 },
+    { type: 'size_bonus_4', size: 4 },
+    { type: 'size_bonus_5', size: 5 },
+    { type: 'size_bonus_6', size: 6 },
+  ]
+  let sizeBonusActiveRelicId: RelicId | null = null
+  if (totalLines > 0) {
+    for (const { type, size } of sizeBonusRelics) {
+      if (hasRelic(ownedRelics, type) && placedBlockSize === size) {
+        sizeBonusActiveRelicId = type as RelicId
+        break
+      }
+    }
+  }
+
   return {
     // 既存レリック
     // 連鎖の達人: 消去ライン数が2以上
     chainMasterActive:
       hasRelic(ownedRelics, 'chain_master') && totalLines >= 2,
 
-    // 小さな幸運: 3ブロックピース配置でライン消去
-    smallLuckActive:
-      hasRelic(ownedRelics, 'small_luck') &&
-      placedBlockSize === 3 &&
-      totalLines > 0,
+    // サイズボーナス: 対応サイズのピース配置でライン消去
+    sizeBonusActiveRelicId,
 
     // 全消しボーナス: 盤面が空になった
     fullClearActive:
@@ -113,8 +129,8 @@ export function calculateRelicEffects(
   const chainMasterMultiplier = activations.chainMasterActive
     ? RELIC_EFFECT_VALUES.CHAIN_MASTER_MULTIPLIER
     : 1.0
-  const smallLuckBonus = activations.smallLuckActive
-    ? RELIC_EFFECT_VALUES.SMALL_LUCK_BONUS
+  const sizeBonusTotal = activations.sizeBonusActiveRelicId !== null
+    ? RELIC_EFFECT_VALUES.SIZE_BONUS_SCORE
     : 0
   const fullClearBonus = activations.fullClearActive
     ? RELIC_EFFECT_VALUES.FULL_CLEAR_BONUS
@@ -160,9 +176,9 @@ export function calculateRelicEffects(
   return {
     activations,
     chainMasterMultiplier,
-    smallLuckBonus,
+    sizeBonusTotal,
     fullClearBonus,
-    totalRelicBonus: smallLuckBonus + fullClearBonus + scriptBonus,
+    totalRelicBonus: sizeBonusTotal + fullClearBonus + scriptBonus,
     singleLineMultiplier,
     takenokoMultiplier,
     kaniMultiplier,
@@ -189,10 +205,10 @@ export function getActivatedRelics(
     })
   }
 
-  if (result.activations.smallLuckActive) {
+  if (result.activations.sizeBonusActiveRelicId) {
     activated.push({
-      relicId: 'small_luck' as RelicId,
-      bonusValue: result.smallLuckBonus,
+      relicId: result.activations.sizeBonusActiveRelicId,
+      bonusValue: result.sizeBonusTotal,
     })
   }
 
@@ -264,7 +280,7 @@ export function getActivatedRelics(
 
 /**
  * レリック効果をスコアに適用
- * 適用順序: 基本スコア → 連鎖の達人(×1.5) → 小さな幸運(+20) → 全消しボーナス(+20)
+ * 適用順序: 基本スコア → 連鎖の達人(×1.5) → サイズボーナス(+20) → 全消しボーナス(+20)
  */
 export function applyRelicEffectsToScore(
   baseScore: number,
@@ -273,8 +289,8 @@ export function applyRelicEffectsToScore(
   // 連鎖の達人: ×1.5（切り捨て）
   let score = Math.floor(baseScore * relicEffects.chainMasterMultiplier)
 
-  // 小さな幸運: +20
-  score += relicEffects.smallLuckBonus
+  // サイズボーナス: +20
+  score += relicEffects.sizeBonusTotal
 
   // 全消しボーナス: +20
   score += relicEffects.fullClearBonus
@@ -291,7 +307,8 @@ export function applyRelicEffectsToScore(
  */
 export function getActivatedRelicsFromScoreBreakdown(scoreBreakdown: {
   readonly chainMasterMultiplier: number
-  readonly smallLuckBonus: number
+  readonly sizeBonusTotal: number
+  readonly sizeBonusRelicId: RelicId | null
   readonly fullClearBonus: number
   readonly singleLineMultiplier?: number
   readonly takenokoMultiplier?: number
@@ -311,10 +328,10 @@ export function getActivatedRelicsFromScoreBreakdown(scoreBreakdown: {
     })
   }
 
-  if (scoreBreakdown.smallLuckBonus > 0) {
+  if (scoreBreakdown.sizeBonusTotal > 0 && scoreBreakdown.sizeBonusRelicId) {
     activated.push({
-      relicId: 'small_luck' as RelicId,
-      bonusValue: scoreBreakdown.smallLuckBonus,
+      relicId: scoreBreakdown.sizeBonusRelicId,
+      bonusValue: scoreBreakdown.sizeBonusTotal,
     })
   }
 

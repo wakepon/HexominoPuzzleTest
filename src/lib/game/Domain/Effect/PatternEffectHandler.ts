@@ -191,7 +191,7 @@ const DEFAULT_RELIC_EFFECTS: RelicEffectResult = {
   activations: {
     // 既存レリック
     chainMasterActive: false,
-    smallLuckActive: false,
+    sizeBonusActiveRelicId: null,
     fullClearActive: false,
     // 2-A: シングルライン
     singleLineActive: false,
@@ -216,7 +216,7 @@ const DEFAULT_RELIC_EFFECTS: RelicEffectResult = {
   },
   // 既存レリック
   chainMasterMultiplier: 1.0,
-  smallLuckBonus: 0,
+  sizeBonusTotal: 0,
   fullClearBonus: 0,
   totalRelicBonus: 0,
   // 新レリック
@@ -274,7 +274,7 @@ export function calculateScoreBreakdown(
     : DEFAULT_RELIC_EFFECTS
   const {
     chainMasterMultiplier,
-    smallLuckBonus,
+    sizeBonusTotal,
     fullClearBonus,
     singleLineMultiplier,
     takenokoMultiplier,
@@ -311,8 +311,8 @@ export function calculateScoreBreakdown(
     }
   }
 
-  // 加算レリック（小さな幸運 + 全消しボーナス + 台本）は最後
-  const finalScore = scoreAfterRelicMultipliers + smallLuckBonus + fullClearBonus + scriptBonus
+  // 加算レリック（サイズボーナス + 全消しボーナス + 台本）は最後
+  const finalScore = scoreAfterRelicMultipliers + sizeBonusTotal + fullClearBonus + scriptBonus
 
   return {
     baseBlocks,
@@ -328,9 +328,10 @@ export function calculateScoreBreakdown(
     sealScoreBonus,
     goldCount,
     chainMasterMultiplier,
-    smallLuckBonus,
+    sizeBonusTotal,
+    sizeBonusRelicId: relicEffects.activations.sizeBonusActiveRelicId,
     fullClearBonus,
-    relicBonusTotal: smallLuckBonus + fullClearBonus + scriptBonus,
+    relicBonusTotal: sizeBonusTotal + fullClearBonus + scriptBonus,
     singleLineMultiplier,
     takenokoMultiplier,
     kaniMultiplier,

@@ -9,7 +9,7 @@ import type { RelicId } from '../Core/Id'
  */
 export const RELIC_EFFECT_VALUES = {
   CHAIN_MASTER_MULTIPLIER: 1.5,
-  SMALL_LUCK_BONUS: 20,
+  SIZE_BONUS_SCORE: 20,
   FULL_CLEAR_BONUS: 20,
   SINGLE_LINE_MULTIPLIER: 3,     // シングルライン: ×3
   RENSHA_INCREMENT: 0.5,         // 連射: +0.5ずつ
@@ -29,7 +29,12 @@ export type RelicRarity = 'common' | 'uncommon' | 'rare' | 'epic'
  */
 export type RelicType =
   | 'full_clear_bonus'  // 全消しボーナス
-  | 'small_luck'        // 小さな幸運
+  | 'size_bonus_1'      // 1サイズボーナス
+  | 'size_bonus_2'      // 2サイズボーナス
+  | 'size_bonus_3'      // 3サイズボーナス
+  | 'size_bonus_4'      // 4サイズボーナス
+  | 'size_bonus_5'      // 5サイズボーナス
+  | 'size_bonus_6'      // 6サイズボーナス
   | 'chain_master'      // 連鎖の達人
   | 'single_line'       // シングルライン
   | 'takenoko'          // タケノコ
@@ -67,14 +72,59 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     price: 15,
     icon: '🏆',
   },
-  small_luck: {
-    id: 'small_luck' as RelicId,
-    type: 'small_luck',
-    name: '小さな幸運',
+  size_bonus_1: {
+    id: 'size_bonus_1' as RelicId,
+    type: 'size_bonus_1',
+    name: '1サイズボーナス',
+    description: '1ブロックのピースでライン消去時+20点',
+    rarity: 'common',
+    price: 15,
+    icon: '1️⃣',
+  },
+  size_bonus_2: {
+    id: 'size_bonus_2' as RelicId,
+    type: 'size_bonus_2',
+    name: '2サイズボーナス',
+    description: '2ブロックのピースでライン消去時+20点',
+    rarity: 'common',
+    price: 15,
+    icon: '2️⃣',
+  },
+  size_bonus_3: {
+    id: 'size_bonus_3' as RelicId,
+    type: 'size_bonus_3',
+    name: '3サイズボーナス',
     description: '3ブロックのピースでライン消去時+20点',
     rarity: 'common',
     price: 15,
-    icon: '🍀',
+    icon: '3️⃣',
+  },
+  size_bonus_4: {
+    id: 'size_bonus_4' as RelicId,
+    type: 'size_bonus_4',
+    name: '4サイズボーナス',
+    description: '4ブロックのピースでライン消去時+20点',
+    rarity: 'common',
+    price: 15,
+    icon: '4️⃣',
+  },
+  size_bonus_5: {
+    id: 'size_bonus_5' as RelicId,
+    type: 'size_bonus_5',
+    name: '5サイズボーナス',
+    description: '5ブロックのピースでライン消去時+20点',
+    rarity: 'common',
+    price: 15,
+    icon: '5️⃣',
+  },
+  size_bonus_6: {
+    id: 'size_bonus_6' as RelicId,
+    type: 'size_bonus_6',
+    name: '6サイズボーナス',
+    description: '6ブロックのピースでライン消去時+20点',
+    rarity: 'common',
+    price: 15,
+    icon: '6️⃣',
   },
   chain_master: {
     id: 'chain_master' as RelicId,
