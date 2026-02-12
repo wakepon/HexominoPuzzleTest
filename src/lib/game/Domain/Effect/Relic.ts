@@ -17,6 +17,7 @@ export const RELIC_EFFECT_VALUES = {
   SCRIPT_BONUS_SINGLE: 20,       // 台本: 1本揃い
   SCRIPT_BONUS_DOUBLE: 60,       // 台本: 2本同時揃い
   VOLCANO_MULTIPLIER: 5,         // 火山: ブロック数×5
+  BANDAID_TRIGGER_COUNT: 3,      // 絆創膏: 発動に必要なハンド消費回数
 } as const
 
 /**
@@ -45,6 +46,7 @@ export type RelicType =
   | 'hand_stock'        // 手札ストック
   | 'script'            // 台本
   | 'volcano'           // 火山
+  | 'bandaid'           // 絆創膏
 
 /**
  * レリック定義
@@ -215,6 +217,15 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     rarity: 'rare',
     price: 30,
     icon: '🌋',
+  },
+  bandaid: {
+    id: 'bandaid' as RelicId,
+    type: 'bandaid',
+    name: '絆創膏',
+    description: '3ハンド消費ごとにノーハンド付きモノミノが手札に追加',
+    rarity: 'uncommon',
+    price: 20,
+    icon: '🩹',
   },
 }
 

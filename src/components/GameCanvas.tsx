@@ -21,6 +21,7 @@ import { BlockDataMapUtils } from '../lib/game/Domain/Piece/BlockData'
 import type { DebugSettings } from '../lib/game/Domain/Debug'
 import type { RelicType } from '../lib/game/Domain/Effect/Relic'
 import { hasRelic } from '../lib/game/Domain/Effect/RelicEffectHandler'
+import { getBandaidCountdown } from '../lib/game/Domain/Effect/RelicState'
 import type { RelicId } from '../lib/game/Domain/Core/Id'
 import type { TooltipState } from '../lib/game/Domain/Tooltip'
 import { INITIAL_TOOLTIP_STATE } from '../lib/game/Domain/Tooltip'
@@ -143,6 +144,9 @@ export function GameCanvas({
       gold: state.player.gold,
       roundInfo: state.roundInfo,
       remainingHands: state.deck.remainingHands,
+      bandaidCountdown: hasRelic(state.player.ownedRelics, 'bandaid')
+        ? getBandaidCountdown(state.relicMultiplierState)
+        : null,
     }, layout)
 
     // レリックパネル描画（ボードの左側）
