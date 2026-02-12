@@ -243,9 +243,10 @@ function getAllFilledCells(board: Board): ClearingCell[] {
  */
 function handlePlacement(
   slots: readonly PieceSlot[],
-  deck: DeckState
+  deck: DeckState,
+  skipHandConsumption: boolean = false
 ): { finalSlots: PieceSlot[]; finalDeck: DeckState } {
-  const updatedDeck = decrementRemainingHands(deck)
+  const updatedDeck = skipHandConsumption ? deck : decrementRemainingHands(deck)
 
   if (!areAllSlotsEmpty(slots) || updatedDeck.remainingHands === 0) {
     return {
@@ -423,8 +424,11 @@ function processPiecePlacement(
   const newBoard = placePieceOnBoard(state.board, piece, boardPos)
   emitPiecePlaced(piece, toGridPosition(boardPos), newBoard)
 
+  // nohandパターンの場合はハンド消費をスキップ
+  const isNohand = getPiecePattern(piece) === 'nohand'
+
   // 配置後の状態を計算
-  const { finalSlots, finalDeck } = handlePlacement(newSlots, newDeck)
+  const { finalSlots, finalDeck } = handlePlacement(newSlots, newDeck, isNohand)
 
   // ライン消去判定
   const completedLines = findCompletedLines(newBoard)
