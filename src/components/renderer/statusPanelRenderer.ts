@@ -17,6 +17,7 @@ interface StatusPanelData {
   gold: number
   roundInfo: RoundInfo
   remainingHands: number
+  bandaidCountdown: number | null
 }
 
 /**
@@ -91,6 +92,13 @@ export function renderStatusPanel(
   ctx.font = `${style.fontWeight} ${style.handFontSize + 12}px ${style.fontFamily}`
   ctx.fillStyle = style.handColor
   ctx.fillText(`${data.remainingHands}`, padding + 175, bottomY + 25)
+
+  // 絆創膏カウントダウン表示
+  if (data.bandaidCountdown !== null) {
+    ctx.font = `${style.fontWeight} ${style.handFontSize}px ${style.fontFamily}`
+    ctx.fillStyle = '#87CEEB'
+    ctx.fillText(`🩹${data.bandaidCountdown}`, padding + 240, bottomY + 25)
+  }
 
   // === デッキボタン ===
   const btnStyle = DECK_BUTTON_STYLE

@@ -9,12 +9,14 @@ export interface RelicMultiplierState {
   readonly nobiTakenokoMultiplier: number  // のびのびタケノコ倍率
   readonly nobiKaniMultiplier: number      // のびのびカニ倍率
   readonly renshaMultiplier: number        // 連射倍率
+  readonly bandaidCounter: number          // 絆創膏カウンター（0〜2、3で発動→0リセット）
 }
 
 export const INITIAL_RELIC_MULTIPLIER_STATE: RelicMultiplierState = {
   nobiTakenokoMultiplier: 1.0,
   nobiKaniMultiplier: 1.0,
   renshaMultiplier: 1.0,
+  bandaidCounter: 0,
 }
 
 /**
@@ -91,6 +93,29 @@ export function updateNobiKaniMultiplier(
   }
   // 消去なし: 変更なし
   return state
+}
+
+/**
+ * 絆創膏カウンターの更新
+ * ハンド消費時にカウンター+1、3に達したら発動→0リセット
+ */
+export function updateBandaidCounter(
+  state: RelicMultiplierState,
+  handConsumed: boolean
+): { newState: RelicMultiplierState; shouldTrigger: boolean } {
+  if (!handConsumed) return { newState: state, shouldTrigger: false }
+  const newCounter = state.bandaidCounter + 1
+  if (newCounter >= RELIC_EFFECT_VALUES.BANDAID_TRIGGER_COUNT) {
+    return { newState: { ...state, bandaidCounter: 0 }, shouldTrigger: true }
+  }
+  return { newState: { ...state, bandaidCounter: newCounter }, shouldTrigger: false }
+}
+
+/**
+ * 絆創膏カウントダウン値を取得（発動まであと何ハンドか）
+ */
+export function getBandaidCountdown(state: RelicMultiplierState): number {
+  return RELIC_EFFECT_VALUES.BANDAID_TRIGGER_COUNT - state.bandaidCounter
 }
 
 /**

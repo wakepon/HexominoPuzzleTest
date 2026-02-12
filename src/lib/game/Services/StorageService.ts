@@ -121,6 +121,7 @@ interface SavedGameState {
     readonly nobiTakenokoMultiplier: number
     readonly nobiKaniMultiplier: number
     readonly renshaMultiplier: number
+    readonly bandaidCounter?: number
   }
 
   // 台本レリック指定ライン（マイグレーション対応でオプショナル）
@@ -450,7 +451,10 @@ export function restoreGameState(
     shopState: deserializeShopState(saved.shopState),
     comboCount: saved.comboCount,
     // マイグレーション対応: 古いセーブデータにはrelicMultiplierStateがない
-    relicMultiplierState: saved.relicMultiplierState ?? INITIAL_RELIC_MULTIPLIER_STATE,
+    relicMultiplierState: {
+      ...INITIAL_RELIC_MULTIPLIER_STATE,
+      ...(saved.relicMultiplierState ?? {}),
+    },
     // マイグレーション対応: 古いセーブデータにはscriptRelicLinesがない
     scriptRelicLines: saved.scriptRelicLines ?? null,
     // マイグレーション対応: 古いセーブデータにはvolcanoEligibleがない

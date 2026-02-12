@@ -57,6 +57,7 @@ import {
   updateRenshaMultiplier,
   updateNobiTakenokoMultiplier,
   updateNobiKaniMultiplier,
+  updateBandaidCounter,
 } from '../../Domain/Effect/RelicState'
 import { createRelicActivationAnimation } from '../../Domain/Animation/AnimationState'
 import type { ScoreAnimationState } from '../../Domain/Animation/ScoreAnimationState'
@@ -77,13 +78,14 @@ import {
   markItemAsPurchased,
   shuffleCurrentDeck,
 } from '../../Services/ShopService'
-import { getPiecePattern } from '../../Services/PieceService'
+import { getPiecePattern, createPieceWithPattern } from '../../Services/PieceService'
 import { DefaultRandom } from '../../Utils/Random'
 import { CLEAR_ANIMATION, RELIC_EFFECT_STYLE, GRID_SIZE } from '../../Data/Constants'
 import { RELIC_EFFECT_VALUES } from '../../Domain/Effect/Relic'
+import { getMinoById } from '../../Data/MinoDefinitions'
 import { saveGameState, clearGameState } from '../../Services/StorageService'
 import type { RelicMultiplierState } from '../../Domain/Effect/RelicState'
-import type { RelicId } from '../../Domain/Core/Id'
+import type { RelicId, PatternId } from '../../Domain/Core/Id'
 import { generateScriptLines } from '../../Domain/Effect/ScriptRelicState'
 
 /**
@@ -244,13 +246,28 @@ function getAllFilledCells(board: Board): ClearingCell[] {
 function handlePlacement(
   slots: readonly PieceSlot[],
   deck: DeckState,
-  skipHandConsumption: boolean = false
+  skipHandConsumption: boolean = false,
+  bandaidTrigger: boolean = false
 ): { finalSlots: PieceSlot[]; finalDeck: DeckState } {
   const updatedDeck = skipHandConsumption ? deck : decrementRemainingHands(deck)
 
-  if (!areAllSlotsEmpty(slots) || updatedDeck.remainingHands === 0) {
+  let modifiedSlots = [...slots]
+
+  // 絆創膏: ハンド残りがある場合のみ、空きスロットにノーハンドモノミノを注入
+  if (bandaidTrigger && updatedDeck.remainingHands > 0) {
+    const emptyIndex = modifiedSlots.findIndex(s => s.piece === null)
+    if (emptyIndex >= 0) {
+      const monomino = getMinoById('mono-1')
+      if (monomino) {
+        const nohandPiece = createPieceWithPattern(monomino, 'nohand' as PatternId)
+        modifiedSlots[emptyIndex] = { ...modifiedSlots[emptyIndex], piece: nohandPiece }
+      }
+    }
+  }
+
+  if (!areAllSlotsEmpty(modifiedSlots) || updatedDeck.remainingHands === 0) {
     return {
-      finalSlots: [...slots],
+      finalSlots: modifiedSlots,
       finalDeck: updatedDeck,
     }
   }
@@ -427,8 +444,15 @@ function processPiecePlacement(
   // nohandパターンの場合はハンド消費をスキップ
   const isNohand = getPiecePattern(piece) === 'nohand'
 
+  // 絆創膏カウンター更新（ハンド消費時のみ）
+  const handConsumed = !isNohand
+  const { newState: updatedMultState, shouldTrigger: bandaidTrigger } =
+    hasRelic(state.player.ownedRelics, 'bandaid')
+      ? updateBandaidCounter(state.relicMultiplierState, handConsumed)
+      : { newState: state.relicMultiplierState, shouldTrigger: false }
+
   // 配置後の状態を計算
-  const { finalSlots, finalDeck } = handlePlacement(newSlots, newDeck, isNohand)
+  const { finalSlots, finalDeck } = handlePlacement(newSlots, newDeck, isNohand, bandaidTrigger)
 
   // ライン消去判定
   const completedLines = findCompletedLines(newBoard)
@@ -498,7 +522,7 @@ function processPiecePlacement(
       : null
 
     const newRelicMultiplierState = updateRelicMultipliers(
-      state.relicMultiplierState,
+      updatedMultState,
       state.player.ownedRelics,
       totalLines,
       completedLines.rows.length,
@@ -533,7 +557,7 @@ function processPiecePlacement(
 
   // ライン消去なし
   const newRelicMultiplierState = updateRelicMultipliers(
-    state.relicMultiplierState,
+    updatedMultState,
     state.player.ownedRelics,
     0,
     0,
