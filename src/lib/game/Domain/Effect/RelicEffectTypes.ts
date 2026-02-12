@@ -28,7 +28,7 @@ export interface RelicEffectContext {
 export interface RelicActivationState {
   // 既存レリック
   readonly chainMasterActive: boolean // 連鎖の達人
-  readonly smallLuckActive: boolean // 小さな幸運
+  readonly sizeBonusActiveRelicId: RelicId | null // サイズボーナス発動レリックID
   readonly fullClearActive: boolean // 全消しボーナス
 
   // 2-A: シングルライン
@@ -67,9 +67,9 @@ export interface RelicEffectResult {
 
   // 既存レリック
   readonly chainMasterMultiplier: number // 1.0 or 1.5
-  readonly smallLuckBonus: number // 0 or 20
+  readonly sizeBonusTotal: number // 0 or 20
   readonly fullClearBonus: number // 0 or 20
-  readonly totalRelicBonus: number // 加算ボーナス合計（小さな幸運 + 全消し）
+  readonly totalRelicBonus: number // 加算ボーナス合計（サイズボーナス + 全消し）
 
   // 2-A: シングルライン倍率
   readonly singleLineMultiplier: number // 1 or 3

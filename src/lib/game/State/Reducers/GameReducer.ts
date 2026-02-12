@@ -194,10 +194,10 @@ function buildScoreBonuses(breakdown: ScoreBreakdown): ScoreBonus[] {
       multiplier: breakdown.chainMasterMultiplier,
     })
   }
-  if (breakdown.smallLuckBonus > 0) {
+  if (breakdown.sizeBonusTotal > 0 && breakdown.sizeBonusRelicId) {
     bonuses.push({
-      source: 'relic:small_luck',
-      amount: breakdown.smallLuckBonus,
+      source: `relic:${breakdown.sizeBonusRelicId}`,
+      amount: breakdown.sizeBonusTotal,
     })
   }
   if (breakdown.fullClearBonus > 0) {
