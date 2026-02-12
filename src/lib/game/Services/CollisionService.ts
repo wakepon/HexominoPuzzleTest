@@ -3,6 +3,7 @@
  */
 
 import type { Board, Position, PieceShape } from '../Domain'
+import type { PatternId } from '../Domain/Core/Id'
 import { GRID_SIZE } from '../Data/Constants'
 
 /**
@@ -10,12 +11,14 @@ import { GRID_SIZE } from '../Data/Constants'
  * @param board 現在のボード
  * @param shape ブロック形状
  * @param position 配置位置（左上基準）
+ * @param piecePattern ピースのパターン（featherの場合は重ね置き可能）
  * @returns 配置可能ならtrue
  */
 export function canPlacePiece(
   board: Board,
   shape: PieceShape,
-  position: Position
+  position: Position,
+  piecePattern: PatternId | null = null
 ): boolean {
   // 各セルをチェック
   for (let shapeY = 0; shapeY < shape.length; shapeY++) {
@@ -33,6 +36,16 @@ export function canPlacePiece(
 
       // 既に埋まっているセルとの重複チェック
       if (board[boardY][boardX].filled) {
+        // featherパターンの場合: 既存ブロックがfeatherでなければ重ね置き可能
+        if (piecePattern === 'feather') {
+          const existingPattern = board[boardY][boardX].pattern
+          if (existingPattern === 'feather') {
+            // featherの上にfeatherは不可
+            return false
+          }
+          // feather以外の既存ブロックの上には配置可能
+          continue
+        }
         return false
       }
     }
@@ -64,10 +77,14 @@ export function screenToBoardPosition(
 /**
  * ピースがボード上のいずれかの位置に配置可能かチェック
  */
-export function canPieceBePlacedAnywhere(board: Board, shape: PieceShape): boolean {
+export function canPieceBePlacedAnywhere(
+  board: Board,
+  shape: PieceShape,
+  piecePattern: PatternId | null = null
+): boolean {
   for (let y = 0; y < GRID_SIZE; y++) {
     for (let x = 0; x < GRID_SIZE; x++) {
-      if (canPlacePiece(board, shape, { x, y })) return true
+      if (canPlacePiece(board, shape, { x, y }, piecePattern)) return true
     }
   }
   return false

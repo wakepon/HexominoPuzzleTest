@@ -1,6 +1,7 @@
 import { Board, DragState, PieceSlot, CanvasLayout } from '../../lib/game/types'
 import { COLORS } from '../../lib/game/Data/Constants'
 import { canPlacePiece } from '../../lib/game/Services/CollisionService'
+import { getPiecePattern } from '../../lib/game/Services/PieceService'
 
 /**
  * 配置プレビューを描画
@@ -24,7 +25,7 @@ export function renderPlacementPreview(
   const { boardOffsetX, boardOffsetY, cellSize } = layout
 
   // 配置可能かチェック
-  const isValid = canPlacePiece(board, shape, boardPos)
+  const isValid = canPlacePiece(board, shape, boardPos, getPiecePattern(slot.piece))
   const previewColor = isValid ? COLORS.previewValid : COLORS.previewInvalid
 
   // プレビュー描画
