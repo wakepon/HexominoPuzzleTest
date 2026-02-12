@@ -14,6 +14,7 @@ export type PatternType =
   | 'aura' // オーラブロック
   | 'moss' // 苔ブロック
   | 'feather' // 羽ブロック
+  | 'nohand' // ノーハンドブロック
   | 'obstacle' // おじゃまブロック（ボス条件）
 
 /**
@@ -87,6 +88,15 @@ export const PATTERN_DEFINITIONS: Record<PatternType, PatternDefinition> = {
     isNegative: false,
     price: 3,
   },
+  nohand: {
+    id: 'nohand' as PatternId,
+    type: 'nohand',
+    name: 'ノーハンドブロック',
+    description: '配置してもハンドを消費しない',
+    symbol: 'N',
+    isNegative: false,
+    price: 5,
+  },
   obstacle: {
     id: 'obstacle' as PatternId,
     type: 'obstacle',
@@ -117,4 +127,5 @@ export const SHOP_AVAILABLE_PATTERNS: PatternType[] = [
   'aura',
   'moss',
   'feather',
+  'nohand',
 ]
