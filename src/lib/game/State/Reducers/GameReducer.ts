@@ -77,6 +77,7 @@ import {
   markItemAsPurchased,
   shuffleCurrentDeck,
 } from '../../Services/ShopService'
+import { getPiecePattern } from '../../Services/PieceService'
 import { DefaultRandom } from '../../Utils/Random'
 import { CLEAR_ANIMATION, RELIC_EFFECT_STYLE, GRID_SIZE } from '../../Data/Constants'
 import { RELIC_EFFECT_VALUES } from '../../Domain/Effect/Relic'
@@ -281,12 +282,12 @@ function resolveUnplaceableHand(
 
     // 手札のいずれかがボード上に配置可能かチェック
     const canPlaceAny = currentSlots.some(
-      s => s.piece && canPieceBePlacedAnywhere(board, s.piece.shape)
+      s => s.piece && canPieceBePlacedAnywhere(board, s.piece.shape, getPiecePattern(s.piece))
     )
     if (canPlaceAny) break
 
     // ストックが配置可能ならスタックではない
-    if (currentDeck.stockSlot && canPieceBePlacedAnywhere(board, currentDeck.stockSlot.shape)) {
+    if (currentDeck.stockSlot && canPieceBePlacedAnywhere(board, currentDeck.stockSlot.shape, getPiecePattern(currentDeck.stockSlot))) {
       break
     }
 
@@ -732,7 +733,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         if (
           state.phase === 'playing' &&
           boardPos &&
-          canPlacePiece(state.board, stockPiece.shape, boardPos)
+          canPlacePiece(state.board, stockPiece.shape, boardPos, getPiecePattern(stockPiece))
         ) {
           // ストックをクリアした新しいデッキを作成
           const newDeck: DeckState = { ...state.deck, stockSlot: null }
@@ -765,7 +766,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       if (
         slot?.piece &&
         boardPos &&
-        canPlacePiece(state.board, slot.piece.shape, boardPos)
+        canPlacePiece(state.board, slot.piece.shape, boardPos, getPiecePattern(slot.piece))
       ) {
         // スロットからブロックを削除
         const newSlots = state.pieceSlots.map((s, i) =>
@@ -788,7 +789,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       // ゲーム終了状態では配置不可
       if (state.phase !== 'playing') return state
 
-      if (!canPlacePiece(state.board, slot.piece.shape, action.position)) {
+      if (!canPlacePiece(state.board, slot.piece.shape, action.position, getPiecePattern(slot.piece))) {
         return state
       }
 

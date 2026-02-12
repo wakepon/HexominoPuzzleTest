@@ -416,6 +416,11 @@ export const PATTERN_COLORS: Record<string, { base: string; highlight: string; s
     highlight: '#3CB371', // ミディアムシーグリーン
     shadow: '#006400',    // ダークグリーン
   },
+  feather: {
+    base: '#F5F5DC',      // ベージュ
+    highlight: '#FFFACD', // レモンシフォン
+    shadow: '#D2B48C',    // タン
+  },
   obstacle: {
     base: '#696969',      // ディムグレー
     highlight: '#808080', // グレー

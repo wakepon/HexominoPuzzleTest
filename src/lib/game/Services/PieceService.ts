@@ -244,6 +244,16 @@ export function getInitialPieces(): Piece[] {
 }
 
 /**
+ * ピースのBlockDataから最初のpatternを取得
+ */
+export function getPiecePattern(piece: Piece): PatternId | null {
+  for (const blockData of piece.blocks.values()) {
+    if (blockData.pattern) return blockData.pattern
+  }
+  return null
+}
+
+/**
  * ブロック形状のサイズを取得
  */
 export function getPieceSize(shape: PieceShape): { width: number; height: number } {

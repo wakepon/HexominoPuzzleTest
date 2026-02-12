@@ -13,6 +13,7 @@ export type PatternType =
   | 'combo' // コンボブロック
   | 'aura' // オーラブロック
   | 'moss' // 苔ブロック
+  | 'feather' // 羽ブロック
   | 'obstacle' // おじゃまブロック（ボス条件）
 
 /**
@@ -77,6 +78,15 @@ export const PATTERN_DEFINITIONS: Record<PatternType, PatternDefinition> = {
     isNegative: false,
     price: 3, // 端配置が必要で条件付き
   },
+  feather: {
+    id: 'feather' as PatternId,
+    type: 'feather',
+    name: '羽ブロック',
+    description: '既にブロックがある場所に重ねて配置できる',
+    symbol: 'F',
+    isNegative: false,
+    price: 3,
+  },
   obstacle: {
     id: 'obstacle' as PatternId,
     type: 'obstacle',
@@ -106,4 +116,5 @@ export const SHOP_AVAILABLE_PATTERNS: PatternType[] = [
   'combo',
   'aura',
   'moss',
+  'feather',
 ]
