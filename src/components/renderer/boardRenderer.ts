@@ -1,6 +1,7 @@
 import { Board, CanvasLayout, ClearingCell } from '../../lib/game/types'
 import { COLORS, LAYOUT, GRID_SIZE } from '../../lib/game/Data/Constants'
 import { drawWoodenCell } from './cellRenderer'
+import type { ScriptRelicLines } from '../../lib/game/Domain/Effect/ScriptRelicState'
 
 /**
  * 消去中のセルかどうかをチェック
@@ -57,6 +58,51 @@ export function renderBoard(
       ctx.strokeRect(cellX, cellY, cellSize, cellSize)
     }
   }
+}
+
+/**
+ * 台本レリックの三角形マーカーを描画
+ * 行マーカー: ボード左端の外側に右向き三角形
+ * 列マーカー: ボード上端の外側に下向き三角形
+ */
+export function renderScriptMarkers(
+  ctx: CanvasRenderingContext2D,
+  scriptLines: ScriptRelicLines,
+  layout: CanvasLayout
+): void {
+  const { boardOffsetX, boardOffsetY, cellSize } = layout
+  const markerSize = 8
+  const markerColor = '#FFD700'
+  const gap = 4
+
+  const drawMarker = (target: { type: 'row' | 'col'; index: number }) => {
+    ctx.fillStyle = markerColor
+    ctx.beginPath()
+
+    if (target.type === 'row') {
+      // 左端の外側に右向き三角形
+      const centerY = boardOffsetY + target.index * cellSize + cellSize / 2
+      const tipX = boardOffsetX - gap
+      const baseX = tipX - markerSize
+      ctx.moveTo(tipX, centerY)
+      ctx.lineTo(baseX, centerY - markerSize / 2)
+      ctx.lineTo(baseX, centerY + markerSize / 2)
+    } else {
+      // 上端の外側に下向き三角形
+      const centerX = boardOffsetX + target.index * cellSize + cellSize / 2
+      const tipY = boardOffsetY - gap
+      const baseY = tipY - markerSize
+      ctx.moveTo(centerX, tipY)
+      ctx.lineTo(centerX - markerSize / 2, baseY)
+      ctx.lineTo(centerX + markerSize / 2, baseY)
+    }
+
+    ctx.closePath()
+    ctx.fill()
+  }
+
+  drawMarker(scriptLines.target1)
+  drawMarker(scriptLines.target2)
 }
 
 /**

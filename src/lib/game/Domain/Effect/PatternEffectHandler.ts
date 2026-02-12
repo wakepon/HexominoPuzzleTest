@@ -210,6 +210,9 @@ const DEFAULT_RELIC_EFFECTS: RelicEffectResult = {
     // 2-F: のびのびカニ
     nobiKaniActive: false,
     nobiKaniMultiplier: 1.0,
+    // 台本
+    scriptActive: false,
+    scriptMatchCount: 0,
   },
   // 既存レリック
   chainMasterMultiplier: 1.0,
@@ -223,6 +226,7 @@ const DEFAULT_RELIC_EFFECTS: RelicEffectResult = {
   renshaMultiplier: 1.0,
   nobiTakenokoMultiplier: 1.0,
   nobiKaniMultiplier: 1.0,
+  scriptBonus: 0,
 }
 
 /**
@@ -278,6 +282,7 @@ export function calculateScoreBreakdown(
     renshaMultiplier,
     nobiTakenokoMultiplier,
     nobiKaniMultiplier,
+    scriptBonus,
   } = relicEffects
 
   // 最終スコア計算（relicDisplayOrder に基づく動的順序）
@@ -306,8 +311,8 @@ export function calculateScoreBreakdown(
     }
   }
 
-  // 加算レリック（小さな幸運 + 全消しボーナス）は最後
-  const finalScore = scoreAfterRelicMultipliers + smallLuckBonus + fullClearBonus
+  // 加算レリック（小さな幸運 + 全消しボーナス + 台本）は最後
+  const finalScore = scoreAfterRelicMultipliers + smallLuckBonus + fullClearBonus + scriptBonus
 
   return {
     baseBlocks,
@@ -325,13 +330,14 @@ export function calculateScoreBreakdown(
     chainMasterMultiplier,
     smallLuckBonus,
     fullClearBonus,
-    relicBonusTotal: smallLuckBonus + fullClearBonus,
+    relicBonusTotal: smallLuckBonus + fullClearBonus + scriptBonus,
     singleLineMultiplier,
     takenokoMultiplier,
     kaniMultiplier,
     renshaMultiplier,
     nobiTakenokoMultiplier,
     nobiKaniMultiplier,
+    scriptBonus,
     finalScore,
   }
 }

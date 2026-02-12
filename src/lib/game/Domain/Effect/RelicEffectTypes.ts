@@ -4,6 +4,7 @@
 
 import type { RelicId } from '../Core/Id'
 import type { RelicMultiplierState } from './RelicState'
+import type { ScriptRelicLines } from './ScriptRelicState'
 
 /**
  * レリック効果計算に必要なコンテキスト
@@ -16,6 +17,9 @@ export interface RelicEffectContext {
   readonly placedBlockSize: number     // 配置したピースのブロック数
   readonly isBoardEmptyAfterClear: boolean // 消去後に盤面が空か
   readonly relicMultiplierState: RelicMultiplierState  // 倍率状態
+  readonly completedRows: readonly number[]  // 揃った行のインデックス
+  readonly completedCols: readonly number[]  // 揃った列のインデックス
+  readonly scriptRelicLines: ScriptRelicLines | null  // 台本レリックの指定ライン
 }
 
 /**
@@ -49,6 +53,10 @@ export interface RelicActivationState {
   // 2-F: のびのびカニ
   readonly nobiKaniActive: boolean // 横列のみ消去時に発動
   readonly nobiKaniMultiplier: number // 現在の倍率
+
+  // 台本
+  readonly scriptActive: boolean // 台本レリック発動（1本以上揃った）
+  readonly scriptMatchCount: number // マッチした本数（0, 1, 2）
 }
 
 /**
@@ -80,6 +88,9 @@ export interface RelicEffectResult {
 
   // 2-F: のびのびカニ倍率
   readonly nobiKaniMultiplier: number // 累積倍率（発動しなければ1.0）
+
+  // 台本ボーナス
+  readonly scriptBonus: number // 0, 20, or 60
 }
 
 /**

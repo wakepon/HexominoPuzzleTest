@@ -9,6 +9,7 @@ import type {
   Piece,
   Board,
   ScoreBreakdown,
+  ClearingCell,
 } from '../../Domain'
 import { toGridPosition } from '../../Domain/Core/Position'
 import type { GameAction } from '../Actions/GameActions'
@@ -46,7 +47,7 @@ import {
   clearLines,
   calculateScoreWithEffects,
 } from '../../Services/LineService'
-import { hasComboPattern } from '../../Domain/Effect/PatternEffectHandler'
+import { hasComboPattern, calculateScoreBreakdown } from '../../Domain/Effect/PatternEffectHandler'
 import {
   getActivatedRelicsFromScoreBreakdown,
   hasRelic,
@@ -77,10 +78,12 @@ import {
   shuffleCurrentDeck,
 } from '../../Services/ShopService'
 import { DefaultRandom } from '../../Utils/Random'
-import { CLEAR_ANIMATION, RELIC_EFFECT_STYLE } from '../../Data/Constants'
+import { CLEAR_ANIMATION, RELIC_EFFECT_STYLE, GRID_SIZE } from '../../Data/Constants'
+import { RELIC_EFFECT_VALUES } from '../../Domain/Effect/Relic'
 import { saveGameState, clearGameState } from '../../Services/StorageService'
 import type { RelicMultiplierState } from '../../Domain/Effect/RelicState'
 import type { RelicId } from '../../Domain/Core/Id'
+import { generateScriptLines } from '../../Domain/Effect/ScriptRelicState'
 
 /**
  * レリック倍率状態を更新
@@ -220,6 +223,21 @@ function isBoardEmpty(board: Board): boolean {
 }
 
 /**
+ * ボード上の全filledセルを取得（火山レリック用）
+ */
+function getAllFilledCells(board: Board): ClearingCell[] {
+  const cells: ClearingCell[] = []
+  for (let row = 0; row < GRID_SIZE; row++) {
+    for (let col = 0; col < GRID_SIZE; col++) {
+      if (board[row][col].filled) {
+        cells.push({ x: col, y: row, row, col })
+      }
+    }
+  }
+  return cells
+}
+
+/**
  * 配置後のデッキとスロットの状態を計算
  */
 function handlePlacement(
@@ -301,6 +319,89 @@ function resolveUnplaceableHand(
 }
 
 /**
+ * 火山レリック発動処理
+ * ゲームオーバー時に火山レリック所持かつ未発動なら、全ブロック消去+スコア加算
+ */
+function tryVolcanoActivation(
+  state: GameState,
+  resolved: { finalSlots: PieceSlot[]; finalDeck: DeckState; phase: ReturnType<typeof determinePhase> },
+  newBoard: Board,
+  comboCount: number,
+  newRelicMultiplierState: RelicMultiplierState
+): PlacementResult | null {
+  if (
+    resolved.phase !== 'game_over' ||
+    !hasRelic(state.player.ownedRelics, 'volcano') ||
+    !state.volcanoEligible
+  ) {
+    return null
+  }
+
+  const filledCells = getAllFilledCells(newBoard)
+  if (filledCells.length === 0) return null
+
+  // スコア計算（linesCleared=VOLCANO_MULTIPLIER でブロック数×5）
+  const volcanoBreakdown = calculateScoreBreakdown(
+    newBoard,
+    filledCells,
+    RELIC_EFFECT_VALUES.VOLCANO_MULTIPLIER,
+    0,
+    null,
+    Math.random,
+    state.player.relicDisplayOrder
+  )
+
+  const newScore = state.score + volcanoBreakdown.finalScore
+  const goldGain = volcanoBreakdown.goldCount
+  const newPlayer = addGold(state.player, goldGain)
+  const volcanoPhase = determinePhase(newScore, state.targetScore, 0)
+
+  // クリアリングアニメーション（全filledCells）
+  const clearAnim = {
+    isAnimating: true as const,
+    cells: filledCells,
+    startTime: Date.now(),
+    duration: CLEAR_ANIMATION.duration,
+  }
+
+  // レリック発動アニメーション（火山）
+  const volcanoRelicAnim = createRelicActivationAnimation(
+    [{
+      relicId: 'volcano' as RelicId,
+      bonusValue: `+${volcanoBreakdown.finalScore}`,
+    }],
+    RELIC_EFFECT_STYLE.duration
+  )
+
+  // スコアアニメーション
+  const scoreAnim = createScoreAnimation(
+    volcanoBreakdown,
+    state.player.relicDisplayOrder,
+    state.score
+  )
+
+  return {
+    success: true,
+    newState: {
+      ...state,
+      board: newBoard,
+      pieceSlots: resolved.finalSlots,
+      dragState: initialDragState,
+      deck: resolved.finalDeck,
+      phase: volcanoPhase,
+      comboCount,
+      relicMultiplierState: newRelicMultiplierState,
+      clearingAnimation: clearAnim,
+      relicActivationAnimation: volcanoRelicAnim,
+      scoreAnimation: scoreAnim,
+      score: newScore,
+      player: newPlayer,
+      volcanoEligible: false,
+    },
+  }
+}
+
+/**
  * ボードにピースを配置し、ライン消去とスコア計算を行う共通処理
  * 手札からの配置とストックからの配置で共通して使用
  */
@@ -353,6 +454,9 @@ function processPiecePlacement(
       placedBlockSize: getPieceBlockCount(piece),
       isBoardEmptyAfterClear: isBoardEmpty(boardAfterClear),
       relicMultiplierState: state.relicMultiplierState,
+      completedRows: completedLines.rows,
+      completedCols: completedLines.columns,
+      scriptRelicLines: state.scriptRelicLines,
     }
 
     const scoreBreakdown = calculateScoreWithEffects(
@@ -417,6 +521,7 @@ function processPiecePlacement(
         phase: newPhase,
         comboCount,
         relicMultiplierState: newRelicMultiplierState,
+        volcanoEligible: false, // ライン消去があったので火山は発動不可
       },
     }
   }
@@ -434,6 +539,14 @@ function processPiecePlacement(
   const resolved = resolveUnplaceableHand(
     newBoard, finalSlots, finalDeck, state.score, state.targetScore
   )
+
+  // 火山レリック発動判定
+  const volcanoResult = tryVolcanoActivation(
+    state, resolved, newBoard, comboCount, newRelicMultiplierState
+  )
+  if (volcanoResult) {
+    return volcanoResult
+  }
 
   return {
     success: true,
@@ -516,6 +629,11 @@ function createNextRoundState(currentState: GameState): GameState {
 
   const targetScore = calculateTargetScore(nextRound)
 
+  // 台本レリック: 所持時に指定ラインを抽選
+  const scriptRelicLines = hasRelic(currentState.player.ownedRelics, 'script')
+    ? generateScriptLines(() => rng.next())
+    : null
+
   // イベント発火: ラウンド開始
   emitRoundStarted(nextRound, targetScore)
 
@@ -536,7 +654,9 @@ function createNextRoundState(currentState: GameState): GameState {
     shopState: null,
     comboCount: 0,
     relicMultiplierState: INITIAL_RELIC_MULTIPLIER_STATE, // ラウンド開始時に倍率をリセット
+    scriptRelicLines,
     deckViewOpen: false,
+    volcanoEligible: true, // ラウンド開始時にリセット
   }
 }
 

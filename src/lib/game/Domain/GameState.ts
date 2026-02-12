@@ -11,6 +11,7 @@ import type {
 import type { ScoreAnimationState } from './Animation/ScoreAnimationState'
 import type { PlayerState } from './Player/PlayerState'
 import type { RelicMultiplierState } from './Effect/RelicState'
+import type { ScriptRelicLines } from './Effect/ScriptRelicState'
 
 /**
  * ゲーム全体の状態（不変）
@@ -45,6 +46,12 @@ export interface GameState {
 
   // レリック倍率状態
   readonly relicMultiplierState: RelicMultiplierState
+
+  // 台本レリック指定ライン
+  readonly scriptRelicLines: ScriptRelicLines | null
+
+  // 火山レリック発動可能フラグ（ラウンド中にライン消去がなければtrue）
+  readonly volcanoEligible: boolean
 
   // UI状態
   readonly deckViewOpen: boolean
