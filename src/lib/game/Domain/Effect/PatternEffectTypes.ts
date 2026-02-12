@@ -44,6 +44,8 @@ export interface ScoreBreakdown {
   readonly nobiTakenokoMultiplier: number // のびのびタケノコ倍率（累積、1.0から+0.5ずつ増加）
   // 2-F: のびのびカニ
   readonly nobiKaniMultiplier: number // のびのびカニ倍率（累積、1.0から+0.5ずつ増加）
+  // 台本
+  readonly scriptBonus: number // 台本ボーナス（0, 20, or 60）
   readonly finalScore: number // 最終スコア
 }
 

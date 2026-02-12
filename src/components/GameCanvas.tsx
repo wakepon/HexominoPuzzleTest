@@ -1,7 +1,7 @@
 import { useRef, useEffect, useCallback, useState } from 'react'
 import { GameState, CanvasLayout, Position } from '../lib/game/types'
 import { COLORS, HD_LAYOUT, ROUND_CLEAR_STYLE, DEBUG_PROBABILITY_SETTINGS } from '../lib/game/Data/Constants'
-import { renderBoard } from './renderer/boardRenderer'
+import { renderBoard, renderScriptMarkers } from './renderer/boardRenderer'
 import { renderPieceSlots, renderDraggingPiece } from './renderer/pieceRenderer'
 import { renderPlacementPreview } from './renderer/previewRenderer'
 import { renderClearAnimation } from './renderer/clearAnimationRenderer'
@@ -20,6 +20,8 @@ import { drawWoodenCellWithBorder } from './renderer/cellRenderer'
 import { BlockDataMapUtils } from '../lib/game/Domain/Piece/BlockData'
 import type { DebugSettings } from '../lib/game/Domain/Debug'
 import type { RelicType } from '../lib/game/Domain/Effect/Relic'
+import { hasRelic } from '../lib/game/Domain/Effect/RelicEffectHandler'
+import type { RelicId } from '../lib/game/Domain/Core/Id'
 import type { TooltipState } from '../lib/game/Domain/Tooltip'
 import { INITIAL_TOOLTIP_STATE } from '../lib/game/Domain/Tooltip'
 import { calculateTooltipState } from '../lib/game/Services/TooltipService'
@@ -145,12 +147,17 @@ export function GameCanvas({
 
     // レリックパネル描画（ボードの左側）
     const highlightedRelicId = state.scoreAnimation?.highlightedRelicId ?? null
+    const grayedOutRelics = new Set<RelicId>()
+    if (hasRelic(state.player.ownedRelics, 'volcano') && !state.volcanoEligible) {
+      grayedOutRelics.add('volcano' as RelicId)
+    }
     relicPanelResultRef.current = renderRelicPanel(
       ctx,
       state.player.relicDisplayOrder,
       layout,
       highlightedRelicId,
-      relicDragRef.current
+      relicDragRef.current,
+      grayedOutRelics
     )
 
     // ボード描画（消去アニメーション中のセルは除外）
@@ -158,6 +165,11 @@ export function GameCanvas({
       ? state.clearingAnimation.cells
       : null
     renderBoard(ctx, state.board, layout, clearingCells)
+
+    // 台本レリックのマーカー描画
+    if (state.scriptRelicLines) {
+      renderScriptMarkers(ctx, state.scriptRelicLines, layout)
+    }
 
     renderPlacementPreview(ctx, state.board, state.pieceSlots, state.dragState, layout)
     renderPieceSlots(ctx, state.pieceSlots, layout, state.dragState)

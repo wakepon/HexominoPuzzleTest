@@ -146,6 +146,7 @@ export function calculateScoreWithEffects(
       renshaMultiplier: 1,
       nobiTakenokoMultiplier: 1,
       nobiKaniMultiplier: 1,
+      scriptBonus: 0,
       finalScore: 0,
     }
   }

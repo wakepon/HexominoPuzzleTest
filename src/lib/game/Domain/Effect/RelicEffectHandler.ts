@@ -35,7 +35,21 @@ export function checkRelicActivations(
     placedBlockSize,
     isBoardEmptyAfterClear,
     relicMultiplierState,
+    completedRows,
+    completedCols,
+    scriptRelicLines,
   } = context
+
+  // 台本レリック: 指定ラインのマッチ数を計算
+  let scriptMatchCount = 0
+  if (hasRelic(ownedRelics, 'script') && scriptRelicLines && totalLines > 0) {
+    const isLineCompleted = (target: { type: 'row' | 'col'; index: number }): boolean => {
+      if (target.type === 'row') return completedRows.includes(target.index)
+      return completedCols.includes(target.index)
+    }
+    if (isLineCompleted(scriptRelicLines.target1)) scriptMatchCount++
+    if (isLineCompleted(scriptRelicLines.target2)) scriptMatchCount++
+  }
 
   return {
     // 既存レリック
@@ -80,6 +94,10 @@ export function checkRelicActivations(
     nobiKaniActive:
       hasRelic(ownedRelics, 'nobi_kani') && colLines === 0 && rowLines >= 1,
     nobiKaniMultiplier: relicMultiplierState.nobiKaniMultiplier,
+
+    // 台本: 指定ラインが揃った
+    scriptActive: scriptMatchCount > 0,
+    scriptMatchCount,
   }
 }
 
@@ -132,18 +150,26 @@ export function calculateRelicEffects(
     ? activations.nobiKaniMultiplier
     : 1.0
 
+  // 台本ボーナス: 2本同時=60, 1本=20, 0本=0
+  const scriptBonus = activations.scriptMatchCount === 2
+    ? RELIC_EFFECT_VALUES.SCRIPT_BONUS_DOUBLE
+    : activations.scriptMatchCount === 1
+      ? RELIC_EFFECT_VALUES.SCRIPT_BONUS_SINGLE
+      : 0
+
   return {
     activations,
     chainMasterMultiplier,
     smallLuckBonus,
     fullClearBonus,
-    totalRelicBonus: smallLuckBonus + fullClearBonus,
+    totalRelicBonus: smallLuckBonus + fullClearBonus + scriptBonus,
     singleLineMultiplier,
     takenokoMultiplier,
     kaniMultiplier,
     renshaMultiplier,
     nobiTakenokoMultiplier,
     nobiKaniMultiplier,
+    scriptBonus,
   }
 }
 
@@ -225,6 +251,14 @@ export function getActivatedRelics(
     })
   }
 
+  // 台本
+  if (result.activations.scriptActive) {
+    activated.push({
+      relicId: 'script' as RelicId,
+      bonusValue: result.scriptBonus,
+    })
+  }
+
   return activated
 }
 
@@ -245,6 +279,9 @@ export function applyRelicEffectsToScore(
   // 全消しボーナス: +20
   score += relicEffects.fullClearBonus
 
+  // 台本ボーナス
+  score += relicEffects.scriptBonus
+
   return score
 }
 
@@ -262,6 +299,7 @@ export function getActivatedRelicsFromScoreBreakdown(scoreBreakdown: {
   readonly renshaMultiplier?: number
   readonly nobiTakenokoMultiplier?: number
   readonly nobiKaniMultiplier?: number
+  readonly scriptBonus?: number
 }): ActivatedRelicInfo[] {
   const activated: ActivatedRelicInfo[] = []
 
@@ -332,6 +370,14 @@ export function getActivatedRelicsFromScoreBreakdown(scoreBreakdown: {
     activated.push({
       relicId: 'nobi_kani' as RelicId,
       bonusValue: `×${scoreBreakdown.nobiKaniMultiplier}`,
+    })
+  }
+
+  // 台本
+  if (scoreBreakdown.scriptBonus && scoreBreakdown.scriptBonus > 0) {
+    activated.push({
+      relicId: 'script' as RelicId,
+      bonusValue: scoreBreakdown.scriptBonus,
     })
   }
 

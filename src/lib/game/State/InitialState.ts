@@ -107,7 +107,9 @@ function createNewGameState(): GameState {
     shopState: null,
     comboCount: 0,
     relicMultiplierState: INITIAL_RELIC_MULTIPLIER_STATE,
+    scriptRelicLines: null,
     deckViewOpen: false,
+    volcanoEligible: true,
   }
 }
 

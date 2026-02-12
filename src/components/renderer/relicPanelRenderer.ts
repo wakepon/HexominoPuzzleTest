@@ -39,7 +39,8 @@ export function renderRelicPanel(
     dragIndex: number | null
     currentY: number
     dropTargetIndex: number | null
-  } | null
+  } | null,
+  grayedOutRelics?: ReadonlySet<RelicId>
 ): RelicPanelRenderResult {
   const { iconSize, iconGap } = RELIC_PANEL_STYLE
   const x = HD_LAYOUT.relicAreaX
@@ -87,8 +88,14 @@ export function renderRelicPanel(
         ctx.fillRect(x, startY + 30 + index * itemHeight - 2, HD_LAYOUT.relicAreaWidth, itemHeight)
       }
 
+      // グレーアウト判定（火山レリックなど、発動不可時に半透明）
+      const isGrayedOut = grayedOutRelics?.has(relicId) ?? false
+
       // ハイライト描画（スコアアニメーション中）
       const isHighlighted = highlightedRelicId === relicId
+      if (isGrayedOut && !isHighlighted && !isDragTarget) {
+        ctx.globalAlpha = 0.3
+      }
       if (isHighlighted) {
         // 金色グロー背景
         const glowX = x + 4
@@ -118,7 +125,7 @@ export function renderRelicPanel(
         ctx.fillText(def.icon, iconX, iconY)
       }
 
-      if (isDragTarget) {
+      if (isDragTarget || isGrayedOut) {
         ctx.globalAlpha = 1.0
       }
 

@@ -17,6 +17,7 @@ import type { MinoId, RelicId, BlockSetId } from '../Domain/Core/Id'
 import type { PieceShape } from '../Domain/Piece/PieceShape'
 import type { Position } from '../Domain/Core/Position'
 import { INITIAL_RELIC_MULTIPLIER_STATE } from '../Domain/Effect/RelicState'
+import type { ScriptRelicLines } from '../Domain/Effect/ScriptRelicState'
 
 // ========================================
 // 定数
@@ -121,6 +122,12 @@ interface SavedGameState {
     readonly nobiKaniMultiplier: number
     readonly renshaMultiplier: number
   }
+
+  // 台本レリック指定ライン（マイグレーション対応でオプショナル）
+  readonly scriptRelicLines?: ScriptRelicLines | null
+
+  // 火山レリック発動可能フラグ（マイグレーション対応でオプショナル）
+  readonly volcanoEligible?: boolean
 }
 
 // ========================================
@@ -216,6 +223,8 @@ function serializeState(state: GameState): SavedGameState {
     pieceSlots: state.pieceSlots.map(serializePieceSlot),
     shopState: serializeShopState(state.shopState),
     relicMultiplierState: state.relicMultiplierState,
+    scriptRelicLines: state.scriptRelicLines,
+    volcanoEligible: state.volcanoEligible,
   }
 }
 
@@ -438,6 +447,10 @@ export function restoreGameState(
     comboCount: saved.comboCount,
     // マイグレーション対応: 古いセーブデータにはrelicMultiplierStateがない
     relicMultiplierState: saved.relicMultiplierState ?? INITIAL_RELIC_MULTIPLIER_STATE,
+    // マイグレーション対応: 古いセーブデータにはscriptRelicLinesがない
+    scriptRelicLines: saved.scriptRelicLines ?? null,
+    // マイグレーション対応: 古いセーブデータにはvolcanoEligibleがない
+    volcanoEligible: saved.volcanoEligible ?? true,
     // UI状態は常にリセット
     deckViewOpen: false,
   }

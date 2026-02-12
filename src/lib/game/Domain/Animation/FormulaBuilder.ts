@@ -49,6 +49,8 @@ function getRelicAdditiveBonus(
       return breakdown.smallLuckBonus
     case 'full_clear_bonus':
       return breakdown.fullClearBonus
+    case 'script':
+      return breakdown.scriptBonus
     default:
       return 0
   }

@@ -14,6 +14,9 @@ export const RELIC_EFFECT_VALUES = {
   SINGLE_LINE_MULTIPLIER: 3,     // シングルライン: ×3
   RENSHA_INCREMENT: 0.5,         // 連射: +0.5ずつ
   NOBI_INCREMENT: 0.5,           // のびのび系: +0.5ずつ
+  SCRIPT_BONUS_SINGLE: 20,       // 台本: 1本揃い
+  SCRIPT_BONUS_DOUBLE: 60,       // 台本: 2本同時揃い
+  VOLCANO_MULTIPLIER: 5,         // 火山: ブロック数×5
 } as const
 
 /**
@@ -35,6 +38,8 @@ export type RelicType =
   | 'nobi_takenoko'     // のびのびタケノコ
   | 'nobi_kani'         // のびのびカニ
   | 'hand_stock'        // 手札ストック
+  | 'script'            // 台本
+  | 'volcano'           // 火山
 
 /**
  * レリック定義
@@ -142,6 +147,24 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     rarity: 'epic',
     price: 40,
     icon: '📦',
+  },
+  script: {
+    id: 'script' as RelicId,
+    type: 'script',
+    name: '台本',
+    description: 'ラウンド開始時に指定ラインが2本出現。揃えると+20、2本同時で+60',
+    rarity: 'common',
+    price: 15,
+    icon: '📜',
+  },
+  volcano: {
+    id: 'volcano' as RelicId,
+    type: 'volcano',
+    name: '火山',
+    description: 'ラウンド中にブロックが消えなかった場合、ハンド0で全消去（ブロック数×5）',
+    rarity: 'rare',
+    price: 30,
+    icon: '🌋',
   },
 }
 

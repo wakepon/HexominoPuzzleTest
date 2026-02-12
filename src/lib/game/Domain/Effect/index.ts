@@ -58,6 +58,10 @@ export {
   calculateSealEffects,
 } from './SealEffectHandler'
 
+// 台本レリック状態
+export type { ScriptLineTarget, ScriptRelicLines } from './ScriptRelicState'
+export { generateScriptLines } from './ScriptRelicState'
+
 // レリック効果
 export type {
   RelicEffectContext,
