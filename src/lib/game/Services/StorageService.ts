@@ -424,7 +424,13 @@ export function restoreGameState(
   initialDragState: GameState['dragState']
 ): GameState {
   return {
-    board: saved.board,
+    // マイグレーション対応: 古いセーブデータにはchargeValueがない
+    board: saved.board.map((row) =>
+      row.map((cell) => ({
+        ...cell,
+        chargeValue: (cell as unknown as { chargeValue?: number }).chargeValue ?? 0,
+      }))
+    ),
     pieceSlots: saved.pieceSlots.map(deserializePieceSlot),
     dragState: initialDragState,
     score: saved.score,

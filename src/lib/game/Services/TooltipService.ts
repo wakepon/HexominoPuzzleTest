@@ -60,9 +60,12 @@ function getEffectsFromBoardCell(
   if (cell.pattern) {
     const patternDef = getPatternDefinition(cell.pattern)
     if (patternDef) {
+      const description = cell.pattern === 'charge'
+        ? `${patternDef.description}（現在: +${cell.chargeValue}）`
+        : patternDef.description
       effects.push({
         name: patternDef.name,
-        description: patternDef.description,
+        description,
       })
     }
   }

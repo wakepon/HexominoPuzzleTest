@@ -39,6 +39,7 @@ import {
   createEmptyBoard,
   placePieceOnBoard,
   placeObstacleOnBoard,
+  incrementChargeValues,
 } from '../../Services/BoardService'
 import { canPlacePiece, canPieceBePlacedAnywhere } from '../../Services/CollisionService'
 import {
@@ -176,6 +177,9 @@ function buildScoreBonuses(breakdown: ScoreBreakdown): ScoreBonus[] {
   }
   if (breakdown.mossBonus > 0) {
     bonuses.push({ source: 'pattern:moss', amount: breakdown.mossBonus })
+  }
+  if (breakdown.chargeBonus > 0) {
+    bonuses.push({ source: 'pattern:charge', amount: breakdown.chargeBonus })
   }
   if (breakdown.comboBonus > 0) {
     bonuses.push({ source: 'pattern:combo', amount: breakdown.comboBonus })
@@ -437,7 +441,7 @@ function processPiecePlacement(
   newDeck: DeckState,
   comboCount: number
 ): PlacementResult {
-  // ブロックを配置
+  // ピース配置（chargeインクリメントは得点計算後に行う）
   const newBoard = placePieceOnBoard(state.board, piece, boardPos)
   emitPiecePlaced(piece, toGridPosition(boardPos), newBoard)
 
@@ -529,11 +533,14 @@ function processPiecePlacement(
       completedLines.columns.length
     )
 
+    // 得点計算後にchargeValueをインクリメント（配置したピース自身は除外）
+    const boardAfterChargeIncrement = incrementChargeValues(newBoard, piece.blockSetId)
+
     return {
       success: true,
       newState: {
         ...state,
-        board: newBoard,
+        board: boardAfterChargeIncrement,
         pieceSlots: finalSlots,
         dragState: initialDragState,
         clearingAnimation: {
@@ -577,11 +584,14 @@ function processPiecePlacement(
     return volcanoResult
   }
 
+  // 得点計算後にchargeValueをインクリメント（配置したピース自身は除外）
+  const boardAfterChargeIncrement = incrementChargeValues(newBoard, piece.blockSetId)
+
   return {
     success: true,
     newState: {
       ...state,
-      board: newBoard,
+      board: boardAfterChargeIncrement,
       pieceSlots: resolved.finalSlots,
       dragState: initialDragState,
       deck: resolved.finalDeck,
@@ -826,7 +836,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         ? state.comboCount + 1
         : 0
 
-      // Piece全体を渡す
+      // ピース配置（chargeインクリメントは配置処理後に行う）
       const newBoard = placePieceOnBoard(state.board, slot.piece, action.position)
       const newSlots = state.pieceSlots.map((s, i) =>
         i === action.slotIndex ? { ...s, piece: null } : s
@@ -840,9 +850,12 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         finalDeck.remainingHands
       )
 
+      // 配置後にchargeValueをインクリメント（配置したピース自身は除外）
+      const boardAfterChargeIncrement = incrementChargeValues(newBoard, slot.piece.blockSetId)
+
       return {
         ...state,
-        board: newBoard,
+        board: boardAfterChargeIncrement,
         pieceSlots: finalSlots,
         deck: finalDeck,
         phase: newPhase,

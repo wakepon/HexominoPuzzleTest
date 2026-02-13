@@ -153,6 +153,17 @@ export function buildFormulaSteps(
     })
   }
 
+  // charge: カッコ内に加算
+  if (breakdown.chargeBonus > 0) {
+    innerSum += breakdown.chargeBonus
+    steps.push({
+      type: 'pattern',
+      label: 'チャージ',
+      formula: buildFormula(innerSum, outerMultiplier, additiveParts, 1),
+      relicId: null,
+    })
+  }
+
   // combo: 加算部分に追加
   if (breakdown.comboBonus > 0) {
     additiveParts.push(breakdown.comboBonus)

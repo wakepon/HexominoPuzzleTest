@@ -123,6 +123,25 @@ export function calculateMossBonus(
   return bonus
 }
 
+// === charge効果 ===
+/**
+ * charge効果を計算
+ * 消去対象のchargeセルのchargeValueを合算
+ */
+export function calculateChargeBonus(
+  board: Board,
+  cellsToRemove: readonly ClearingCell[]
+): number {
+  let bonus = 0
+  for (const cell of cellsToRemove) {
+    const boardCell = board[cell.row][cell.col]
+    if (boardCell.pattern === ('charge' as PatternId)) {
+      bonus += boardCell.chargeValue
+    }
+  }
+  return bonus
+}
+
 // === lucky効果 ===
 /**
  * lucky効果を判定（10%の確率）
@@ -181,6 +200,7 @@ export function calculatePatternEffects(
     enhancedBonus: calculateEnhancedBonus(board, cellsToRemove),
     auraBonus: calculateAuraBonus(board, cellsToRemove),
     mossBonus: calculateMossBonus(board, cellsToRemove),
+    chargeBonus: calculateChargeBonus(board, cellsToRemove),
   }
 }
 
@@ -243,17 +263,22 @@ export function calculateScoreBreakdown(
 ): ScoreBreakdown {
   const baseBlocks = cellsToRemove.length
 
+  // chargeパターンのブロックは基礎スコア+0として扱う（chargeValueのみ寄与）
+  const chargeBlockCount = cellsToRemove.filter(
+    (c) => board[c.row][c.col].pattern === ('charge' as PatternId)
+  ).length
+
   // パターン効果を計算
   const patternEffects = calculatePatternEffects(board, cellsToRemove)
-  const { enhancedBonus, auraBonus, mossBonus } = patternEffects
+  const { enhancedBonus, auraBonus, mossBonus, chargeBonus } = patternEffects
 
   // シール効果を計算
   const sealEffects = calculateSealEffects(board, cellsToRemove)
   const { multiBonus, scoreBonus: sealScoreBonus, goldCount } = sealEffects
 
-  // 合計ブロック数（乗算対象）= パターン効果 + multiシール効果
+  // 合計ブロック数（乗算対象）= パターン効果 + multiシール効果（chargeブロックの基礎分を除外）
   const totalBlocks =
-    baseBlocks + enhancedBonus + auraBonus + mossBonus + multiBonus
+    baseBlocks - chargeBlockCount + enhancedBonus + auraBonus + mossBonus + chargeBonus + multiBonus
 
   // 基本スコア
   const baseScore = totalBlocks * linesCleared
@@ -320,6 +345,7 @@ export function calculateScoreBreakdown(
     auraBonus,
     mossBonus,
     multiBonus,
+    chargeBonus,
     totalBlocks,
     linesCleared,
     baseScore,

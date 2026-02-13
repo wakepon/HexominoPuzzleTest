@@ -3,7 +3,7 @@
  */
 
 import type { Board, Cell, Position, Piece, PieceShape } from '../Domain'
-import type { PatternId } from '../Domain/Core/Id'
+import type { PatternId, BlockSetId } from '../Domain/Core/Id'
 import type { RandomGenerator } from '../Utils/Random'
 import { BlockDataMapUtils } from '../Domain/Piece/BlockData'
 import { GRID_SIZE } from '../Data/Constants'
@@ -16,7 +16,7 @@ export function createEmptyBoard(): Board {
   for (let y = 0; y < GRID_SIZE; y++) {
     const row: Cell[] = []
     for (let x = 0; x < GRID_SIZE; x++) {
-      row.push({ filled: false, blockSetId: null, pattern: null, seal: null })
+      row.push({ filled: false, blockSetId: null, pattern: null, seal: null, chargeValue: 0 })
     }
     board.push(row)
   }
@@ -58,6 +58,7 @@ export function placePieceOnBoard(
           blockSetId: blockSetId,
           pattern: blockData?.pattern ?? null,
           seal: blockData?.seal ?? null,
+          chargeValue: 0,
         }
       }
     }
@@ -88,6 +89,7 @@ export function placePieceShapeOnBoard(
           blockSetId: null,
           pattern: null,
           seal: null,
+          chargeValue: 0,
         }
       }
     }
@@ -130,7 +132,23 @@ export function placeObstacleOnBoard(
     blockSetId: null,
     pattern: 'obstacle' as PatternId,
     seal: null,
+    chargeValue: 0,
   }
 
   return newBoard
+}
+
+/**
+ * ボード上の全chargeパターンブロックのchargeValueを+0.5する
+ * 得点計算後に呼び出すことで「別のブロックが置かれるたび」の仕様を実現
+ */
+export function incrementChargeValues(board: Board, excludeBlockSetId?: BlockSetId | null): Board {
+  return board.map((row) =>
+    row.map((cell) => {
+      if (cell.filled && cell.pattern === ('charge' as PatternId) && cell.blockSetId !== excludeBlockSetId) {
+        return { ...cell, chargeValue: cell.chargeValue + 0.5 }
+      }
+      return cell
+    })
+  )
 }

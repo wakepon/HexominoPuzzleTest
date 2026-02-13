@@ -129,6 +129,7 @@ export function calculateScoreWithEffects(
       auraBonus: 0,
       mossBonus: 0,
       multiBonus: 0,
+      chargeBonus: 0,
       totalBlocks: 0,
       linesCleared: 0,
       baseScore: 0,
@@ -182,6 +183,7 @@ export function clearLines(board: Board, cellsToClear: readonly ClearingCell[]):
       blockSetId: null,
       pattern: null,
       seal: null,
+      chargeValue: 0,
     }
   }
 

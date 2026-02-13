@@ -10,7 +10,7 @@ import { Board, CompletedLines, Cell } from './types'
 
 // テスト用ヘルパー関数: 埋まったセルを作成
 function createFilledCell(): Cell {
-  return { filled: true, blockSetId: null, pattern: null, seal: null }
+  return { filled: true, blockSetId: null, pattern: null, seal: null, chargeValue: 0 }
 }
 
 // テスト用ヘルパー関数: 指定した行を埋めたボードを作成（immutable）

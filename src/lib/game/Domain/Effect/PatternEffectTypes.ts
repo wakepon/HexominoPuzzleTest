@@ -11,6 +11,7 @@ export interface PatternEffectResult {
   readonly enhancedBonus: number // enhanced効果による追加ブロック数
   readonly auraBonus: number // aura効果による追加ブロック数
   readonly mossBonus: number // moss効果による追加ブロック数
+  readonly chargeBonus: number // charge効果による追加ブロック数
 }
 
 /**
@@ -22,6 +23,7 @@ export interface ScoreBreakdown {
   readonly auraBonus: number // aura効果
   readonly mossBonus: number // moss効果
   readonly multiBonus: number // multiシール効果（追加ブロック数）
+  readonly chargeBonus: number // charge効果による追加ブロック数
   readonly totalBlocks: number // 合計ブロック数（乗算対象）
   readonly linesCleared: number // 消去ライン数
   readonly baseScore: number // 基本スコア（totalBlocks × linesCleared）
