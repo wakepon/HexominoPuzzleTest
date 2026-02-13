@@ -191,6 +191,9 @@ function buildScoreBonuses(breakdown: ScoreBreakdown): ScoreBonus[] {
       multiplier: breakdown.luckyMultiplier,
     })
   }
+  if (breakdown.arrowBonus > 0) {
+    bonuses.push({ source: 'seal:arrow', amount: breakdown.arrowBonus })
+  }
   if (breakdown.sealScoreBonus > 0) {
     bonuses.push({ source: 'seal:score', amount: breakdown.sealScoreBonus })
   }

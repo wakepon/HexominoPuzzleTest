@@ -129,6 +129,7 @@ export function calculateScoreWithEffects(
       auraBonus: 0,
       mossBonus: 0,
       multiBonus: 0,
+      arrowBonus: 0,
       chargeBonus: 0,
       totalBlocks: 0,
       linesCleared: 0,
@@ -163,7 +164,8 @@ export function calculateScoreWithEffects(
     comboCount,
     relicContext,
     luckyRandom,
-    relicDisplayOrder
+    relicDisplayOrder,
+    { rows: completedLines.rows, columns: completedLines.columns }
   )
 }
 

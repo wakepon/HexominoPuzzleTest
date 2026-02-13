@@ -108,6 +108,17 @@ export function buildFormulaSteps(
     })
   }
 
+  // arrowシール: カッコ内に加算
+  if (breakdown.arrowBonus > 0) {
+    innerSum += breakdown.arrowBonus
+    steps.push({
+      type: 'seal',
+      label: 'アローシール',
+      formula: buildFormula(innerSum, outerMultiplier, additiveParts, 1),
+      relicId: null,
+    })
+  }
+
   // scoreシール: 加算部分に追加
   if (breakdown.sealScoreBonus > 0) {
     additiveParts.push(breakdown.sealScoreBonus)
