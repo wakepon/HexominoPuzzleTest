@@ -6,6 +6,7 @@ import type { Board, ClearingCell, Piece } from '..'
 import type { PatternId, RelicId } from '../Core/Id'
 import type { PatternEffectResult, ScoreBreakdown } from './PatternEffectTypes'
 import type { RelicEffectContext, RelicEffectResult } from './RelicEffectTypes'
+import type { CompletedLinesInfo } from './SealEffectTypes'
 import { calculateSealEffects } from './SealEffectHandler'
 import { calculateRelicEffects } from './RelicEffectHandler'
 import { GRID_SIZE } from '../../Data/Constants'
@@ -259,7 +260,8 @@ export function calculateScoreBreakdown(
   comboCount: number,
   relicContext: RelicEffectContext | null = null,
   luckyRandom: () => number = Math.random,
-  relicDisplayOrder: readonly RelicId[] = []
+  relicDisplayOrder: readonly RelicId[] = [],
+  completedLines: CompletedLinesInfo | null = null
 ): ScoreBreakdown {
   const baseBlocks = cellsToRemove.length
 
@@ -273,12 +275,12 @@ export function calculateScoreBreakdown(
   const { enhancedBonus, auraBonus, mossBonus, chargeBonus } = patternEffects
 
   // シール効果を計算
-  const sealEffects = calculateSealEffects(board, cellsToRemove)
-  const { multiBonus, scoreBonus: sealScoreBonus, goldCount } = sealEffects
+  const sealEffects = calculateSealEffects(board, cellsToRemove, completedLines)
+  const { multiBonus, scoreBonus: sealScoreBonus, goldCount, arrowBonus } = sealEffects
 
-  // 合計ブロック数（乗算対象）= パターン効果 + multiシール効果（chargeブロックの基礎分を除外）
+  // 合計ブロック数（乗算対象）= パターン効果 + multiシール効果 + アローシール効果（chargeブロックの基礎分を除外）
   const totalBlocks =
-    baseBlocks - chargeBlockCount + enhancedBonus + auraBonus + mossBonus + chargeBonus + multiBonus
+    baseBlocks - chargeBlockCount + enhancedBonus + auraBonus + mossBonus + chargeBonus + multiBonus + arrowBonus
 
   // 基本スコア
   const baseScore = totalBlocks * linesCleared
@@ -345,6 +347,7 @@ export function calculateScoreBreakdown(
     auraBonus,
     mossBonus,
     multiBonus,
+    arrowBonus,
     chargeBonus,
     totalBlocks,
     linesCleared,

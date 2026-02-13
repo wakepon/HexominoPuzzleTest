@@ -12,6 +12,8 @@ export type SealType =
   | 'score' // スコアシール
   | 'multi' // マルチシール
   | 'stone' // 石シール
+  | 'arrow_v' // アローシール(縦)
+  | 'arrow_h' // アローシール(横)
 
 /**
  * シール定義
@@ -66,6 +68,24 @@ export const SEAL_DEFINITIONS: Record<SealType, SealDefinition> = {
     preventsClearing: true,
     price: 0, // ショップに出ない
   },
+  arrow_v: {
+    id: 'arrow_v' as SealId,
+    type: 'arrow_v',
+    name: 'アローシール(縦)',
+    description: '縦ライン消去時に+10/ブロック',
+    symbol: '↕',
+    preventsClearing: false,
+    price: 4,
+  },
+  arrow_h: {
+    id: 'arrow_h' as SealId,
+    type: 'arrow_h',
+    name: 'アローシール(横)',
+    description: '横ライン消去時に+10/ブロック',
+    symbol: '↔',
+    preventsClearing: false,
+    price: 4,
+  },
 }
 
 /**
@@ -78,4 +98,4 @@ export const getSealDefinition = (sealId: SealId): SealDefinition | undefined =>
 /**
  * ショップで購入可能なシールタイプ（ネガティブ効果のstoneは除外）
  */
-export const SHOP_AVAILABLE_SEALS: SealType[] = ['gold', 'score', 'multi']
+export const SHOP_AVAILABLE_SEALS: SealType[] = ['gold', 'score', 'multi', 'arrow_v', 'arrow_h']

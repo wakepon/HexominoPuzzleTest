@@ -453,6 +453,8 @@ export const SEAL_COLORS: Record<string, string> = {
   score: '#00FF00',  // グリーン
   multi: '#FF69B4',  // ピンク
   stone: '#808080',  // グレー
+  arrow_v: '#1E90FF', // ドジャーブルー
+  arrow_h: '#FF6347', // トマト
 }
 
 // シール記号のスタイル設定

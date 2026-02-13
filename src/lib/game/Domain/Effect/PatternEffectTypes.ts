@@ -23,6 +23,7 @@ export interface ScoreBreakdown {
   readonly auraBonus: number // aura効果
   readonly mossBonus: number // moss効果
   readonly multiBonus: number // multiシール効果（追加ブロック数）
+  readonly arrowBonus: number // アローシール効果（+10/個）
   readonly chargeBonus: number // charge効果による追加ブロック数
   readonly totalBlocks: number // 合計ブロック数（乗算対象）
   readonly linesCleared: number // 消去ライン数

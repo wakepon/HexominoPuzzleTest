@@ -4,7 +4,7 @@
 
 import type { Board, ClearingCell } from '..'
 import type { SealId } from '../Core/Id'
-import type { SealEffectResult } from './SealEffectTypes'
+import type { SealEffectResult, CompletedLinesInfo } from './SealEffectTypes'
 import { getSealDefinition } from './Seal'
 import { getPatternDefinition } from './Pattern'
 
@@ -91,14 +91,17 @@ export function calculateMultiBonus(
 
 /**
  * 全シール効果を統合計算（1回のループで全て計算）
+ * @param completedLines 完成ライン情報（アローシール判定用、nullの場合はアロー無効）
  */
 export function calculateSealEffects(
   board: Board,
-  cellsToRemove: readonly ClearingCell[]
+  cellsToRemove: readonly ClearingCell[],
+  completedLines: CompletedLinesInfo | null = null
 ): SealEffectResult {
   let goldCount = 0
   let scoreCount = 0
   let multiCount = 0
+  let arrowCount = 0
 
   for (const cell of cellsToRemove) {
     const boardCell = board[cell.row][cell.col]
@@ -109,6 +112,16 @@ export function calculateSealEffects(
       scoreCount++
     } else if (seal === ('multi' as SealId)) {
       multiCount++
+    } else if (seal === ('arrow_v' as SealId)) {
+      // 縦アロー: このセルが完成した縦列に含まれているか
+      if (completedLines?.columns.includes(cell.col)) {
+        arrowCount++
+      }
+    } else if (seal === ('arrow_h' as SealId)) {
+      // 横アロー: このセルが完成した横行に含まれているか
+      if (completedLines?.rows.includes(cell.row)) {
+        arrowCount++
+      }
     }
   }
 
@@ -116,5 +129,6 @@ export function calculateSealEffects(
     goldCount,
     scoreBonus: scoreCount * 5,
     multiBonus: multiCount,
+    arrowBonus: arrowCount * 10,
   }
 }
