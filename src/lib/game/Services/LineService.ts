@@ -150,6 +150,7 @@ export function calculateScoreWithEffects(
       nobiTakenokoMultiplier: 1,
       nobiKaniMultiplier: 1,
       scriptBonus: 0,
+      timingMultiplier: 1,
       finalScore: 0,
     }
   }

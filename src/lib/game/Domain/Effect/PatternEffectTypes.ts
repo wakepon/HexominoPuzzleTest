@@ -52,6 +52,8 @@ export interface ScoreBreakdown {
   readonly nobiKaniMultiplier: number // のびのびカニ倍率（累積、1.0から+0.5ずつ増加）
   // 台本
   readonly scriptBonus: number // 台本ボーナス（0, 20, or 60）
+  // タイミング
+  readonly timingMultiplier: number // タイミング倍率（1 or 2）
   readonly finalScore: number // 最終スコア
 }
 

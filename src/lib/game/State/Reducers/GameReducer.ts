@@ -59,6 +59,7 @@ import {
   updateNobiTakenokoMultiplier,
   updateNobiKaniMultiplier,
   updateBandaidCounter,
+  updateTimingCounter,
 } from '../../Domain/Effect/RelicState'
 import { createRelicActivationAnimation } from '../../Domain/Animation/AnimationState'
 import type { ScoreAnimationState } from '../../Domain/Animation/ScoreAnimationState'
@@ -214,6 +215,13 @@ function buildScoreBonuses(breakdown: ScoreBreakdown): ScoreBonus[] {
     bonuses.push({
       source: 'relic:full_clear_bonus',
       amount: breakdown.fullClearBonus,
+    })
+  }
+  if (breakdown.timingMultiplier > 1) {
+    bonuses.push({
+      source: 'relic:timing',
+      amount: 0,
+      multiplier: breakdown.timingMultiplier,
     })
   }
 
@@ -458,6 +466,12 @@ function processPiecePlacement(
       ? updateBandaidCounter(state.relicMultiplierState, handConsumed)
       : { newState: state.relicMultiplierState, shouldTrigger: false }
 
+  // タイミングカウンター更新（ハンド消費時のみ）
+  const { newState: timingUpdatedState, bonusApplies: timingBonusApplies } =
+    hasRelic(state.player.ownedRelics, 'timing')
+      ? updateTimingCounter(updatedMultState, handConsumed)
+      : { newState: updatedMultState, bonusApplies: false }
+
   // 配置後の状態を計算
   const { finalSlots, finalDeck } = handlePlacement(newSlots, newDeck, isNohand, bandaidTrigger)
 
@@ -482,6 +496,11 @@ function processPiecePlacement(
     const boardAfterClear = clearLines(newBoard, cells)
 
     // レリック効果コンテキストを作成
+    // relicContextには「今回ボーナスが適用されるか」のフラグを渡す
+    const relicContextMultState = {
+      ...timingUpdatedState,
+      timingBonusActive: timingBonusApplies,
+    }
     const relicContext: RelicEffectContext = {
       ownedRelics: state.player.ownedRelics,
       totalLines,
@@ -489,7 +508,7 @@ function processPiecePlacement(
       colLines: completedLines.columns.length,
       placedBlockSize: getPieceBlockCount(piece),
       isBoardEmptyAfterClear: isBoardEmpty(boardAfterClear),
-      relicMultiplierState: state.relicMultiplierState,
+      relicMultiplierState: relicContextMultState,
       completedRows: completedLines.rows,
       completedCols: completedLines.columns,
       scriptRelicLines: state.scriptRelicLines,
@@ -529,7 +548,7 @@ function processPiecePlacement(
       : null
 
     const newRelicMultiplierState = updateRelicMultipliers(
-      updatedMultState,
+      timingUpdatedState,
       state.player.ownedRelics,
       totalLines,
       completedLines.rows.length,
@@ -567,7 +586,7 @@ function processPiecePlacement(
 
   // ライン消去なし
   const newRelicMultiplierState = updateRelicMultipliers(
-    updatedMultState,
+    timingUpdatedState,
     state.player.ownedRelics,
     0,
     0,

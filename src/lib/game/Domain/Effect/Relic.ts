@@ -18,6 +18,8 @@ export const RELIC_EFFECT_VALUES = {
   SCRIPT_BONUS_DOUBLE: 60,       // 台本: 2本同時揃い
   VOLCANO_MULTIPLIER: 5,         // 火山: ブロック数×5
   BANDAID_TRIGGER_COUNT: 3,      // 絆創膏: 発動に必要なハンド消費回数
+  TIMING_TRIGGER_COUNT: 3,       // タイミング: 発動に必要なハンド消費回数
+  TIMING_MULTIPLIER: 2,          // タイミング: スコア倍率
 } as const
 
 /**
@@ -47,6 +49,7 @@ export type RelicType =
   | 'script'            // 台本
   | 'volcano'           // 火山
   | 'bandaid'           // 絆創膏
+  | 'timing'            // タイミング
 
 /**
  * レリック定義
@@ -226,6 +229,15 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     rarity: 'uncommon',
     price: 20,
     icon: '🩹',
+  },
+  timing: {
+    id: 'timing' as RelicId,
+    type: 'timing',
+    name: 'タイミング',
+    description: '3ハンドに1回、スコア×2',
+    rarity: 'rare',
+    price: 7,
+    icon: '⌛',
   },
 }
 

@@ -57,6 +57,10 @@ export interface RelicActivationState {
   // 台本
   readonly scriptActive: boolean // 台本レリック発動（1本以上揃った）
   readonly scriptMatchCount: number // マッチした本数（0, 1, 2）
+
+  // タイミング
+  readonly timingActive: boolean // タイミングボーナス中
+  readonly timingMultiplier: number // 1 or 2
 }
 
 /**
@@ -91,6 +95,9 @@ export interface RelicEffectResult {
 
   // 台本ボーナス
   readonly scriptBonus: number // 0, 20, or 60
+
+  // タイミング倍率
+  readonly timingMultiplier: number // 1 or 2
 }
 
 /**

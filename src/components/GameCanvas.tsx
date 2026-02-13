@@ -21,7 +21,7 @@ import { BlockDataMapUtils } from '../lib/game/Domain/Piece/BlockData'
 import type { DebugSettings } from '../lib/game/Domain/Debug'
 import type { RelicType } from '../lib/game/Domain/Effect/Relic'
 import { hasRelic } from '../lib/game/Domain/Effect/RelicEffectHandler'
-import { getBandaidCountdown } from '../lib/game/Domain/Effect/RelicState'
+import { getBandaidCountdown, getTimingCountdown } from '../lib/game/Domain/Effect/RelicState'
 import type { RelicId } from '../lib/game/Domain/Core/Id'
 import type { TooltipState } from '../lib/game/Domain/Tooltip'
 import { INITIAL_TOOLTIP_STATE } from '../lib/game/Domain/Tooltip'
@@ -147,6 +147,10 @@ export function GameCanvas({
       bandaidCountdown: hasRelic(state.player.ownedRelics, 'bandaid')
         ? getBandaidCountdown(state.relicMultiplierState)
         : null,
+      timingCountdown: hasRelic(state.player.ownedRelics, 'timing')
+        ? getTimingCountdown(state.relicMultiplierState)
+        : null,
+      timingBonusActive: state.relicMultiplierState.timingBonusActive,
     }, layout)
 
     // レリックパネル描画（ボードの左側）
@@ -155,13 +159,18 @@ export function GameCanvas({
     if (hasRelic(state.player.ownedRelics, 'volcano') && !state.volcanoEligible) {
       grayedOutRelics.add('volcano' as RelicId)
     }
+    const timingBonusRelicId = (
+      hasRelic(state.player.ownedRelics, 'timing') && state.relicMultiplierState.timingBonusActive
+    ) ? 'timing' as RelicId : null
+
     relicPanelResultRef.current = renderRelicPanel(
       ctx,
       state.player.relicDisplayOrder,
       layout,
       highlightedRelicId,
       relicDragRef.current,
-      grayedOutRelics
+      grayedOutRelics,
+      timingBonusRelicId
     )
 
     // ボード描画（消去アニメーション中のセルは除外）
