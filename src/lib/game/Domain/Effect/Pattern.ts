@@ -15,6 +15,7 @@ export type PatternType =
   | 'moss' // 苔ブロック
   | 'feather' // 羽ブロック
   | 'nohand' // ノーハンドブロック
+  | 'charge' // チャージブロック
   | 'obstacle' // おじゃまブロック（ボス条件）
 
 /**
@@ -97,6 +98,15 @@ export const PATTERN_DEFINITIONS: Record<PatternType, PatternDefinition> = {
     isNegative: false,
     price: 5,
   },
+  charge: {
+    id: 'charge' as PatternId,
+    type: 'charge',
+    name: 'チャージブロック',
+    description: '配置後、他のブロックが置かれるたびにスコア+0.5',
+    symbol: '⚡',
+    isNegative: false,
+    price: 3,
+  },
   obstacle: {
     id: 'obstacle' as PatternId,
     type: 'obstacle',
@@ -128,4 +138,5 @@ export const SHOP_AVAILABLE_PATTERNS: PatternType[] = [
   'moss',
   'feather',
   'nohand',
+  'charge',
 ]

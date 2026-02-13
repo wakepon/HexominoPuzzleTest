@@ -100,7 +100,8 @@ export function drawWoodenCell(
   y: number,
   size: number,
   pattern: PatternId | null = null,
-  seal: SealId | null = null
+  seal: SealId | null = null,
+  chargeValue: number = 0
 ): void {
   const { padding, highlightWidth, shadowWidth } = CELL_STYLE
   const colors = getPatternColors(pattern)
@@ -134,6 +135,19 @@ export function drawWoodenCell(
     const patternDef = getPatternDefinition(pattern)
     if (patternDef) {
       drawPatternSymbol(ctx, x, y, size, patternDef.symbol)
+
+      // チャージパターンの場合、記号の下に値を表示
+      if (pattern === 'charge') {
+        const { fontFamily, color } = PATTERN_SYMBOL_STYLE
+        const chargeFontSize = Math.max(8, Math.floor(size * 0.28))
+        ctx.save()
+        ctx.font = `bold ${chargeFontSize}px ${fontFamily}`
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'top'
+        ctx.fillStyle = color
+        ctx.fillText(`+${chargeValue}`, x + size / 2, y + size / 2 + chargeFontSize * 0.3)
+        ctx.restore()
+      }
     }
   }
 
@@ -152,11 +166,12 @@ export function drawWoodenCellWithBorder(
   y: number,
   size: number,
   pattern: PatternId | null = null,
-  seal: SealId | null = null
+  seal: SealId | null = null,
+  chargeValue: number = 0
 ): void {
   const { padding } = CELL_STYLE
 
-  drawWoodenCell(ctx, x, y, size, pattern, seal)
+  drawWoodenCell(ctx, x, y, size, pattern, seal, chargeValue)
 
   // 枠線
   ctx.strokeStyle = COLORS.cellBorder

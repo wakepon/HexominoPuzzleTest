@@ -11,6 +11,7 @@ export interface Cell {
   readonly blockSetId: BlockSetId | null
   readonly pattern: PatternId | null
   readonly seal: SealId | null
+  readonly chargeValue: number
 }
 
 /**
@@ -21,6 +22,7 @@ export const createEmptyCell = (): Cell => ({
   blockSetId: null,
   pattern: null,
   seal: null,
+  chargeValue: 0,
 })
 
 /**
@@ -29,10 +31,12 @@ export const createEmptyCell = (): Cell => ({
 export const createFilledCell = (
   blockSetId: BlockSetId | null = null,
   pattern: PatternId | null = null,
-  seal: SealId | null = null
+  seal: SealId | null = null,
+  chargeValue: number = 0
 ): Cell => ({
   filled: true,
   blockSetId,
   pattern,
   seal,
+  chargeValue,
 })
