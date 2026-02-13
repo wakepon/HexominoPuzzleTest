@@ -114,6 +114,10 @@ export function checkRelicActivations(
     // 台本: 指定ラインが揃った
     scriptActive: scriptMatchCount > 0,
     scriptMatchCount,
+
+    // タイミング: ボーナスタイミング中かつライン消去あり
+    timingActive: hasRelic(ownedRelics, 'timing') && relicMultiplierState.timingBonusActive && totalLines > 0,
+    timingMultiplier: RELIC_EFFECT_VALUES.TIMING_MULTIPLIER,
   }
 }
 
@@ -166,6 +170,11 @@ export function calculateRelicEffects(
     ? activations.nobiKaniMultiplier
     : 1.0
 
+  // タイミング倍率
+  const timingMultiplier = activations.timingActive
+    ? activations.timingMultiplier
+    : 1
+
   // 台本ボーナス: 2本同時=60, 1本=20, 0本=0
   const scriptBonus = activations.scriptMatchCount === 2
     ? RELIC_EFFECT_VALUES.SCRIPT_BONUS_DOUBLE
@@ -186,6 +195,7 @@ export function calculateRelicEffects(
     nobiTakenokoMultiplier,
     nobiKaniMultiplier,
     scriptBonus,
+    timingMultiplier,
   }
 }
 
@@ -275,6 +285,14 @@ export function getActivatedRelics(
     })
   }
 
+  // タイミング
+  if (result.activations.timingActive) {
+    activated.push({
+      relicId: 'timing' as RelicId,
+      bonusValue: `×${result.timingMultiplier}`,
+    })
+  }
+
   return activated
 }
 
@@ -317,6 +335,7 @@ export function getActivatedRelicsFromScoreBreakdown(scoreBreakdown: {
   readonly nobiTakenokoMultiplier?: number
   readonly nobiKaniMultiplier?: number
   readonly scriptBonus?: number
+  readonly timingMultiplier?: number
 }): ActivatedRelicInfo[] {
   const activated: ActivatedRelicInfo[] = []
 
@@ -395,6 +414,14 @@ export function getActivatedRelicsFromScoreBreakdown(scoreBreakdown: {
     activated.push({
       relicId: 'script' as RelicId,
       bonusValue: scoreBreakdown.scriptBonus,
+    })
+  }
+
+  // タイミング
+  if (scoreBreakdown.timingMultiplier && scoreBreakdown.timingMultiplier > 1) {
+    activated.push({
+      relicId: 'timing' as RelicId,
+      bonusValue: `×${scoreBreakdown.timingMultiplier}`,
     })
   }
 

@@ -32,6 +32,8 @@ function getRelicMultiplier(
       return breakdown.nobiKaniMultiplier
     case 'rensha':
       return breakdown.renshaMultiplier
+    case 'timing':
+      return breakdown.timingMultiplier
     default:
       return 1
   }
@@ -63,7 +65,7 @@ function getRelicAdditiveBonus(
 function isMultiplicativeRelic(relicId: RelicId): boolean {
   const multiplicativeRelics: string[] = [
     'chain_master', 'single_line', 'takenoko', 'kani',
-    'nobi_takenoko', 'nobi_kani', 'rensha',
+    'nobi_takenoko', 'nobi_kani', 'rensha', 'timing',
   ]
   return multiplicativeRelics.includes(relicId)
 }

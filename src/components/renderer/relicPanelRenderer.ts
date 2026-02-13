@@ -40,7 +40,8 @@ export function renderRelicPanel(
     currentY: number
     dropTargetIndex: number | null
   } | null,
-  grayedOutRelics?: ReadonlySet<RelicId>
+  grayedOutRelics?: ReadonlySet<RelicId>,
+  timingBonusRelicId?: RelicId | null
 ): RelicPanelRenderResult {
   const { iconSize, iconGap } = RELIC_PANEL_STYLE
   const x = HD_LAYOUT.relicAreaX
@@ -91,6 +92,9 @@ export function renderRelicPanel(
       // グレーアウト判定（火山レリックなど、発動不可時に半透明）
       const isGrayedOut = grayedOutRelics?.has(relicId) ?? false
 
+      // タイミングボーナス中の青色グロー（スコアアニメーションのハイライトより低優先）
+      const isTimingBonus = timingBonusRelicId === relicId
+
       // ハイライト描画（スコアアニメーション中）
       const isHighlighted = highlightedRelicId === relicId
       if (isGrayedOut && !isHighlighted && !isDragTarget) {
@@ -120,6 +124,23 @@ export function renderRelicPanel(
         ctx.fillStyle = '#FFFFFF'
         ctx.fillText(def.icon, iconX, iconY)
         ctx.restore()
+      } else if (isTimingBonus && !isDragTarget) {
+        // 青系グロー（スコアアニメーションの金色と区別）
+        const glowX = x + 4
+        const glowY = startY + 26 + index * itemHeight
+        const glowW = HD_LAYOUT.relicAreaWidth - 8
+        const glowH = itemHeight + 4
+
+        ctx.shadowColor = '#00BFFF'
+        ctx.shadowBlur = 8
+        ctx.fillStyle = 'rgba(0, 191, 255, 0.2)'
+        ctx.beginPath()
+        ctx.roundRect(glowX, glowY, glowW, glowH, 6)
+        ctx.fill()
+        ctx.shadowBlur = 0
+
+        ctx.fillStyle = '#FFFFFF'
+        ctx.fillText(def.icon, iconX, iconY)
       } else {
         ctx.fillStyle = '#FFFFFF'
         ctx.fillText(def.icon, iconX, iconY)

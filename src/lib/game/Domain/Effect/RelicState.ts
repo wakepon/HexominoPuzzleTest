@@ -10,6 +10,8 @@ export interface RelicMultiplierState {
   readonly nobiKaniMultiplier: number      // のびのびカニ倍率
   readonly renshaMultiplier: number        // 連射倍率
   readonly bandaidCounter: number          // 絆創膏カウンター（0〜2、3で発動→0リセット）
+  readonly timingCounter: number           // タイミングカウンター（0,1,2）
+  readonly timingBonusActive: boolean      // タイミングボーナスタイミングか
 }
 
 export const INITIAL_RELIC_MULTIPLIER_STATE: RelicMultiplierState = {
@@ -17,6 +19,8 @@ export const INITIAL_RELIC_MULTIPLIER_STATE: RelicMultiplierState = {
   nobiKaniMultiplier: 1.0,
   renshaMultiplier: 1.0,
   bandaidCounter: 0,
+  timingCounter: 0,
+  timingBonusActive: false,
 }
 
 /**
@@ -116,6 +120,46 @@ export function updateBandaidCounter(
  */
 export function getBandaidCountdown(state: RelicMultiplierState): number {
   return RELIC_EFFECT_VALUES.BANDAID_TRIGGER_COUNT - state.bandaidCounter
+}
+
+/**
+ * タイミングカウンターの更新
+ * ハンド消費時にカウンター+1、TRIGGER_COUNT-1でボーナス待機状態に
+ * ノーハンド時は変更なし（ボーナス継続）
+ * bonusApplies: 今回のスコア計算にボーナスを適用するか
+ */
+export function updateTimingCounter(
+  state: RelicMultiplierState,
+  handConsumed: boolean
+): { newState: RelicMultiplierState; bonusApplies: boolean } {
+  const bonusApplies = state.timingBonusActive
+
+  if (!handConsumed) {
+    return { newState: state, bonusApplies }
+  }
+
+  if (state.timingBonusActive) {
+    // ボーナス待機中にハンド消費 → ボーナス消費、カウンターリセット
+    return {
+      newState: { ...state, timingCounter: 0, timingBonusActive: false },
+      bonusApplies: true,
+    }
+  }
+
+  const newCounter = state.timingCounter + 1
+  const bonusPending = newCounter >= RELIC_EFFECT_VALUES.TIMING_TRIGGER_COUNT - 1
+  return {
+    newState: { ...state, timingCounter: newCounter, timingBonusActive: bonusPending },
+    bonusApplies: false,
+  }
+}
+
+/**
+ * タイミングカウントダウン値を取得（発動まであと何ハンドか）
+ */
+export function getTimingCountdown(state: RelicMultiplierState): number {
+  if (state.timingBonusActive) return 0
+  return RELIC_EFFECT_VALUES.TIMING_TRIGGER_COUNT - 1 - state.timingCounter
 }
 
 /**

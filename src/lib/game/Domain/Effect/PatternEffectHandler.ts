@@ -234,6 +234,9 @@ const DEFAULT_RELIC_EFFECTS: RelicEffectResult = {
     // 台本
     scriptActive: false,
     scriptMatchCount: 0,
+    // タイミング
+    timingActive: false,
+    timingMultiplier: 1,
   },
   // 既存レリック
   chainMasterMultiplier: 1.0,
@@ -248,6 +251,7 @@ const DEFAULT_RELIC_EFFECTS: RelicEffectResult = {
   nobiTakenokoMultiplier: 1.0,
   nobiKaniMultiplier: 1.0,
   scriptBonus: 0,
+  timingMultiplier: 1,
 }
 
 /**
@@ -310,6 +314,7 @@ export function calculateScoreBreakdown(
     nobiTakenokoMultiplier,
     nobiKaniMultiplier,
     scriptBonus,
+    timingMultiplier,
   } = relicEffects
 
   // 最終スコア計算（relicDisplayOrder に基づく動的順序）
@@ -322,13 +327,14 @@ export function calculateScoreBreakdown(
     nobi_takenoko: nobiTakenokoMultiplier,
     nobi_kani: nobiKaniMultiplier,
     rensha: renshaMultiplier,
+    timing: timingMultiplier,
   }
 
   // relicDisplayOrder に基づいて乗算レリックを適用
   // relicDisplayOrder が空の場合はデフォルト順序を使用
   const effectiveOrder: readonly string[] = relicDisplayOrder.length > 0
     ? relicDisplayOrder
-    : ['chain_master', 'single_line', 'takenoko', 'kani', 'nobi_takenoko', 'nobi_kani', 'rensha']
+    : ['chain_master', 'single_line', 'takenoko', 'kani', 'nobi_takenoko', 'nobi_kani', 'rensha', 'timing']
 
   let scoreAfterRelicMultipliers = scoreBeforeRelics
   for (const relicId of effectiveOrder) {
@@ -368,6 +374,7 @@ export function calculateScoreBreakdown(
     nobiTakenokoMultiplier,
     nobiKaniMultiplier,
     scriptBonus,
+    timingMultiplier,
     finalScore,
   }
 }

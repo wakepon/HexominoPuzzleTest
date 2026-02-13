@@ -18,6 +18,8 @@ interface StatusPanelData {
   roundInfo: RoundInfo
   remainingHands: number
   bandaidCountdown: number | null
+  timingCountdown: number | null
+  timingBonusActive: boolean
 }
 
 /**
@@ -98,6 +100,14 @@ export function renderStatusPanel(
     ctx.font = `${style.fontWeight} ${style.handFontSize}px ${style.fontFamily}`
     ctx.fillStyle = '#87CEEB'
     ctx.fillText(`🩹${data.bandaidCountdown}`, padding + 240, bottomY + 25)
+  }
+
+  // タイミングカウントダウン表示
+  if (data.timingCountdown !== null) {
+    ctx.font = `${style.fontWeight} ${style.handFontSize}px ${style.fontFamily}`
+    ctx.fillStyle = data.timingBonusActive ? '#FFD700' : '#AAAAAA'
+    const timingX = data.bandaidCountdown !== null ? padding + 310 : padding + 240
+    ctx.fillText(`⌛${data.timingCountdown}`, timingX, bottomY + 25)
   }
 
   // === デッキボタン ===
