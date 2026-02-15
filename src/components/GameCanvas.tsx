@@ -1,6 +1,7 @@
 import { useRef, useEffect, useCallback, useState } from 'react'
 import { GameState, CanvasLayout, Position } from '../lib/game/types'
 import { COLORS, HD_LAYOUT, ROUND_CLEAR_STYLE, DEBUG_PROBABILITY_SETTINGS } from '../lib/game/Data/Constants'
+import { SCORE_ANIMATION } from '../lib/game/Domain/Animation/ScoreAnimationState'
 import { renderBoard, renderScriptMarkers } from './renderer/boardRenderer'
 import { renderPieceSlots, renderDraggingPiece } from './renderer/pieceRenderer'
 import { renderPlacementPreview } from './renderer/previewRenderer'
@@ -56,6 +57,7 @@ interface GameCanvasProps {
   onMoveFromStock: (targetSlotIndex: number) => void
   onSwapWithStock: (slotIndex: number) => void
   onReorderRelic: (fromIndex: number, toIndex: number) => void
+  onApplyPendingPhase: () => void
   // デバッグ用
   onDebugToggleRelic: (relicType: RelicType) => void
   onDebugAddGold: (amount: number) => void
@@ -88,6 +90,7 @@ export function GameCanvas({
   onMoveFromStock,
   onSwapWithStock,
   onReorderRelic,
+  onApplyPendingPhase,
   onDebugToggleRelic,
   onDebugAddGold,
   onDebugAddScore,
@@ -151,6 +154,8 @@ export function GameCanvas({
         ? getTimingCountdown(state.relicMultiplierState)
         : null,
       timingBonusActive: state.relicMultiplierState.timingBonusActive,
+      pendingPhase: state.pendingPhase,
+      scoreAnimation: state.scoreAnimation,
     }, layout)
 
     // レリックパネル描画（ボードの左側）
@@ -310,6 +315,18 @@ export function GameCanvas({
       renderTooltip(ctx, tooltipState, layout.canvasWidth, layout.canvasHeight)
     }
   }, [canvas, state, layout, onClearAnimationEnd, onRelicActivationAnimationEnd, showDebugWindow, debugSettings, tooltipState])
+
+  // スコアアニメーション終了後の遅延遷移
+  useEffect(() => {
+    // scoreAnimationが終了し、pendingPhaseがある場合に遅延して遷移
+    if (state.scoreAnimation !== null || !state.pendingPhase) return
+
+    const timer = setTimeout(() => {
+      onApplyPendingPhase()
+    }, SCORE_ANIMATION.postAnimationDelay)
+
+    return () => clearTimeout(timer)
+  }, [state.scoreAnimation, state.pendingPhase, onApplyPendingPhase])
 
   // Canvasサイズの設定
   useEffect(() => {

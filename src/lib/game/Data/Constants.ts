@@ -69,8 +69,8 @@ export const HD_LAYOUT = {
   cellSize: 70,                  // セルサイズ（6x6グリッドで420px）
 
   // スロットエリア
-  slotAreaY: 530,                // スロットエリアのY位置（ボード下）
-  slotCellSizeRatio: 0.7,        // スロット内ブロックのサイズ比率
+  slotAreaY: 480,                // スロットエリアのY位置（ボード下）
+  slotCellSizeRatio: 0.55,       // スロット内ブロックのサイズ比率
   slotGap: 15,                   // スロット間の隙間
 
   // レリック置き場（ボードの左側）
@@ -118,6 +118,8 @@ export const HD_STATUS_PANEL_STYLE = {
   // ラウンドスコアセクション
   roundScoreFontSize: 28,
   roundScoreColor: '#FFFFFF',
+  roundScoreClearColor: '#FF4444',   // ラウンドクリア時（赤）
+  roundScoreFailColor: '#4488FF',    // ゲームオーバー時（青）
   roundScoreLabelFontSize: 16,
   roundScoreLabelColor: '#AAAAAA',
 
@@ -279,9 +281,9 @@ export const SHOP_STYLE = {
   leaveButtonTextColor: '#FFFFFF',
   leaveButtonFontSize: 20,
   leaveButtonGap: 50,             // 商品とボタンの間隔
-  titleOffsetY: -180,
+  titleOffsetY: -250,
   itemsOffsetY: -50,
-  goldDisplayOffsetY: -220,
+  goldDisplayOffsetY: -280,
   cellSizeRatio: 0.6,
   shapeVerticalOffset: 15,      // ミノ形状の垂直オフセット
   priceVerticalOffset: 20,      // 価格表示の下からのオフセット

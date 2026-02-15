@@ -41,6 +41,10 @@ export type AnimationAction =
   | { type: 'ANIMATION/END_SCORE' }
   | { type: 'ANIMATION/SET_FAST_FORWARD'; isFastForward: boolean }
 
+// フェーズアクション
+export type PhaseAction =
+  | { type: 'PHASE/APPLY_PENDING' }
+
 // ラウンドアクション
 export type RoundAction =
   | { type: 'ROUND/ADVANCE'; probabilityOverride?: ProbabilityOverride }
@@ -77,6 +81,7 @@ export type GameAction =
   | UIAction
   | GameCoreAction
   | AnimationAction
+  | PhaseAction
   | RoundAction
   | ShopAction
   | StockAction

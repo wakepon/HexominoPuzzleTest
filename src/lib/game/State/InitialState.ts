@@ -100,6 +100,7 @@ function createNewGameState(): GameState {
     scoreAnimation: null,
     deck: newDeck,
     phase: 'round_progress',
+    pendingPhase: null,
     round: initialRound,
     roundInfo,
     player: createInitialPlayerState(ROUND_CONFIG.initialGold),

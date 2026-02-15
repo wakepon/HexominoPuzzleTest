@@ -558,6 +558,9 @@ function processPiecePlacement(
     // 得点計算後にchargeValueをインクリメント（配置したピース自身は除外）
     const boardAfterChargeIncrement = incrementChargeValues(newBoard, piece.blockSetId)
 
+    // スコアアニメーションが存在し、playing以外のフェーズに遷移する場合はpendingPhaseに保留
+    const shouldDefer = scoreAnim !== null && newPhase !== 'playing'
+
     return {
       success: true,
       newState: {
@@ -576,7 +579,8 @@ function processPiecePlacement(
         score: newScore,
         player: newPlayer,
         deck: finalDeck,
-        phase: newPhase,
+        phase: shouldDefer ? 'playing' : newPhase,
+        pendingPhase: shouldDefer ? newPhase : null,
         comboCount,
         relicMultiplierState: newRelicMultiplierState,
         volcanoEligible: false, // ライン消去があったので火山は発動不可
@@ -708,6 +712,7 @@ function createNextRoundState(currentState: GameState): GameState {
     scoreAnimation: null,
     deck: newDeck,
     phase: 'round_progress',
+    pendingPhase: null,
     round: nextRound,
     roundInfo,
     player: currentState.player,
@@ -910,13 +915,17 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         clearedBoard, [...state.pieceSlots], state.deck, state.score, state.targetScore
       )
 
+      // スコアアニメーションがまだ再生中の場合はpendingPhaseに保留
+      const shouldDeferEndClear = state.scoreAnimation?.isAnimating === true && resolved.phase !== 'playing'
+
       return {
         ...state,
         board: clearedBoard,
         clearingAnimation: null,
         pieceSlots: resolved.finalSlots,
         deck: resolved.finalDeck,
-        phase: resolved.phase,
+        phase: shouldDeferEndClear ? state.phase : resolved.phase,
+        pendingPhase: shouldDeferEndClear ? resolved.phase : state.pendingPhase,
       }
     }
 
@@ -958,6 +967,15 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       return {
         ...state,
         scoreAnimation: null,
+      }
+    }
+
+    case 'PHASE/APPLY_PENDING': {
+      if (!state.pendingPhase) return state
+      return {
+        ...state,
+        phase: state.pendingPhase,
+        pendingPhase: null,
       }
     }
 

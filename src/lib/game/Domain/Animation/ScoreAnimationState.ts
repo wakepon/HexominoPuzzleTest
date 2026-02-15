@@ -51,4 +51,5 @@ export const SCORE_ANIMATION = {
   fastForwardDuration: 200,     // 早送り時のステップ表示時間（ms）
   countUpDuration: 500,         // スコアカウントアップ時間（ms）
   fadeInDuration: 200,          // フェードイン時間（ms）
+  postAnimationDelay: 1500,     // アニメーション完了後の遅延時間（ms）
 } as const
