@@ -30,6 +30,7 @@ export interface GameState {
 
   // ラウンド関連
   readonly phase: GamePhase
+  readonly pendingPhase: GamePhase | null
   readonly round: number
   readonly roundInfo: RoundInfo
   readonly score: number

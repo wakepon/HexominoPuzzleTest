@@ -60,6 +60,7 @@ export function GameContainer() {
         onMoveFromStock={actions.moveFromStock}
         onSwapWithStock={actions.swapWithStock}
         onReorderRelic={actions.reorderRelic}
+        onApplyPendingPhase={actions.applyPendingPhase}
         onDebugToggleRelic={handleDebugToggleRelic}
         onDebugAddGold={actions.debugAddGold}
         onDebugAddScore={actions.debugAddScore}

@@ -467,5 +467,7 @@ export function restoreGameState(
     volcanoEligible: saved.volcanoEligible ?? true,
     // UI状態は常にリセット
     deckViewOpen: false,
+    // マイグレーション対応: 古いセーブデータにはpendingPhaseがない
+    pendingPhase: null,
   }
 }

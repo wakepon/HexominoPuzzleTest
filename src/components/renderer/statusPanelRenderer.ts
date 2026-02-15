@@ -9,6 +9,9 @@
 
 import type { CanvasLayout, RoundInfo } from '../../lib/game/types'
 import { HD_LAYOUT, HD_STATUS_PANEL_STYLE, ROUND_CONFIG, DECK_BUTTON_STYLE } from '../../lib/game/Data/Constants'
+import { SCORE_ANIMATION } from '../../lib/game/Domain/Animation/ScoreAnimationState'
+import type { ScoreAnimationState } from '../../lib/game/Domain/Animation/ScoreAnimationState'
+import type { GamePhase } from '../../lib/game/Domain/Round/GamePhase'
 import type { ButtonArea } from './overlayRenderer'
 
 interface StatusPanelData {
@@ -20,6 +23,8 @@ interface StatusPanelData {
   bandaidCountdown: number | null
   timingCountdown: number | null
   timingBonusActive: boolean
+  pendingPhase: GamePhase | null
+  scoreAnimation: ScoreAnimationState | null
 }
 
 /**
@@ -27,6 +32,47 @@ interface StatusPanelData {
  */
 export interface StatusPanelRenderResult {
   deckButtonArea: ButtonArea
+}
+
+/**
+ * ラウンドスコアの表示色を決定
+ * - ゲームオーバー時（アニメーション完了後の遅延中）: 青色
+ * - ラウンドクリア時（カウントアップで目標超過 or 遅延中）: 赤色
+ * - それ以外: 白色
+ */
+function determineRoundScoreColor(
+  data: StatusPanelData,
+  style: typeof HD_STATUS_PANEL_STYLE
+): string {
+  const { pendingPhase, scoreAnimation, targetScore } = data
+
+  if (pendingPhase === 'game_over' && scoreAnimation === null) {
+    return style.roundScoreFailColor
+  }
+
+  if (pendingPhase === 'round_clear') {
+    if (scoreAnimation?.isCountingUp) {
+      // カウントアップ中: 表示スコアが目標を超えたら赤色
+      const now = Date.now()
+      const countElapsed = now - scoreAnimation.countStartTime
+      const countProgress = Math.min(1, countElapsed / SCORE_ANIMATION.countUpDuration)
+      const eased = 1 - Math.pow(1 - countProgress, 3)
+      const displayScore = Math.floor(
+        scoreAnimation.startingScore + scoreAnimation.scoreGain * eased
+      )
+      return displayScore >= targetScore ? style.roundScoreClearColor : style.roundScoreColor
+    }
+
+    if (scoreAnimation === null) {
+      // アニメーション完了後の遅延中
+      return style.roundScoreClearColor
+    }
+
+    // 式ステップ表示中（まだカウントアップに到達していない）
+    return style.roundScoreColor
+  }
+
+  return style.roundScoreColor
 }
 
 /**
@@ -65,7 +111,7 @@ export function renderStatusPanel(
   y += style.roundScoreLabelFontSize + itemGap
 
   ctx.font = `${style.fontWeight} ${style.roundScoreFontSize}px ${style.fontFamily}`
-  ctx.fillStyle = style.roundScoreColor
+  ctx.fillStyle = determineRoundScoreColor(data, style)
   ctx.fillText(`${data.roundScore}点`, padding, y)
   y += style.roundScoreFontSize + groupGap + 40
 

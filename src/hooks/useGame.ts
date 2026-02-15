@@ -51,6 +51,10 @@ export function useGame() {
     dispatch({ type: 'ANIMATION/SET_FAST_FORWARD', isFastForward })
   }, [])
 
+  const applyPendingPhase = useCallback(() => {
+    dispatch({ type: 'PHASE/APPLY_PENDING' })
+  }, [])
+
   const reorderRelic = useCallback((fromIndex: number, toIndex: number) => {
     dispatch({ type: 'RELIC/REORDER', fromIndex, toIndex })
   }, [])
@@ -157,6 +161,7 @@ export function useGame() {
       debugRemoveRelic,
       debugAddGold,
       debugAddScore,
+      applyPendingPhase,
     },
   }
 }
