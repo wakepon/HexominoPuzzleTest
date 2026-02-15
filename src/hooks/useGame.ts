@@ -77,6 +77,10 @@ export function useGame() {
     dispatch({ type: 'SHOP/LEAVE' })
   }, [])
 
+  const rerollShop = useCallback(() => {
+    dispatch({ type: 'SHOP/REROLL' })
+  }, [])
+
   const startRound = useCallback(() => {
     dispatch({ type: 'ROUND/START' })
   }, [])
@@ -149,6 +153,7 @@ export function useGame() {
       advanceRound,
       buyItem,
       leaveShop,
+      rerollShop,
       updateDebugSettings,
       deleteSave,
       startRound,

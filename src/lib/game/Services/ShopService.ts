@@ -18,6 +18,7 @@ export interface ProbabilityOverride {
   /** シール付与確率 (0-1) */
   seal?: number
 }
+import { SHOP_STYLE } from '../Data/Constants'
 import { MINOS_BY_CATEGORY } from '../Data/MinoDefinitions'
 import { shuffleDeck } from './DeckService'
 import {
@@ -259,7 +260,15 @@ export function createShopState(
 
   return {
     items: itemsWithSale,
+    rerollCount: 0,
   }
+}
+
+/**
+ * リロールコストを計算
+ */
+export function getRerollCost(rerollCount: number): number {
+  return SHOP_STYLE.rerollInitialCost + rerollCount * SHOP_STYLE.rerollCostIncrement
 }
 
 /**

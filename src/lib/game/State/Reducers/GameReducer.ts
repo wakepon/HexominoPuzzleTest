@@ -79,6 +79,7 @@ import {
   canAfford,
   markItemAsPurchased,
   shuffleCurrentDeck,
+  getRerollCost,
 } from '../../Services/ShopService'
 import { getPiecePattern, createPieceWithPattern } from '../../Services/PieceService'
 import { DefaultRandom } from '../../Utils/Random'
@@ -1093,6 +1094,34 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       saveGameState(updatedState)
 
       return updatedState
+    }
+
+    case 'SHOP/REROLL': {
+      // shopping状態でのみリロール可能
+      if (state.phase !== 'shopping' || !state.shopState) return state
+
+      const rerollCost = getRerollCost(state.shopState.rerollCount)
+      if (!canAfford(state.player.gold, rerollCost)) return state
+
+      // ゴールド消費
+      const rerollPlayer = subtractGold(state.player, rerollCost)
+
+      // 新商品生成
+      const rerollRng = new DefaultRandom()
+      const newShopState = createShopState(rerollRng, rerollPlayer.ownedRelics)
+
+      const rerollState = {
+        ...state,
+        player: rerollPlayer,
+        shopState: {
+          ...newShopState,
+          rerollCount: state.shopState.rerollCount + 1,
+        },
+      }
+
+      saveGameState(rerollState)
+
+      return rerollState
     }
 
     case 'SHOP/LEAVE': {

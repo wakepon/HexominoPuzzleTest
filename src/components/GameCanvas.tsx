@@ -29,7 +29,7 @@ import { INITIAL_TOOLTIP_STATE } from '../lib/game/Domain/Tooltip'
 import { calculateTooltipState } from '../lib/game/Services/TooltipService'
 import { screenToBoardPosition } from '../lib/game/Services/CollisionService'
 import { getPieceSize } from '../lib/game/Services/PieceService'
-import { canAfford } from '../lib/game/Services/ShopService'
+import { canAfford, getRerollCost } from '../lib/game/Services/ShopService'
 
 interface GameCanvasProps {
   state: GameState
@@ -48,6 +48,7 @@ interface GameCanvasProps {
   onReset: () => void
   onBuyItem: (itemIndex: number) => void
   onLeaveShop: () => void
+  onRerollShop: () => void
   onUpdateDebugSettings: (updates: Partial<DebugSettings>) => void
   onDeleteSave: () => void
   onStartRound: () => void
@@ -81,6 +82,7 @@ export function GameCanvas({
   onReset,
   onBuyItem,
   onLeaveShop,
+  onRerollShop,
   onUpdateDebugSettings,
   onDeleteSave,
   onStartRound,
@@ -264,7 +266,7 @@ export function GameCanvas({
       shopRenderResultRef.current = null
       roundProgressResultRef.current = null
     } else if (state.phase === 'shopping' && state.shopState) {
-      shopRenderResultRef.current = renderShop(ctx, state.shopState, state.player.gold, layout)
+      shopRenderResultRef.current = renderShop(ctx, state.shopState, state.player.gold, layout, state.shopState.rerollCount)
       buttonAreaRef.current = null
       roundProgressResultRef.current = null
     } else if (state.phase === 'game_over') {
@@ -602,6 +604,14 @@ export function GameCanvas({
     const handleShopClick = (pos: Position): boolean => {
       const shopResult = shopRenderResultRef.current
       if (!shopResult || !state.shopState) return false
+
+      // リロールボタンのクリック
+      if (isPointInArea(pos, shopResult.rerollButtonArea)) {
+        if (canAfford(state.player.gold, getRerollCost(state.shopState.rerollCount))) {
+          onRerollShop()
+        }
+        return true
+      }
 
       // 店を出るボタンのクリック
       if (isPointInArea(pos, shopResult.leaveButtonArea)) {
@@ -1277,7 +1287,7 @@ export function GameCanvas({
       window.removeEventListener('touchend', handleTouchEnd)
       window.removeEventListener('touchcancel', handleTouchEnd)
     }
-  }, [canvas, layout, state.pieceSlots, state.clearingAnimation, state.scoreAnimation, state.phase, state.shopState, state.player, state.board, state.dragState, state.deckViewOpen, onDragStart, onDragMove, onDragEnd, onReset, onBuyItem, onLeaveShop, onStartRound, onOpenDeckView, onCloseDeckView, onAdvanceScoreStep, onSetFastForward, onReorderRelic, showDebugWindow, debugSettings, onUpdateDebugSettings])
+  }, [canvas, layout, state.pieceSlots, state.clearingAnimation, state.scoreAnimation, state.phase, state.shopState, state.player, state.board, state.dragState, state.deckViewOpen, onDragStart, onDragMove, onDragEnd, onReset, onBuyItem, onLeaveShop, onRerollShop, onStartRound, onOpenDeckView, onCloseDeckView, onAdvanceScoreStep, onSetFastForward, onReorderRelic, showDebugWindow, debugSettings, onUpdateDebugSettings])
 
   return (
     <canvas

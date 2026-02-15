@@ -81,6 +81,7 @@ type SerializedShopItem = SerializedBlockShopItem | RelicShopItem
  */
 interface SerializedShopState {
   readonly items: readonly SerializedShopItem[]
+  readonly rerollCount?: number  // マイグレーション対応でオプショナル
 }
 
 /**
@@ -199,6 +200,7 @@ function serializeShopState(shopState: ShopState | null): SerializedShopState | 
   if (!shopState) return null
   return {
     items: shopState.items.map(serializeShopItem),
+    rerollCount: shopState.rerollCount,
   }
 }
 
@@ -298,6 +300,7 @@ function deserializeShopState(serialized: SerializedShopState | null): ShopState
   if (!serialized) return null
   return {
     items: serialized.items.map(deserializeShopItem),
+    rerollCount: serialized.rerollCount ?? 0,
   }
 }
 

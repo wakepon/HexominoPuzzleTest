@@ -55,6 +55,7 @@ export type RoundAction =
 export type ShopAction =
   | { type: 'SHOP/BUY_ITEM'; itemIndex: number }
   | { type: 'SHOP/LEAVE' }
+  | { type: 'SHOP/REROLL' }
 
 // ストックアクション
 export type StockAction =

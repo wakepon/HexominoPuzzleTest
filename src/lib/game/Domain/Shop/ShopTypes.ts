@@ -38,6 +38,7 @@ export type ShopItem = BlockShopItem | RelicShopItem
  */
 export interface ShopState {
   readonly items: readonly ShopItem[]
+  readonly rerollCount: number  // リロール回数（コスト計算用）
 }
 
 /**
