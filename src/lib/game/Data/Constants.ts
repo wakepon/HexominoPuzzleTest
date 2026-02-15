@@ -305,6 +305,16 @@ export const SHOP_STYLE = {
   strikethroughColor: '#888888',      // 打ち消し線の色
   // 購入不可表示
   unavailableOpacity: 0.5,            // 購入不可時の不透明度
+  // リロールボタン
+  rerollButtonWidth: 200,
+  rerollButtonHeight: 50,
+  rerollButtonColor: '#5B8DBE',          // 通常時（青系）
+  rerollButtonDisabledColor: '#555555',  // ゴールド不足時（グレー）
+  rerollButtonTextColor: '#FFFFFF',
+  rerollButtonFontSize: 16,
+  rerollButtonGap: 15,                   // 店を出るボタンとの間隔
+  rerollInitialCost: 3,                  // 初回コスト
+  rerollCostIncrement: 1,               // 押すたびの増加量
 }
 
 // レリックパネル表示スタイル（画面上部、ゴールドの右隣）

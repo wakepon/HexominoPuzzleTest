@@ -15,7 +15,7 @@ import {
   SEAL_SYMBOL_STYLE,
   RARITY_COLORS,
 } from '../../lib/game/Data/Constants'
-import { canAfford } from '../../lib/game/Services/ShopService'
+import { canAfford, getRerollCost } from '../../lib/game/Services/ShopService'
 import { isBlockShopItem, isRelicShopItem } from '../../lib/game/Domain/Shop/ShopTypes'
 import { getPatternDefinition } from '../../lib/game/Domain/Effect/Pattern'
 import { getSealDefinition } from '../../lib/game/Domain/Effect/Seal'
@@ -36,6 +36,7 @@ export interface ShopItemArea extends ButtonArea {
 export interface ShopRenderResult {
   itemAreas: ShopItemArea[]
   leaveButtonArea: ButtonArea
+  rerollButtonArea: ButtonArea
 }
 
 /**
@@ -471,7 +472,8 @@ export function renderShop(
   ctx: CanvasRenderingContext2D,
   shopState: ShopState,
   gold: number,
-  layout: CanvasLayout
+  layout: CanvasLayout,
+  rerollCount: number
 ): ShopRenderResult {
   const {
     backgroundColor,
@@ -585,31 +587,73 @@ export function renderShop(
     })
   }
 
-  // 「店を出る」ボタン - 商品の下に動的に配置
-  const buttonX = centerX - leaveButtonWidth / 2
+  // ボタンエリア - 商品の下に動的に配置（リロール + 店を出る を横並び）
+  const {
+    rerollButtonWidth,
+    rerollButtonHeight,
+    rerollButtonColor,
+    rerollButtonDisabledColor,
+    rerollButtonTextColor,
+    rerollButtonFontSize,
+    rerollButtonGap,
+  } = SHOP_STYLE
+
   // レリック行がある場合はレリック行の下端、ない場合はブロック行の下端を基準にする
   const contentBottomY = relicItems.length > 0
     ? blockBoxY + boxHeight + relicRowOffsetY + relicBoxHeight  // レリック行の下端
     : blockBoxY + boxHeight                                      // ブロック行の下端
   const buttonY = contentBottomY + leaveButtonGap
 
+  // 2つのボタンの合計幅を計算して中央寄せ
+  const totalButtonWidth = rerollButtonWidth + rerollButtonGap + leaveButtonWidth
+  const buttonsStartX = centerX - totalButtonWidth / 2
+
+  // リロールボタン
+  const rerollCost = getRerollCost(rerollCount)
+  const canReroll = canAfford(gold, rerollCost)
+  const rerollButtonX = buttonsStartX
+
+  ctx.fillStyle = canReroll ? rerollButtonColor : rerollButtonDisabledColor
+  ctx.beginPath()
+  ctx.roundRect(rerollButtonX, buttonY, rerollButtonWidth, rerollButtonHeight, 8)
+  ctx.fill()
+
+  ctx.font = `bold ${rerollButtonFontSize}px Arial, sans-serif`
+  ctx.fillStyle = rerollButtonTextColor
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(
+    `ショップリロール ${rerollCost}G`,
+    rerollButtonX + rerollButtonWidth / 2,
+    buttonY + rerollButtonHeight / 2
+  )
+
+  // 「店を出る」ボタン
+  const leaveButtonX = buttonsStartX + rerollButtonWidth + rerollButtonGap
+
   ctx.fillStyle = leaveButtonColor
   ctx.beginPath()
-  ctx.roundRect(buttonX, buttonY, leaveButtonWidth, leaveButtonHeight, 8)
+  ctx.roundRect(leaveButtonX, buttonY, leaveButtonWidth, leaveButtonHeight, 8)
   ctx.fill()
 
   ctx.font = `bold ${leaveButtonFontSize}px Arial, sans-serif`
   ctx.fillStyle = leaveButtonTextColor
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
-  ctx.fillText('店を出る', centerX, buttonY + leaveButtonHeight / 2)
+  ctx.fillText('店を出る', leaveButtonX + leaveButtonWidth / 2, buttonY + leaveButtonHeight / 2)
 
   ctx.restore()
 
   return {
     itemAreas,
+    rerollButtonArea: {
+      x: rerollButtonX,
+      y: buttonY,
+      width: rerollButtonWidth,
+      height: rerollButtonHeight,
+    },
     leaveButtonArea: {
-      x: buttonX,
+      x: leaveButtonX,
       y: buttonY,
       width: leaveButtonWidth,
       height: leaveButtonHeight,

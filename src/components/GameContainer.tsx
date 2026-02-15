@@ -51,6 +51,7 @@ export function GameContainer() {
         onReset={actions.resetGame}
         onBuyItem={actions.buyItem}
         onLeaveShop={actions.leaveShop}
+        onRerollShop={actions.rerollShop}
         onUpdateDebugSettings={actions.updateDebugSettings}
         onDeleteSave={actions.deleteSave}
         onStartRound={actions.startRound}
