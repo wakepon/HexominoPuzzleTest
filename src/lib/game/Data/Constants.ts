@@ -637,7 +637,6 @@ export const DECK_BUTTON_STYLE = {
   textColor: '#FFFFFF',
   fontSize: 14,
   borderRadius: 6,
-  offsetY: 350,
 }
 
 // ストック枠スタイル（ボードの左側、レリックパネルの下）

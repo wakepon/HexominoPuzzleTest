@@ -1198,7 +1198,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
       // 最終ラウンドならゲームクリア（ショップをスキップ）
       if (isFinalRound(state.round)) {
-        const goldReward = calculateGoldReward(state.deck.remainingHands)
+        const goldReward = calculateGoldReward(state.deck.remainingHands, state.roundInfo.roundType)
 
         // イベント発火: ラウンドクリア + ゴールド獲得
         emitRoundCleared(state.round, state.score, goldReward)
@@ -1217,7 +1217,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
       // ショップへ遷移（デバッグ用の確率オーバーライドを適用）
       const rng = new DefaultRandom()
-      const goldReward = calculateGoldReward(state.deck.remainingHands)
+      const goldReward = calculateGoldReward(state.deck.remainingHands, state.roundInfo.roundType)
 
       // イベント発火: ラウンドクリア + ゴールド獲得
       emitRoundCleared(state.round, state.score, goldReward)

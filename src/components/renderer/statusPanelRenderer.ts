@@ -9,6 +9,7 @@
 
 import type { CanvasLayout, RoundInfo } from '../../lib/game/types'
 import { HD_LAYOUT, HD_STATUS_PANEL_STYLE, ROUND_CONFIG, DECK_BUTTON_STYLE } from '../../lib/game/Data/Constants'
+import { getBaseReward } from '../../lib/game/Services/RoundService'
 import { SCORE_ANIMATION } from '../../lib/game/Domain/Animation/ScoreAnimationState'
 import type { ScoreAnimationState } from '../../lib/game/Domain/Animation/ScoreAnimationState'
 import type { GamePhase } from '../../lib/game/Domain/Round/GamePhase'
@@ -34,6 +35,7 @@ interface StatusPanelData {
  */
 export interface StatusPanelRenderResult {
   deckButtonArea: ButtonArea
+  formulaY: number
 }
 
 /**
@@ -104,7 +106,14 @@ export function renderStatusPanel(
   ctx.textAlign = 'left'
   ctx.textBaseline = 'top'
   ctx.fillText(`目標:${data.targetScore}点`, padding, y)
-  y += style.targetFontSize + groupGap
+  y += style.targetFontSize + itemGap
+
+  // === 報酬セクション ===
+  const baseReward = getBaseReward(data.roundInfo.roundType)
+  ctx.font = `${style.fontWeight} ${style.roundScoreLabelFontSize}px ${style.fontFamily}`
+  ctx.fillStyle = '#FFD700'
+  ctx.fillText(`Reward ${baseReward}G`, padding, y)
+  y += style.roundScoreLabelFontSize + groupGap
 
   // === ラウンドスコアセクション ===
   ctx.font = `${style.fontWeight} ${style.roundScoreLabelFontSize}px ${style.fontFamily}`
@@ -115,7 +124,9 @@ export function renderStatusPanel(
   ctx.font = `${style.fontWeight} ${style.roundScoreFontSize}px ${style.fontFamily}`
   ctx.fillStyle = determineRoundScoreColor(data, style)
   ctx.fillText(`${data.roundScore}点`, padding, y)
-  y += style.roundScoreFontSize + groupGap + 40
+  y += style.roundScoreFontSize
+  const formulaY = y
+  y += groupGap + 40
 
   // === ゴールドセクション ===
   ctx.font = `${style.fontWeight} ${style.goldFontSize}px ${style.fontFamily}`
@@ -179,7 +190,7 @@ export function renderStatusPanel(
   // === デッキボタン ===
   const btnStyle = DECK_BUTTON_STYLE
   const buttonX = padding
-  const buttonY = btnStyle.offsetY
+  const buttonY = bottomY + 60
 
   ctx.fillStyle = btnStyle.backgroundColor
   ctx.beginPath()
@@ -201,5 +212,6 @@ export function renderStatusPanel(
       width: btnStyle.width,
       height: btnStyle.height,
     },
+    formulaY,
   }
 }
