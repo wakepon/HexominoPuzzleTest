@@ -57,6 +57,7 @@ interface SerializedDeckState {
   readonly remainingHands: number
   readonly purchasedPieces: ReadonlyArray<readonly [MinoId, SerializedPiece]>
   readonly stockSlot?: SerializedPiece | null  // 追加（マイグレーション対応でオプショナル）
+  readonly stockSlot2?: SerializedPiece | null  // コピーレリック用
 }
 
 /**
@@ -123,6 +124,15 @@ interface SavedGameState {
     readonly nobiKaniMultiplier: number
     readonly renshaMultiplier: number
     readonly bandaidCounter?: number
+    readonly copyRelicState?: {
+      readonly targetRelicId: string | null
+      readonly timingCounter: number
+      readonly timingBonusActive: boolean
+      readonly bandaidCounter: number
+      readonly renshaMultiplier: number
+      readonly nobiTakenokoMultiplier: number
+      readonly nobiKaniMultiplier: number
+    } | null
   }
 
   // 台本レリック指定ライン（マイグレーション対応でオプショナル）
@@ -173,6 +183,7 @@ function serializeDeckState(deck: DeckState): SerializedDeckState {
     remainingHands: deck.remainingHands,
     purchasedPieces: purchasedPiecesArray,
     stockSlot: deck.stockSlot ? serializePiece(deck.stockSlot) : null,
+    stockSlot2: deck.stockSlot2 ? serializePiece(deck.stockSlot2) : null,
   }
 }
 
@@ -273,6 +284,7 @@ function deserializeDeckState(serialized: SerializedDeckState): DeckState {
     purchasedPieces: purchasedPiecesMap,
     // マイグレーション対応: 古いセーブデータにはstockSlotがない
     stockSlot: serialized.stockSlot ? deserializePiece(serialized.stockSlot) : null,
+    stockSlot2: serialized.stockSlot2 ? deserializePiece(serialized.stockSlot2) : null,
   }
 }
 
@@ -463,6 +475,8 @@ export function restoreGameState(
     relicMultiplierState: {
       ...INITIAL_RELIC_MULTIPLIER_STATE,
       ...(saved.relicMultiplierState ?? {}),
+      // copyRelicStateのマイグレーション
+      copyRelicState: saved.relicMultiplierState?.copyRelicState ?? null,
     },
     // マイグレーション対応: 古いセーブデータにはscriptRelicLinesがない
     scriptRelicLines: saved.scriptRelicLines ?? null,

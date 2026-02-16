@@ -13,6 +13,8 @@ export interface DeckState {
   readonly purchasedPieces: ReadonlyMap<MinoId, Piece>
   /** ストック枠（hand_stockレリック用） */
   readonly stockSlot: Piece | null
+  /** ストック枠2（コピーレリックでhand_stockをコピー時に使用） */
+  readonly stockSlot2: Piece | null
 }
 
 /**

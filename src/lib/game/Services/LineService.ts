@@ -151,6 +151,9 @@ export function calculateScoreWithEffects(
       nobiKaniMultiplier: 1,
       scriptBonus: 0,
       timingMultiplier: 1,
+      copyTargetRelicId: null,
+      copyMultiplier: 1,
+      copyBonus: 0,
       finalScore: 0,
     }
   }

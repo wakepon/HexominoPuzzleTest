@@ -16,13 +16,14 @@ import { renderRelicEffect } from './renderer/relicEffectRenderer'
 import { renderScoreAnimation, type ScoreAnimationRenderResult } from './renderer/scoreAnimationRenderer'
 import { renderRoundProgress, RoundProgressRenderResult } from './renderer/RoundProgressRenderer'
 import { renderDeckView, DeckViewRenderResult } from './renderer/DeckViewRenderer'
-import { renderStockSlot, StockSlotRenderResult } from './renderer/StockSlotRenderer'
+import { renderStockSlot, renderStockSlot2, StockSlotRenderResult, StockSlot2RenderResult } from './renderer/StockSlotRenderer'
 import { drawWoodenCellWithBorder } from './renderer/cellRenderer'
 import { BlockDataMapUtils } from '../lib/game/Domain/Piece/BlockData'
 import type { DebugSettings } from '../lib/game/Domain/Debug'
 import type { RelicType } from '../lib/game/Domain/Effect/Relic'
 import { hasRelic } from '../lib/game/Domain/Effect/RelicEffectHandler'
 import { getBandaidCountdown, getTimingCountdown } from '../lib/game/Domain/Effect/RelicState'
+import { resolveCopyTarget, isCopyRelicInactive } from '../lib/game/Domain/Effect/CopyRelicResolver'
 import type { RelicId } from '../lib/game/Domain/Core/Id'
 import type { TooltipState } from '../lib/game/Domain/Tooltip'
 import { INITIAL_TOOLTIP_STATE } from '../lib/game/Domain/Tooltip'
@@ -37,6 +38,7 @@ interface GameCanvasProps {
   debugSettings: DebugSettings
   onDragStart: (slotIndex: number, startPos: { x: number; y: number }) => void
   onDragStartFromStock: (startPos: { x: number; y: number }) => void
+  onDragStartFromStock2: (startPos: { x: number; y: number }) => void
   onDragMove: (currentPos: { x: number; y: number }, boardPos: { x: number; y: number } | null) => void
   onDragEnd: () => void
   onClearAnimationEnd: () => void
@@ -57,6 +59,9 @@ interface GameCanvasProps {
   onMoveToStock: (slotIndex: number) => void
   onMoveFromStock: (targetSlotIndex: number) => void
   onSwapWithStock: (slotIndex: number) => void
+  onMoveToStock2: (slotIndex: number) => void
+  onMoveFromStock2: (targetSlotIndex: number) => void
+  onSwapWithStock2: (slotIndex: number) => void
   onReorderRelic: (fromIndex: number, toIndex: number) => void
   onApplyPendingPhase: () => void
   // デバッグ用
@@ -71,6 +76,7 @@ export function GameCanvas({
   debugSettings,
   onDragStart,
   onDragStartFromStock,
+  onDragStartFromStock2,
   onDragMove,
   onDragEnd,
   onClearAnimationEnd,
@@ -91,6 +97,9 @@ export function GameCanvas({
   onMoveToStock,
   onMoveFromStock,
   onSwapWithStock,
+  onMoveToStock2,
+  onMoveFromStock2,
+  onSwapWithStock2,
   onReorderRelic,
   onApplyPendingPhase,
   onDebugToggleRelic,
@@ -111,10 +120,13 @@ export function GameCanvas({
   const deckViewResultRef = useRef<DeckViewRenderResult | null>(null)
   const statusPanelResultRef = useRef<StatusPanelRenderResult | null>(null)
   const stockSlotResultRef = useRef<StockSlotRenderResult | null>(null)
+  const stockSlot2ResultRef = useRef<StockSlot2RenderResult | null>(null)
   const scoreAnimationResultRef = useRef<ScoreAnimationRenderResult | null>(null)
   const relicPanelResultRef = useRef<RelicPanelRenderResult | null>(null)
   // ストックからのドラッグかどうかを追跡
   const isDraggingFromStockRef = useRef(false)
+  // ストック2からのドラッグかどうかを追跡
+  const isDraggingFromStock2Ref = useRef(false)
   // レリックドラッグ&ドロップ状態
   const relicDragRef = useRef<{
     isDragging: boolean
@@ -143,6 +155,15 @@ export function GameCanvas({
     ctx.fillRect(0, 0, layout.canvasWidth, layout.canvasHeight)
 
     // 左側ステータスパネル描画
+    // コピーレリック用カウントダウン計算
+    const copyState = state.relicMultiplierState.copyRelicState
+    const copyTimingCountdown = copyState?.targetRelicId === ('timing' as RelicId)
+      ? (copyState.timingBonusActive ? 0 : 2 - copyState.timingCounter)
+      : null
+    const copyBandaidCountdown = copyState?.targetRelicId === ('bandaid' as RelicId)
+      ? 3 - copyState.bandaidCounter
+      : null
+
     statusPanelResultRef.current = renderStatusPanel(ctx, {
       targetScore: state.targetScore,
       roundScore: state.score,
@@ -158,6 +179,8 @@ export function GameCanvas({
       timingBonusActive: state.relicMultiplierState.timingBonusActive,
       pendingPhase: state.pendingPhase,
       scoreAnimation: state.scoreAnimation,
+      copyTimingCountdown,
+      copyBandaidCountdown,
     }, layout)
 
     // レリックパネル描画（ボードの左側）
@@ -166,9 +189,24 @@ export function GameCanvas({
     if (hasRelic(state.player.ownedRelics, 'volcano') && !state.volcanoEligible) {
       grayedOutRelics.add('volcano' as RelicId)
     }
+    // コピーレリック非アクティブ時のグレーアウト
+    if (isCopyRelicInactive(state.player.relicDisplayOrder)) {
+      grayedOutRelics.add('copy' as RelicId)
+    }
+
     const timingBonusRelicId = (
       hasRelic(state.player.ownedRelics, 'timing') && state.relicMultiplierState.timingBonusActive
     ) ? 'timing' as RelicId : null
+
+    // コピーリンク表示用のレリックセット
+    const copyLinkRelics = new Set<RelicId>()
+    if (hasRelic(state.player.ownedRelics, 'copy')) {
+      const copyTarget = resolveCopyTarget(state.player.relicDisplayOrder)
+      if (copyTarget) {
+        copyLinkRelics.add('copy' as RelicId)
+        copyLinkRelics.add(copyTarget)
+      }
+    }
 
     relicPanelResultRef.current = renderRelicPanel(
       ctx,
@@ -177,7 +215,8 @@ export function GameCanvas({
       highlightedRelicId,
       relicDragRef.current,
       grayedOutRelics,
-      timingBonusRelicId
+      timingBonusRelicId,
+      copyLinkRelics
     )
 
     // ボード描画（消去アニメーション中のセルは除外）
@@ -197,32 +236,43 @@ export function GameCanvas({
     // ストック枠描画（hand_stockレリック所持時のみ）
     stockSlotResultRef.current = renderStockSlot(ctx, state.deck.stockSlot, layout, state.dragState)
 
+    // ストック枠2描画（コピーレリックでhand_stockをコピー中のみ）
+    const copyTargetForStock = state.relicMultiplierState.copyRelicState?.targetRelicId
+    const showStock2 = hasRelic(state.player.ownedRelics, 'hand_stock') &&
+      hasRelic(state.player.ownedRelics, 'copy') &&
+      copyTargetForStock === ('hand_stock' as RelicId)
+    stockSlot2ResultRef.current = showStock2
+      ? renderStockSlot2(ctx, state.deck.stockSlot2, layout, state.dragState)
+      : null
+
     // ドラッグ中のピース描画（手札から）
     renderDraggingPiece(ctx, state.pieceSlots, state.dragState, layout)
 
     // ストックからのドラッグ中のピース描画
-    if (state.dragState.isDragging && state.dragState.dragSource === 'stock' && state.dragState.currentPos) {
-      const stockPiece = state.deck.stockSlot
-      if (stockPiece) {
-        const pieceWidth = stockPiece.shape[0].length * layout.cellSize
-        const pieceHeight = stockPiece.shape.length * layout.cellSize
-        const drawX = state.dragState.currentPos.x - pieceWidth / 2
-        const drawY = state.dragState.currentPos.y - pieceHeight / 2
+    const dragFromStockPiece = state.dragState.isDragging && state.dragState.currentPos
+      ? (state.dragState.dragSource === 'stock' ? state.deck.stockSlot
+        : state.dragState.dragSource === 'stock2' ? state.deck.stockSlot2
+        : null)
+      : null
+    if (dragFromStockPiece && state.dragState.currentPos) {
+      const pieceWidth = dragFromStockPiece.shape[0].length * layout.cellSize
+      const pieceHeight = dragFromStockPiece.shape.length * layout.cellSize
+      const drawX = state.dragState.currentPos.x - pieceWidth / 2
+      const drawY = state.dragState.currentPos.y - pieceHeight / 2
 
-        ctx.globalAlpha = 0.8
-        for (let y = 0; y < stockPiece.shape.length; y++) {
-          for (let x = 0; x < stockPiece.shape[y].length; x++) {
-            if (!stockPiece.shape[y][x]) continue
-            const cellX = drawX + x * layout.cellSize
-            const cellY = drawY + y * layout.cellSize
-            const blockData = BlockDataMapUtils.get(stockPiece.blocks, y, x)
-            const pattern = blockData?.pattern ?? null
-            const seal = blockData?.seal ?? null
-            drawWoodenCellWithBorder(ctx, cellX, cellY, layout.cellSize, pattern, seal)
-          }
+      ctx.globalAlpha = 0.8
+      for (let y = 0; y < dragFromStockPiece.shape.length; y++) {
+        for (let x = 0; x < dragFromStockPiece.shape[y].length; x++) {
+          if (!dragFromStockPiece.shape[y][x]) continue
+          const cellX = drawX + x * layout.cellSize
+          const cellY = drawY + y * layout.cellSize
+          const blockData = BlockDataMapUtils.get(dragFromStockPiece.blocks, y, x)
+          const pattern = blockData?.pattern ?? null
+          const seal = blockData?.seal ?? null
+          drawWoodenCellWithBorder(ctx, cellX, cellY, layout.cellSize, pattern, seal)
         }
-        ctx.globalAlpha = 1.0
       }
+      ctx.globalAlpha = 1.0
     }
 
     // 消去アニメーション描画（ボードから除外されたセルをアニメーションとして描画）
@@ -581,6 +631,18 @@ export function GameCanvas({
       return state.deck.stockSlot !== null
     }
 
+    // ストック枠2がクリックされたか判定
+    const isPointInStockSlot2 = (pos: Position): boolean => {
+      const stock2Result = stockSlot2ResultRef.current
+      if (!stock2Result) return false
+      return isPointInArea(pos, stock2Result.bounds)
+    }
+
+    // ストック枠2にピースがあるか
+    const hasStock2Piece = (): boolean => {
+      return state.deck.stockSlot2 !== null
+    }
+
     const isPointInButton = (pos: Position): boolean => {
       const btn = buttonAreaRef.current
       if (!btn) return false
@@ -900,12 +962,22 @@ export function GameCanvas({
         return
       }
 
+      // ストック枠2からのドラッグ開始判定
+      if (state.phase === 'playing' && isPointInStockSlot2(pos) && hasStock2Piece()) {
+        isDraggingRef.current = true
+        isDraggingFromStock2Ref.current = true
+        activeSlotRef.current = null
+        onDragStartFromStock2(pos)
+        return
+      }
+
       const slotIndex = findSlotAtPosition(pos)
 
       if (slotIndex === null) return
 
       isDraggingRef.current = true
       isDraggingFromStockRef.current = false
+      isDraggingFromStock2Ref.current = false
       activeSlotRef.current = slotIndex
       onDragStart(slotIndex, pos)
     }
@@ -961,9 +1033,8 @@ export function GameCanvas({
       const pos = getCanvasPosition(e)
 
       // 手札からストック枠へのドロップ判定
-      if (!isDraggingFromStockRef.current && activeSlotRef.current !== null) {
+      if (!isDraggingFromStockRef.current && !isDraggingFromStock2Ref.current && activeSlotRef.current !== null) {
         if (isPointInStockSlot(pos) && layout.stockSlotPosition) {
-          // ストック枠へドロップ → ストックに移動（既存があればスワップ）
           if (hasStockPiece()) {
             onSwapWithStock(activeSlotRef.current)
           } else {
@@ -971,6 +1042,20 @@ export function GameCanvas({
           }
           isDraggingRef.current = false
           isDraggingFromStockRef.current = false
+          isDraggingFromStock2Ref.current = false
+          activeSlotRef.current = null
+          return
+        }
+        // 手札からストック枠2へのドロップ判定
+        if (isPointInStockSlot2(pos)) {
+          if (hasStock2Piece()) {
+            onSwapWithStock2(activeSlotRef.current)
+          } else {
+            onMoveToStock2(activeSlotRef.current)
+          }
+          isDraggingRef.current = false
+          isDraggingFromStockRef.current = false
+          isDraggingFromStock2Ref.current = false
           activeSlotRef.current = null
           return
         }
@@ -986,6 +1071,21 @@ export function GameCanvas({
             onMoveFromStock(slotIndex)
             isDraggingRef.current = false
             isDraggingFromStockRef.current = false
+            activeSlotRef.current = null
+            return
+          }
+        }
+      }
+
+      // ストック2から空きスロットへのドロップ判定
+      if (isDraggingFromStock2Ref.current) {
+        const slotIndex = findSlotAtPosition(pos)
+        if (slotIndex !== null) {
+          const slot = state.pieceSlots[slotIndex]
+          if (slot && !slot.piece) {
+            onMoveFromStock2(slotIndex)
+            isDraggingRef.current = false
+            isDraggingFromStock2Ref.current = false
             activeSlotRef.current = null
             return
           }
@@ -1135,12 +1235,22 @@ export function GameCanvas({
         return
       }
 
+      // ストック枠2からのドラッグ開始判定
+      if (state.phase === 'playing' && isPointInStockSlot2(pos) && hasStock2Piece()) {
+        isDraggingRef.current = true
+        isDraggingFromStock2Ref.current = true
+        activeSlotRef.current = null
+        onDragStartFromStock2(pos)
+        return
+      }
+
       const slotIndex = findSlotAtPosition(pos)
 
       if (slotIndex === null) return
 
       isDraggingRef.current = true
       isDraggingFromStockRef.current = false
+      isDraggingFromStock2Ref.current = false
       activeSlotRef.current = slotIndex
       onDragStart(slotIndex, pos)
     }
@@ -1221,6 +1331,21 @@ export function GameCanvas({
               onMoveFromStock(slotIndex)
               isDraggingRef.current = false
               isDraggingFromStockRef.current = false
+              activeSlotRef.current = null
+              return
+            }
+          }
+        }
+
+        // ストック2から空きスロットへのドロップ判定
+        if (isDraggingFromStock2Ref.current) {
+          const slotIndex = findSlotAtPosition(pos)
+          if (slotIndex !== null) {
+            const slot = state.pieceSlots[slotIndex]
+            if (slot && !slot.piece) {
+              onMoveFromStock2(slotIndex)
+              isDraggingRef.current = false
+              isDraggingFromStock2Ref.current = false
               activeSlotRef.current = null
               return
             }

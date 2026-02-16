@@ -10,6 +10,7 @@ import type {
   RelicEffectResult,
   ActivatedRelicInfo,
 } from './RelicEffectTypes'
+import type { CopyRelicState } from './RelicState'
 
 /**
  * レリックを所持しているか判定
@@ -182,12 +183,11 @@ export function calculateRelicEffects(
       ? RELIC_EFFECT_VALUES.SCRIPT_BONUS_SINGLE
       : 0
 
-  return {
-    activations,
+  // コピーレリック効果計算
+  const copyResult = calculateCopyRelicEffects(context, {
     chainMasterMultiplier,
     sizeBonusTotal,
     fullClearBonus,
-    totalRelicBonus: sizeBonusTotal + fullClearBonus + scriptBonus,
     singleLineMultiplier,
     takenokoMultiplier,
     kaniMultiplier,
@@ -196,6 +196,147 @@ export function calculateRelicEffects(
     nobiKaniMultiplier,
     scriptBonus,
     timingMultiplier,
+    activations,
+  })
+
+  return {
+    activations,
+    chainMasterMultiplier,
+    sizeBonusTotal,
+    fullClearBonus,
+    totalRelicBonus: sizeBonusTotal + fullClearBonus + scriptBonus + copyResult.copyBonus,
+    singleLineMultiplier,
+    takenokoMultiplier,
+    kaniMultiplier,
+    renshaMultiplier,
+    nobiTakenokoMultiplier,
+    nobiKaniMultiplier,
+    scriptBonus,
+    timingMultiplier,
+    copyTargetRelicId: copyResult.copyTargetRelicId,
+    copyMultiplier: copyResult.copyMultiplier,
+    copyBonus: copyResult.copyBonus,
+  }
+}
+
+/**
+ * コピーレリック効果の乗算倍率を取得（コピー独自カウンター使用）
+ */
+function getCopyMultiplierForTarget(
+  targetRelicType: string,
+  copyState: CopyRelicState,
+  context: RelicEffectContext,
+  originalEffects: {
+    chainMasterMultiplier: number
+    singleLineMultiplier: number
+    takenokoMultiplier: number
+    kaniMultiplier: number
+    activations: RelicActivationState
+  }
+): number {
+  switch (targetRelicType) {
+    case 'chain_master':
+      return originalEffects.activations.chainMasterActive
+        ? RELIC_EFFECT_VALUES.CHAIN_MASTER_MULTIPLIER : 1
+    case 'single_line':
+      return originalEffects.activations.singleLineActive
+        ? RELIC_EFFECT_VALUES.SINGLE_LINE_MULTIPLIER : 1
+    case 'takenoko':
+      return originalEffects.activations.takenokoActive
+        ? Math.max(1, originalEffects.activations.takenokoCols) : 1
+    case 'kani':
+      return originalEffects.activations.kaniActive
+        ? Math.max(1, originalEffects.activations.kaniRows) : 1
+    case 'rensha': {
+      // コピー独自カウンター
+      const totalLines = context.totalLines
+      if (totalLines > 0) return copyState.renshaMultiplier
+      return 1
+    }
+    case 'nobi_takenoko': {
+      if (context.rowLines === 0 && context.colLines >= 1)
+        return copyState.nobiTakenokoMultiplier
+      return 1
+    }
+    case 'nobi_kani': {
+      if (context.colLines === 0 && context.rowLines >= 1)
+        return copyState.nobiKaniMultiplier
+      return 1
+    }
+    case 'timing': {
+      // コピー独自カウンター
+      if (copyState.timingBonusActive && context.totalLines > 0)
+        return RELIC_EFFECT_VALUES.TIMING_MULTIPLIER
+      return 1
+    }
+    default:
+      return 1
+  }
+}
+
+/**
+ * コピーレリック効果の加算ボーナスを取得
+ */
+function getCopyBonusForTarget(
+  targetRelicType: string,
+  originalEffects: {
+    sizeBonusTotal: number
+    fullClearBonus: number
+    scriptBonus: number
+    activations: RelicActivationState
+  }
+): number {
+  switch (targetRelicType) {
+    case 'size_bonus_1': case 'size_bonus_2': case 'size_bonus_3':
+    case 'size_bonus_4': case 'size_bonus_5': case 'size_bonus_6':
+      return originalEffects.sizeBonusTotal
+    case 'full_clear_bonus':
+      return originalEffects.fullClearBonus
+    case 'script':
+      // 台本コピー: 指定ラインは増やさず、ボーナスのみ2重
+      return originalEffects.scriptBonus
+    default:
+      return 0
+  }
+}
+
+/**
+ * コピーレリック効果を計算
+ */
+function calculateCopyRelicEffects(
+  context: RelicEffectContext,
+  originalEffects: {
+    chainMasterMultiplier: number
+    sizeBonusTotal: number
+    fullClearBonus: number
+    singleLineMultiplier: number
+    takenokoMultiplier: number
+    kaniMultiplier: number
+    renshaMultiplier: number
+    nobiTakenokoMultiplier: number
+    nobiKaniMultiplier: number
+    scriptBonus: number
+    timingMultiplier: number
+    activations: RelicActivationState
+  }
+): { copyTargetRelicId: RelicId | null; copyMultiplier: number; copyBonus: number } {
+  const copyState = context.copyRelicState
+  if (!copyState || !copyState.targetRelicId) {
+    return { copyTargetRelicId: null, copyMultiplier: 1, copyBonus: 0 }
+  }
+
+  const targetType = copyState.targetRelicId as string
+
+  // 乗算レリックのコピー
+  const copyMultiplier = getCopyMultiplierForTarget(targetType, copyState, context, originalEffects)
+
+  // 加算レリックのコピー
+  const copyBonus = getCopyBonusForTarget(targetType, originalEffects)
+
+  return {
+    copyTargetRelicId: copyState.targetRelicId,
+    copyMultiplier,
+    copyBonus,
   }
 }
 
@@ -293,6 +434,21 @@ export function getActivatedRelics(
     })
   }
 
+  // コピーレリック
+  if (result.copyTargetRelicId) {
+    if (result.copyMultiplier > 1) {
+      activated.push({
+        relicId: 'copy' as RelicId,
+        bonusValue: `×${Number.isInteger(result.copyMultiplier) ? result.copyMultiplier : result.copyMultiplier.toFixed(1)}`,
+      })
+    } else if (result.copyBonus > 0) {
+      activated.push({
+        relicId: 'copy' as RelicId,
+        bonusValue: result.copyBonus,
+      })
+    }
+  }
+
   return activated
 }
 
@@ -336,6 +492,9 @@ export function getActivatedRelicsFromScoreBreakdown(scoreBreakdown: {
   readonly nobiKaniMultiplier?: number
   readonly scriptBonus?: number
   readonly timingMultiplier?: number
+  readonly copyTargetRelicId?: RelicId | null
+  readonly copyMultiplier?: number
+  readonly copyBonus?: number
 }): ActivatedRelicInfo[] {
   const activated: ActivatedRelicInfo[] = []
 
@@ -423,6 +582,22 @@ export function getActivatedRelicsFromScoreBreakdown(scoreBreakdown: {
       relicId: 'timing' as RelicId,
       bonusValue: `×${scoreBreakdown.timingMultiplier}`,
     })
+  }
+
+  // コピーレリック
+  if (scoreBreakdown.copyTargetRelicId) {
+    if (scoreBreakdown.copyMultiplier && scoreBreakdown.copyMultiplier > 1) {
+      const m = scoreBreakdown.copyMultiplier
+      activated.push({
+        relicId: 'copy' as RelicId,
+        bonusValue: `×${Number.isInteger(m) ? m : m.toFixed(1)}`,
+      })
+    } else if (scoreBreakdown.copyBonus && scoreBreakdown.copyBonus > 0) {
+      activated.push({
+        relicId: 'copy' as RelicId,
+        bonusValue: scoreBreakdown.copyBonus,
+      })
+    }
   }
 
   return activated

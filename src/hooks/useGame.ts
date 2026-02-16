@@ -105,6 +105,22 @@ export function useGame() {
     dispatch({ type: 'STOCK/SWAP', slotIndex })
   }, [])
 
+  const startDragFromStock2 = useCallback((startPos: Position) => {
+    dispatch({ type: 'UI/START_DRAG_FROM_STOCK2', startPos })
+  }, [])
+
+  const moveToStock2 = useCallback((slotIndex: number) => {
+    dispatch({ type: 'STOCK/MOVE_TO_STOCK2', slotIndex })
+  }, [])
+
+  const moveFromStock2 = useCallback((targetSlotIndex: number) => {
+    dispatch({ type: 'STOCK/MOVE_FROM_STOCK2', targetSlotIndex })
+  }, [])
+
+  const swapWithStock2 = useCallback((slotIndex: number) => {
+    dispatch({ type: 'STOCK/SWAP2', slotIndex })
+  }, [])
+
   const updateDebugSettings = useCallback((updates: Partial<DebugSettings>) => {
     setDebugSettings((prev) => ({ ...prev, ...updates }))
   }, [])
@@ -141,6 +157,7 @@ export function useGame() {
     actions: {
       startDrag,
       startDragFromStock,
+      startDragFromStock2,
       updateDrag,
       endDrag,
       resetGame,
@@ -162,6 +179,9 @@ export function useGame() {
       moveToStock,
       moveFromStock,
       swapWithStock,
+      moveToStock2,
+      moveFromStock2,
+      swapWithStock2,
       debugAddRelic,
       debugRemoveRelic,
       debugAddGold,

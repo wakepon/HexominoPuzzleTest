@@ -59,7 +59,13 @@ import {
   updateNobiKaniMultiplier,
   updateBandaidCounter,
   updateTimingCounter,
+  createInitialCopyRelicState,
 } from '../../Domain/Effect/RelicState'
+import type { CopyRelicState } from '../../Domain/Effect/RelicState'
+import {
+  resolveCopyTarget,
+  shouldResetCopyState,
+} from '../../Domain/Effect/CopyRelicResolver'
 import { createRelicActivationAnimation } from '../../Domain/Animation/AnimationState'
 import type { ScoreAnimationState } from '../../Domain/Animation/ScoreAnimationState'
 import { SCORE_ANIMATION } from '../../Domain/Animation/ScoreAnimationState'
@@ -121,6 +127,74 @@ function updateRelicMultipliers(
   }
 
   return newState
+}
+
+/**
+ * コピーレリックのカウンターを更新（対象レリックの種別に応じて独立管理）
+ */
+function updateCopyRelicCounters(
+  copyState: CopyRelicState | null,
+  handConsumed: boolean,
+  totalLines: number,
+  rowLines: number,
+  colLines: number
+): CopyRelicState | null {
+  if (!copyState || !copyState.targetRelicId) return copyState
+
+  const targetType = copyState.targetRelicId as string
+  let updated = copyState
+
+  // タイミングカウンター
+  if (targetType === 'timing') {
+    if (handConsumed) {
+      if (updated.timingBonusActive) {
+        updated = { ...updated, timingCounter: 0, timingBonusActive: false }
+      } else {
+        const newCounter = updated.timingCounter + 1
+        const bonusPending = newCounter >= 2 // TIMING_TRIGGER_COUNT - 1
+        updated = { ...updated, timingCounter: newCounter, timingBonusActive: bonusPending }
+      }
+    }
+  }
+
+  // 絆創膏カウンター
+  if (targetType === 'bandaid' && handConsumed) {
+    const newCounter = updated.bandaidCounter + 1
+    if (newCounter >= 3) { // BANDAID_TRIGGER_COUNT
+      updated = { ...updated, bandaidCounter: 0 }
+    } else {
+      updated = { ...updated, bandaidCounter: newCounter }
+    }
+  }
+
+  // 連射カウンター
+  if (targetType === 'rensha') {
+    if (totalLines === 0) {
+      updated = { ...updated, renshaMultiplier: 1.0 }
+    } else {
+      updated = { ...updated, renshaMultiplier: updated.renshaMultiplier + 0.5 }
+    }
+  }
+
+  // のびのびタケノコカウンター
+  if (targetType === 'nobi_takenoko') {
+    if (rowLines > 0) {
+      updated = { ...updated, nobiTakenokoMultiplier: 1.0 }
+    } else if (colLines > 0) {
+      updated = { ...updated, nobiTakenokoMultiplier: updated.nobiTakenokoMultiplier + 0.5 }
+    }
+  }
+
+  // のびのびカニカウンター
+  if (targetType === 'nobi_kani') {
+    if (colLines > 0) {
+      updated = { ...updated, nobiKaniMultiplier: 1.0 }
+    } else if (rowLines > 0) {
+      updated = { ...updated, nobiKaniMultiplier: updated.nobiKaniMultiplier + 0.5 }
+    }
+  }
+
+  return updated
 }
 
 /**
@@ -328,6 +402,10 @@ function resolveUnplaceableHand(
     if (currentDeck.stockSlot && canPieceBePlacedAnywhere(board, currentDeck.stockSlot.shape, getPiecePattern(currentDeck.stockSlot))) {
       break
     }
+    // ストック2が配置可能ならスタックではない
+    if (currentDeck.stockSlot2 && canPieceBePlacedAnywhere(board, currentDeck.stockSlot2.shape, getPiecePattern(currentDeck.stockSlot2))) {
+      break
+    }
 
     // 全て配置不可 → ハンドを手札枚数分減らす
     const penaltyCount = remainingPieces.length
@@ -507,6 +585,14 @@ function processPiecePlacement(
       ...timingUpdatedState,
       timingBonusActive: timingBonusApplies,
     }
+    // コピーレリックのタイミングボーナス判定（独自カウンター）
+    const copyState = timingUpdatedState.copyRelicState
+    const copyTimingBonusApplies = copyState?.targetRelicId === ('timing' as RelicId)
+      ? copyState.timingBonusActive : false
+    const relicContextCopyState = copyState && copyTimingBonusApplies
+      ? { ...copyState, timingBonusActive: true }
+      : copyState
+
     const relicContext: RelicEffectContext = {
       ownedRelics: state.player.ownedRelics,
       totalLines,
@@ -518,6 +604,7 @@ function processPiecePlacement(
       completedRows: completedLines.rows,
       completedCols: completedLines.columns,
       scriptRelicLines: state.scriptRelicLines,
+      copyRelicState: relicContextCopyState,
     }
 
     const scoreBreakdown = calculateScoreWithEffects(
@@ -561,6 +648,15 @@ function processPiecePlacement(
       completedLines.columns.length
     )
 
+    // コピーレリックカウンター更新
+    const updatedCopyState = updateCopyRelicCounters(
+      newRelicMultiplierState.copyRelicState,
+      handConsumed,
+      totalLines,
+      completedLines.rows.length,
+      completedLines.columns.length
+    )
+
     // 得点計算後にchargeValueをインクリメント（配置したピース自身は除外）
     const boardAfterChargeIncrement = incrementChargeValues(newBoard, piece.blockSetId)
 
@@ -588,7 +684,10 @@ function processPiecePlacement(
         phase: shouldDefer ? 'playing' : newPhase,
         pendingPhase: shouldDefer ? newPhase : null,
         comboCount,
-        relicMultiplierState: newRelicMultiplierState,
+        relicMultiplierState: {
+          ...newRelicMultiplierState,
+          copyRelicState: updatedCopyState,
+        },
         volcanoEligible: false, // ライン消去があったので火山は発動不可
       },
     }
@@ -598,6 +697,15 @@ function processPiecePlacement(
   const newRelicMultiplierState = updateRelicMultipliers(
     timingUpdatedState,
     state.player.ownedRelics,
+    0,
+    0,
+    0
+  )
+
+  // コピーレリックカウンター更新（ライン消去なし）
+  const updatedCopyStateNoLine = updateCopyRelicCounters(
+    newRelicMultiplierState.copyRelicState,
+    handConsumed,
     0,
     0,
     0
@@ -629,7 +737,10 @@ function processPiecePlacement(
       deck: resolved.finalDeck,
       phase: resolved.phase,
       comboCount,
-      relicMultiplierState: newRelicMultiplierState,
+      relicMultiplierState: {
+        ...newRelicMultiplierState,
+        copyRelicState: updatedCopyStateNoLine,
+      },
     },
   }
 }
@@ -684,6 +795,7 @@ function createNextRoundState(currentState: GameState): GameState {
     remainingHands: maxHands,
     purchasedPieces: currentState.deck.purchasedPieces,
     stockSlot: null, // ラウンド開始時にストックをクリア
+    stockSlot2: null,
   }
 
   const { slots, newDeck } = generateNewPieceSlotsFromDeckWithCount(
@@ -727,7 +839,13 @@ function createNextRoundState(currentState: GameState): GameState {
     targetScore,
     shopState: null,
     comboCount: 0,
-    relicMultiplierState: INITIAL_RELIC_MULTIPLIER_STATE, // ラウンド開始時に倍率をリセット
+    relicMultiplierState: {
+      ...INITIAL_RELIC_MULTIPLIER_STATE,
+      // コピーレリック: カウンターリセットだがtargetは維持
+      copyRelicState: currentState.relicMultiplierState.copyRelicState
+        ? createInitialCopyRelicState(currentState.relicMultiplierState.copyRelicState.targetRelicId)
+        : null,
+    }, // ラウンド開始時に倍率をリセット
     scriptRelicLines,
     deckViewOpen: false,
     volcanoEligible: true, // ラウンド開始時にリセット
@@ -775,6 +893,24 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       }
     }
 
+    case 'UI/START_DRAG_FROM_STOCK2': {
+      const stockPiece2 = state.deck.stockSlot2
+      if (!stockPiece2) return state
+
+      return {
+        ...state,
+        dragState: {
+          isDragging: true,
+          pieceId: stockPiece2.id,
+          slotIndex: null,
+          dragSource: 'stock2',
+          currentPos: action.startPos,
+          startPos: action.startPos,
+          boardPos: null,
+        },
+      }
+    }
+
     case 'UI/UPDATE_DRAG': {
       if (!state.dragState.isDragging) return state
 
@@ -790,6 +926,31 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
     case 'UI/END_DRAG': {
       if (!state.dragState.isDragging) {
+        return { ...state, dragState: initialDragState }
+      }
+
+      // ストック2からのドラッグの場合
+      if (state.dragState.dragSource === 'stock2') {
+        const stock2Piece = state.deck.stockSlot2
+        if (!stock2Piece) {
+          return { ...state, dragState: initialDragState }
+        }
+
+        const boardPos2 = state.dragState.boardPos
+
+        if (
+          state.phase === 'playing' &&
+          boardPos2 &&
+          canPlacePiece(state.board, stock2Piece.shape, boardPos2, getPiecePattern(stock2Piece))
+        ) {
+          const newDeck: DeckState = { ...state.deck, stockSlot2: null }
+          const newSlots = [...state.pieceSlots]
+          const newComboCount = hasComboPattern(stock2Piece) ? state.comboCount + 1 : 0
+
+          const result = processPiecePlacement(state, stock2Piece, boardPos2, newSlots, newDeck, newComboCount)
+          return result.newState
+        }
+
         return { ...state, dragState: initialDragState }
       }
 
@@ -1009,9 +1170,25 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       // fromIndex を除外した配列に toIndex の位置に挿入
       const without = [...source.slice(0, action.fromIndex), ...source.slice(action.fromIndex + 1)]
       const newOrder = [...without.slice(0, action.toIndex), item, ...without.slice(action.toIndex)]
+
+      // コピーレリックの対象変化を検出してカウンターリセット
+      let newCopyRelicState = state.relicMultiplierState.copyRelicState
+      if (newCopyRelicState && hasRelic(state.player.ownedRelics, 'copy')) {
+        const newTarget = resolveCopyTarget(newOrder)
+        if (shouldResetCopyState(source, newOrder)) {
+          newCopyRelicState = createInitialCopyRelicState(newTarget)
+        } else {
+          newCopyRelicState = { ...newCopyRelicState, targetRelicId: newTarget }
+        }
+      }
+
       return {
         ...state,
         player: { ...state.player, relicDisplayOrder: newOrder },
+        relicMultiplierState: {
+          ...state.relicMultiplierState,
+          copyRelicState: newCopyRelicState,
+        },
       }
     }
 
@@ -1086,8 +1263,18 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       }
 
       // RelicShopItemの場合はレリックをプレイヤーに追加
+      let newRelicMultiplierState = state.relicMultiplierState
       if (isRelicShopItem(item)) {
         newPlayer = addRelic(newPlayer, item.relicId)
+
+        // コピーレリック購入時にcopyRelicStateを初期化
+        if (item.relicId === ('copy' as RelicId)) {
+          const target = resolveCopyTarget(newPlayer.relicDisplayOrder)
+          newRelicMultiplierState = {
+            ...newRelicMultiplierState,
+            copyRelicState: createInitialCopyRelicState(target),
+          }
+        }
       }
 
       const updatedState = {
@@ -1095,6 +1282,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         player: newPlayer,
         deck: newDeck,
         shopState: newShopState,
+        relicMultiplierState: newRelicMultiplierState,
       }
 
       // 購入後に保存（データ整合性のため）
@@ -1273,11 +1461,100 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       }
     }
 
+    // ストック2操作
+    case 'STOCK/MOVE_TO_STOCK2': {
+      if (state.phase !== 'playing') return state
+      if (action.slotIndex < 0 || action.slotIndex >= state.pieceSlots.length) return state
+
+      const slot = state.pieceSlots[action.slotIndex]
+      if (!slot?.piece) return state
+
+      const pieceToStock2 = slot.piece
+      const currentStock2 = state.deck.stockSlot2
+
+      const newSlots = state.pieceSlots.map((s, i) =>
+        i === action.slotIndex ? { ...s, piece: currentStock2 } : s
+      )
+
+      return {
+        ...state,
+        pieceSlots: newSlots,
+        deck: { ...state.deck, stockSlot2: pieceToStock2 },
+        dragState: initialDragState,
+      }
+    }
+
+    case 'STOCK/MOVE_FROM_STOCK2': {
+      if (state.phase !== 'playing') return state
+      if (action.targetSlotIndex < 0 || action.targetSlotIndex >= state.pieceSlots.length) return state
+
+      const stock2Piece = state.deck.stockSlot2
+      if (!stock2Piece) return state
+
+      const targetSlot = state.pieceSlots[action.targetSlotIndex]
+      if (targetSlot?.piece) return state
+
+      const newSlots = state.pieceSlots.map((s, i) =>
+        i === action.targetSlotIndex ? { ...s, piece: stock2Piece } : s
+      )
+
+      return {
+        ...state,
+        pieceSlots: newSlots,
+        deck: { ...state.deck, stockSlot2: null },
+        dragState: initialDragState,
+      }
+    }
+
+    case 'STOCK/SWAP2': {
+      if (state.phase !== 'playing') return state
+      if (action.slotIndex < 0 || action.slotIndex >= state.pieceSlots.length) return state
+
+      const slot = state.pieceSlots[action.slotIndex]
+      if (!slot?.piece) return state
+
+      const stock2Piece = state.deck.stockSlot2
+      if (!stock2Piece) return state
+
+      const newSlots = state.pieceSlots.map((s, i) =>
+        i === action.slotIndex ? { ...s, piece: stock2Piece } : s
+      )
+
+      return {
+        ...state,
+        pieceSlots: newSlots,
+        deck: { ...state.deck, stockSlot2: slot.piece },
+        dragState: initialDragState,
+      }
+    }
+
     // デバッグアクション
     case 'DEBUG/ADD_RELIC': {
       const relicId = action.relicType as RelicId
       const newPlayer = addRelic(state.player, relicId)
-      const newState = { ...state, player: newPlayer }
+
+      // コピーレリック追加時にcopyRelicStateを初期化
+      let newRelicMultiplierState = state.relicMultiplierState
+      if (relicId === ('copy' as RelicId)) {
+        const target = resolveCopyTarget(newPlayer.relicDisplayOrder)
+        newRelicMultiplierState = {
+          ...newRelicMultiplierState,
+          copyRelicState: createInitialCopyRelicState(target),
+        }
+      }
+      // 他のレリック追加時、既にcopyレリック所持中なら対象を再解決
+      if (relicId !== ('copy' as RelicId) && hasRelic(newPlayer.ownedRelics, 'copy')) {
+        const newTarget = resolveCopyTarget(newPlayer.relicDisplayOrder)
+        const currentCopy = newRelicMultiplierState.copyRelicState
+        if (currentCopy && currentCopy.targetRelicId !== newTarget) {
+          newRelicMultiplierState = {
+            ...newRelicMultiplierState,
+            copyRelicState: createInitialCopyRelicState(newTarget),
+          }
+        }
+      }
+
+      const newState = { ...state, player: newPlayer, relicMultiplierState: newRelicMultiplierState }
       saveGameState(newState)
       return newState
     }
@@ -1290,7 +1567,25 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       if (action.relicType === 'hand_stock' && state.deck.stockSlot) {
         newDeck = { ...state.deck, stockSlot: null }
       }
-      const newState = { ...state, player: newPlayer, deck: newDeck }
+
+      // コピーレリック削除時: copyRelicStateをクリア
+      let newRelicMultiplierState = state.relicMultiplierState
+      if (relicId === ('copy' as RelicId)) {
+        newRelicMultiplierState = {
+          ...newRelicMultiplierState,
+          copyRelicState: null,
+        }
+      }
+      // 他のレリック削除時、copyレリック所持中なら対象を再解決
+      if (relicId !== ('copy' as RelicId) && hasRelic(newPlayer.ownedRelics, 'copy')) {
+        const newTarget = resolveCopyTarget(newPlayer.relicDisplayOrder)
+        newRelicMultiplierState = {
+          ...newRelicMultiplierState,
+          copyRelicState: createInitialCopyRelicState(newTarget),
+        }
+      }
+
+      const newState = { ...state, player: newPlayer, deck: newDeck, relicMultiplierState: newRelicMultiplierState }
       saveGameState(newState)
       return newState
     }

@@ -50,6 +50,7 @@ export type RelicType =
   | 'volcano'           // 火山
   | 'bandaid'           // 絆創膏
   | 'timing'            // タイミング
+  | 'copy'              // コピー
 
 /**
  * レリック定義
@@ -238,6 +239,15 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     rarity: 'rare',
     price: 7,
     icon: '⌛',
+  },
+  copy: {
+    id: 'copy' as RelicId,
+    type: 'copy',
+    name: 'コピー',
+    description: '1つ上のレリックの効果をコピー',
+    rarity: 'epic',
+    price: 40,
+    icon: '🪞',
   },
 }
 

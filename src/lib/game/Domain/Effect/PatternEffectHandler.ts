@@ -252,6 +252,9 @@ const DEFAULT_RELIC_EFFECTS: RelicEffectResult = {
   nobiKaniMultiplier: 1.0,
   scriptBonus: 0,
   timingMultiplier: 1,
+  copyTargetRelicId: null,
+  copyMultiplier: 1,
+  copyBonus: 0,
 }
 
 /**
@@ -317,6 +320,9 @@ export function calculateScoreBreakdown(
     timingMultiplier,
   } = relicEffects
 
+  // コピーレリック効果
+  const { copyTargetRelicId, copyMultiplier, copyBonus } = relicEffects
+
   // 最終スコア計算（relicDisplayOrder に基づく動的順序）
   // 乗算レリックの倍率マップ
   const relicMultiplierMap: Record<string, number> = {
@@ -338,14 +344,19 @@ export function calculateScoreBreakdown(
 
   let scoreAfterRelicMultipliers = scoreBeforeRelics
   for (const relicId of effectiveOrder) {
+    // 通常の乗算レリック
     const multiplier = relicMultiplierMap[relicId]
     if (multiplier !== undefined && multiplier !== 1) {
       scoreAfterRelicMultipliers = Math.floor(scoreAfterRelicMultipliers * multiplier)
     }
+    // コピーレリック: 対象レリックの直後に乗算を適用
+    if (relicId === copyTargetRelicId && copyMultiplier > 1) {
+      scoreAfterRelicMultipliers = Math.floor(scoreAfterRelicMultipliers * copyMultiplier)
+    }
   }
 
-  // 加算レリック（サイズボーナス + 全消しボーナス + 台本）は最後
-  const finalScore = scoreAfterRelicMultipliers + sizeBonusTotal + fullClearBonus + scriptBonus
+  // 加算レリック（サイズボーナス + 全消しボーナス + 台本 + コピー加算）は最後
+  const finalScore = scoreAfterRelicMultipliers + sizeBonusTotal + fullClearBonus + scriptBonus + copyBonus
 
   return {
     baseBlocks,
@@ -366,7 +377,7 @@ export function calculateScoreBreakdown(
     sizeBonusTotal,
     sizeBonusRelicId: relicEffects.activations.sizeBonusActiveRelicId,
     fullClearBonus,
-    relicBonusTotal: sizeBonusTotal + fullClearBonus + scriptBonus,
+    relicBonusTotal: sizeBonusTotal + fullClearBonus + scriptBonus + copyBonus,
     singleLineMultiplier,
     takenokoMultiplier,
     kaniMultiplier,
@@ -375,6 +386,9 @@ export function calculateScoreBreakdown(
     nobiKaniMultiplier,
     scriptBonus,
     timingMultiplier,
+    copyTargetRelicId,
+    copyMultiplier,
+    copyBonus,
     finalScore,
   }
 }
