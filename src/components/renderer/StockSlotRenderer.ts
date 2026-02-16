@@ -1,6 +1,7 @@
 /**
  * ストック枠の描画
  * hand_stockレリック所持時にのみ表示される
+ * コピーレリックでhand_stockをコピー中は2枠表示
  */
 
 import type { Piece, CanvasLayout, DragState } from '../../lib/game/types'
@@ -11,6 +12,13 @@ import { renderPiece } from './pieceRenderer'
  * ストック枠の描画結果
  */
 export interface StockSlotRenderResult {
+  readonly bounds: { x: number; y: number; width: number; height: number }
+}
+
+/**
+ * ストック枠2の描画結果
+ */
+export interface StockSlot2RenderResult {
   readonly bounds: { x: number; y: number; width: number; height: number }
 }
 
@@ -52,14 +60,65 @@ export function renderStockSlot(
   // ストックにピースがあり、ドラッグ中でなければ描画
   if (stockPiece && !(dragState.isDragging && dragState.dragSource === 'stock')) {
     const cellSize = layout.cellSize * HD_LAYOUT.slotCellSizeRatio
-    // ピースのサイズを計算
     const pieceWidth = stockPiece.shape[0].length * cellSize
     const pieceHeight = stockPiece.shape.length * cellSize
-    // ピースを中央に配置
     const pieceX = x + (width - pieceWidth) / 2
     const pieceY = y + (height - pieceHeight) / 2
 
     renderPiece(ctx, stockPiece, pieceX, pieceY, cellSize, 1.0)
+  }
+
+  ctx.restore()
+
+  return {
+    bounds: { x, y, width, height }
+  }
+}
+
+/**
+ * ストック枠2を描画（コピーレリックでhand_stockをコピー中のみ）
+ * ストック1の下に配置
+ */
+export function renderStockSlot2(
+  ctx: CanvasRenderingContext2D,
+  stockPiece2: Piece | null,
+  layout: CanvasLayout,
+  dragState: DragState
+): StockSlot2RenderResult | null {
+  const stockPos = layout.stockSlotPosition
+  if (!stockPos) return null
+
+  const { width, height, borderWidth, backgroundColor, labelFontSize, labelColor } = STOCK_SLOT_STYLE
+  const x = stockPos.x
+  const y = stockPos.y + height + 10 // ストック1の下
+
+  ctx.save()
+
+  // ラベル描画
+  ctx.font = `${labelFontSize}px Arial, sans-serif`
+  ctx.fillStyle = labelColor
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'bottom'
+  ctx.fillText('ストック2', x + width / 2, y - 5)
+
+  // 背景描画
+  ctx.fillStyle = backgroundColor
+  ctx.fillRect(x, y, width, height)
+
+  // 枠線描画（紫系のボーダーで区別）
+  ctx.strokeStyle = '#9370DB'
+  ctx.lineWidth = borderWidth
+  ctx.strokeRect(x, y, width, height)
+
+  // ストック2にピースがあり、ドラッグ中でなければ描画
+  if (stockPiece2 && !(dragState.isDragging && dragState.dragSource === 'stock2')) {
+    const cellSize = layout.cellSize * HD_LAYOUT.slotCellSizeRatio
+    const pieceWidth = stockPiece2.shape[0].length * cellSize
+    const pieceHeight = stockPiece2.shape.length * cellSize
+    const pieceX = x + (width - pieceWidth) / 2
+    const pieceY = y + (height - pieceHeight) / 2
+
+    renderPiece(ctx, stockPiece2, pieceX, pieceY, cellSize, 1.0)
   }
 
   ctx.restore()

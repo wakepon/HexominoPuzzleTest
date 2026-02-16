@@ -121,6 +121,7 @@ export function createInitialDeckState(rng: RandomGenerator): DeckState {
     allMinos: [...cards],
     purchasedPieces: new Map(),
     stockSlot: null,
+    stockSlot2: null,
   }
 }
 
@@ -140,6 +141,7 @@ export function createInitialDeckStateWithParams(
     allMinos: [...cards],
     purchasedPieces: new Map(),
     stockSlot: null,
+    stockSlot2: null,
   }
 }
 

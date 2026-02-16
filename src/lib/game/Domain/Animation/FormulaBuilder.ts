@@ -221,11 +221,23 @@ export function buildFormulaSteps(
         })
       }
     }
+    // コピーレリック: 対象レリックの直後にコピー分の乗算を追加
+    if (relicId === breakdown.copyTargetRelicId && breakdown.copyMultiplier > 1) {
+      currentScore = Math.floor(currentScore * breakdown.copyMultiplier)
+      const targetDef = getRelicDefinition(relicId)
+      const targetName = targetDef?.name ?? relicId
+      steps.push({
+        type: 'relic',
+        label: `コピー (${targetName}) ×${formatNum(breakdown.copyMultiplier)}`,
+        formula: `${currentScore}`,
+        relicId: 'copy' as RelicId,
+      })
+    }
   }
 
   // 加算レリック（サイズボーナス、全消しボーナス、台本）
   for (const relicId of relicDisplayOrder) {
-    if (!isMultiplicativeRelic(relicId)) {
+    if (!isMultiplicativeRelic(relicId) && relicId !== ('copy' as string)) {
       const bonus = getRelicAdditiveBonus(relicId, breakdown)
       if (bonus > 0) {
         currentScore += bonus
@@ -236,6 +248,18 @@ export function buildFormulaSteps(
           label: `${label} +${bonus}`,
           formula: `${currentScore}`,
           relicId,
+        })
+      }
+      // コピーレリックで加算レリックをコピー中の場合
+      if (relicId === breakdown.copyTargetRelicId && breakdown.copyBonus > 0) {
+        currentScore += breakdown.copyBonus
+        const targetDef = getRelicDefinition(relicId)
+        const targetName = targetDef?.name ?? relicId
+        steps.push({
+          type: 'relic',
+          label: `コピー (${targetName}) +${breakdown.copyBonus}`,
+          formula: `${currentScore}`,
+          relicId: 'copy' as RelicId,
         })
       }
     }

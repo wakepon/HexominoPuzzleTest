@@ -3,7 +3,7 @@
  */
 
 import type { RelicId } from '../Core/Id'
-import type { RelicMultiplierState } from './RelicState'
+import type { RelicMultiplierState, CopyRelicState } from './RelicState'
 import type { ScriptRelicLines } from './ScriptRelicState'
 
 /**
@@ -20,6 +20,7 @@ export interface RelicEffectContext {
   readonly completedRows: readonly number[]  // 揃った行のインデックス
   readonly completedCols: readonly number[]  // 揃った列のインデックス
   readonly scriptRelicLines: ScriptRelicLines | null  // 台本レリックの指定ライン
+  readonly copyRelicState?: CopyRelicState | null  // コピーレリック状態（オプショナル）
 }
 
 /**
@@ -98,6 +99,11 @@ export interface RelicEffectResult {
 
   // タイミング倍率
   readonly timingMultiplier: number // 1 or 2
+
+  // コピーレリック
+  readonly copyTargetRelicId: RelicId | null // コピー対象のレリックID
+  readonly copyMultiplier: number // コピーによる乗算倍率（1=無効）
+  readonly copyBonus: number // コピーによる加算ボーナス（0=無効）
 }
 
 /**

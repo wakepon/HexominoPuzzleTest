@@ -40,6 +40,7 @@ export function GameContainer() {
         debugSettings={debugSettings}
         onDragStart={actions.startDrag}
         onDragStartFromStock={actions.startDragFromStock}
+        onDragStartFromStock2={actions.startDragFromStock2}
         onDragMove={actions.updateDrag}
         onDragEnd={actions.endDrag}
         onClearAnimationEnd={actions.endClearAnimation}
@@ -60,6 +61,9 @@ export function GameContainer() {
         onMoveToStock={actions.moveToStock}
         onMoveFromStock={actions.moveFromStock}
         onSwapWithStock={actions.swapWithStock}
+        onMoveToStock2={actions.moveToStock2}
+        onMoveFromStock2={actions.moveFromStock2}
+        onSwapWithStock2={actions.swapWithStock2}
         onReorderRelic={actions.reorderRelic}
         onApplyPendingPhase={actions.applyPendingPhase}
         onDebugToggleRelic={handleDebugToggleRelic}

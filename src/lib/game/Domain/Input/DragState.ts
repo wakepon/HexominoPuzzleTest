@@ -4,7 +4,7 @@ import type { Position } from '../Core/Position'
 /**
  * ドラッグ元の種別
  */
-export type DragSource = 'hand' | 'stock'
+export type DragSource = 'hand' | 'stock' | 'stock2'
 
 /**
  * ドラッグ状態

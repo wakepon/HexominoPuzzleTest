@@ -41,7 +41,8 @@ export function renderRelicPanel(
     dropTargetIndex: number | null
   } | null,
   grayedOutRelics?: ReadonlySet<RelicId>,
-  timingBonusRelicId?: RelicId | null
+  timingBonusRelicId?: RelicId | null,
+  copyLinkRelics?: ReadonlySet<RelicId>
 ): RelicPanelRenderResult {
   const { iconSize, iconGap } = RELIC_PANEL_STYLE
   const x = HD_LAYOUT.relicAreaX
@@ -134,6 +135,23 @@ export function renderRelicPanel(
         ctx.shadowColor = '#00BFFF'
         ctx.shadowBlur = 8
         ctx.fillStyle = 'rgba(0, 191, 255, 0.2)'
+        ctx.beginPath()
+        ctx.roundRect(glowX, glowY, glowW, glowH, 6)
+        ctx.fill()
+        ctx.shadowBlur = 0
+
+        ctx.fillStyle = '#FFFFFF'
+        ctx.fillText(def.icon, iconX, iconY)
+      } else if (copyLinkRelics?.has(relicId) && !isDragTarget) {
+        // 紫色グロー（コピーリンク表示）
+        const glowX = x + 4
+        const glowY = startY + 26 + index * itemHeight
+        const glowW = HD_LAYOUT.relicAreaWidth - 8
+        const glowH = itemHeight + 4
+
+        ctx.shadowColor = '#9370DB'
+        ctx.shadowBlur = 8
+        ctx.fillStyle = 'rgba(147, 112, 219, 0.2)'
         ctx.beginPath()
         ctx.roundRect(glowX, glowY, glowW, glowH, 6)
         ctx.fill()

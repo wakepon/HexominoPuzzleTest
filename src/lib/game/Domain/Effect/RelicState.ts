@@ -3,7 +3,36 @@
  * 倍率系レリックの状態を一元管理
  */
 
+import type { RelicId } from '../Core/Id'
 import { RELIC_EFFECT_VALUES } from './Relic'
+
+/**
+ * コピーレリック専用の状態（独立カウンター管理）
+ */
+export interface CopyRelicState {
+  readonly targetRelicId: RelicId | null
+  readonly timingCounter: number
+  readonly timingBonusActive: boolean
+  readonly bandaidCounter: number
+  readonly renshaMultiplier: number
+  readonly nobiTakenokoMultiplier: number
+  readonly nobiKaniMultiplier: number
+}
+
+/**
+ * コピーレリック状態を初期化
+ */
+export function createInitialCopyRelicState(targetRelicId: RelicId | null): CopyRelicState {
+  return {
+    targetRelicId,
+    timingCounter: 0,
+    timingBonusActive: false,
+    bandaidCounter: 0,
+    renshaMultiplier: 1.0,
+    nobiTakenokoMultiplier: 1.0,
+    nobiKaniMultiplier: 1.0,
+  }
+}
 
 export interface RelicMultiplierState {
   readonly nobiTakenokoMultiplier: number  // のびのびタケノコ倍率
@@ -12,6 +41,7 @@ export interface RelicMultiplierState {
   readonly bandaidCounter: number          // 絆創膏カウンター（0〜2、3で発動→0リセット）
   readonly timingCounter: number           // タイミングカウンター（0,1,2）
   readonly timingBonusActive: boolean      // タイミングボーナスタイミングか
+  readonly copyRelicState: CopyRelicState | null  // コピーレリック状態（未所持時はnull）
 }
 
 export const INITIAL_RELIC_MULTIPLIER_STATE: RelicMultiplierState = {
@@ -21,6 +51,7 @@ export const INITIAL_RELIC_MULTIPLIER_STATE: RelicMultiplierState = {
   bandaidCounter: 0,
   timingCounter: 0,
   timingBonusActive: false,
+  copyRelicState: null,
 }
 
 /**

@@ -24,6 +24,7 @@ export type BoardAction =
 export type UIAction =
   | { type: 'UI/START_DRAG'; slotIndex: number; startPos: Position }
   | { type: 'UI/START_DRAG_FROM_STOCK'; startPos: Position }
+  | { type: 'UI/START_DRAG_FROM_STOCK2'; startPos: Position }
   | { type: 'UI/UPDATE_DRAG'; currentPos: Position; boardPos: Position | null }
   | { type: 'UI/END_DRAG' }
   | { type: 'UI/OPEN_DECK_VIEW' }
@@ -62,6 +63,9 @@ export type StockAction =
   | { type: 'STOCK/MOVE_TO_STOCK'; slotIndex: number }      // 手札→ストック
   | { type: 'STOCK/MOVE_FROM_STOCK'; targetSlotIndex: number }  // ストック→手札
   | { type: 'STOCK/SWAP'; slotIndex: number }               // 手札とストック交換
+  | { type: 'STOCK/MOVE_TO_STOCK2'; slotIndex: number }     // 手札→ストック2
+  | { type: 'STOCK/MOVE_FROM_STOCK2'; targetSlotIndex: number } // ストック2→手札
+  | { type: 'STOCK/SWAP2'; slotIndex: number }              // 手札とストック2交換
 
 // レリックアクション
 export type RelicAction =

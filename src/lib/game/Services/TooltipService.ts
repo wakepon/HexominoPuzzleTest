@@ -344,7 +344,7 @@ export function calculateTooltipState(
   layout: CanvasLayout
 ): TooltipState {
   // 所持レリックパネルは全フェーズで常にチェック（最優先）
-  const relicPanelEffects = hitTestRelicPanel(pos, state.player.ownedRelics)
+  const relicPanelEffects = hitTestRelicPanel(pos, state.player.relicDisplayOrder)
   if (relicPanelEffects.length > 0) {
     return {
       visible: true,

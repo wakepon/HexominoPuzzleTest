@@ -25,6 +25,8 @@ interface StatusPanelData {
   timingBonusActive: boolean
   pendingPhase: GamePhase | null
   scoreAnimation: ScoreAnimationState | null
+  copyTimingCountdown: number | null
+  copyBandaidCountdown: number | null
 }
 
 /**
@@ -154,6 +156,24 @@ export function renderStatusPanel(
     ctx.fillStyle = data.timingBonusActive ? '#FFD700' : '#AAAAAA'
     const timingX = data.bandaidCountdown !== null ? padding + 310 : padding + 240
     ctx.fillText(`⌛${data.timingCountdown}`, timingX, bottomY + 25)
+  }
+
+  // コピーレリック用カウントダウン表示
+  let copyCounterX = padding + 240
+  if (data.bandaidCountdown !== null) copyCounterX += 70
+  if (data.timingCountdown !== null) copyCounterX += 70
+
+  if (data.copyBandaidCountdown !== null) {
+    ctx.font = `${style.fontWeight} ${style.handFontSize}px ${style.fontFamily}`
+    ctx.fillStyle = '#9370DB'
+    ctx.fillText(`🪞🩹${data.copyBandaidCountdown}`, copyCounterX, bottomY + 25)
+    copyCounterX += 80
+  }
+
+  if (data.copyTimingCountdown !== null) {
+    ctx.font = `${style.fontWeight} ${style.handFontSize}px ${style.fontFamily}`
+    ctx.fillStyle = '#9370DB'
+    ctx.fillText(`🪞⌛${data.copyTimingCountdown}`, copyCounterX, bottomY + 25)
   }
 
   // === デッキボタン ===

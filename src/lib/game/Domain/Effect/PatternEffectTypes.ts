@@ -54,6 +54,10 @@ export interface ScoreBreakdown {
   readonly scriptBonus: number // 台本ボーナス（0, 20, or 60）
   // タイミング
   readonly timingMultiplier: number // タイミング倍率（1 or 2）
+  // コピーレリック
+  readonly copyTargetRelicId: RelicId | null // コピー対象のレリックID
+  readonly copyMultiplier: number // コピーによる乗算倍率（1=無効）
+  readonly copyBonus: number // コピーによる加算ボーナス（0=無効）
   readonly finalScore: number // 最終スコア
 }
 
