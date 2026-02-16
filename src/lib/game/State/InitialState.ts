@@ -18,6 +18,7 @@ import {
 } from '../Services/RoundService'
 import { DefaultRandom } from '../Utils/Random'
 import { ROUND_CONFIG } from '../Data/Constants'
+import { OBSTACLE_BLOCK_COUNT } from '../Data/BossConditions'
 import { createInitialPlayerState } from '../Domain/Player/PlayerState'
 import { loadGameState, restoreGameState, clearGameState } from '../Services/StorageService'
 import { INITIAL_RELIC_MULTIPLIER_STATE } from '../Domain/Effect/RelicState'
@@ -87,7 +88,9 @@ function createNewGameState(): GameState {
   // ボス条件「おじゃまブロック」の場合は配置
   let board = createEmptyBoard()
   if (roundInfo.bossCondition?.id === 'obstacle') {
-    board = placeObstacleOnBoard(board, rng)
+    for (let i = 0; i < OBSTACLE_BLOCK_COUNT; i++) {
+      board = placeObstacleOnBoard(board, rng)
+    }
   }
 
   return {

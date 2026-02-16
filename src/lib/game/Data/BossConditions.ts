@@ -14,7 +14,7 @@ export const BOSS_CONDITIONS: Record<BossConditionType, BossCondition> = {
   obstacle: {
     id: 'obstacle',
     name: 'おじゃまブロック',
-    description: 'ランダムな1マスが埋まっている（消去不可）',
+    description: 'ランダムな4マスが埋まっている（消去不可）',
   },
   energy_save: {
     id: 'energy_save',
@@ -46,3 +46,8 @@ export const ENERGY_SAVE_RATIO = 0.75
  * 手札2枚条件時のドロー枚数
  */
 export const TWO_CARDS_DRAW_COUNT = 2
+
+/**
+ * おじゃまブロック条件時の配置数
+ */
+export const OBSTACLE_BLOCK_COUNT = 4

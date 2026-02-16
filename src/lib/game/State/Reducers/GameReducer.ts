@@ -30,7 +30,6 @@ import {
 import {
   initialDragState,
   createInitialState,
-  generateNewPieceSlotsFromDeck,
   generateNewPieceSlotsFromDeckWithCount,
   areAllSlotsEmpty,
   determinePhase,
@@ -84,11 +83,13 @@ import {
 import { getPiecePattern, createPieceWithPattern } from '../../Services/PieceService'
 import { DefaultRandom } from '../../Utils/Random'
 import { CLEAR_ANIMATION, RELIC_EFFECT_STYLE, GRID_SIZE } from '../../Data/Constants'
+import { OBSTACLE_BLOCK_COUNT } from '../../Data/BossConditions'
 import { RELIC_EFFECT_VALUES } from '../../Domain/Effect/Relic'
 import { getMinoById } from '../../Data/MinoDefinitions'
 import { saveGameState, clearGameState } from '../../Services/StorageService'
 import type { RelicMultiplierState } from '../../Domain/Effect/RelicState'
 import type { RelicId, PatternId } from '../../Domain/Core/Id'
+import type { RoundInfo } from '../../Domain/Round/RoundTypes'
 import { generateScriptLines } from '../../Domain/Effect/ScriptRelicState'
 
 /**
@@ -263,7 +264,8 @@ function handlePlacement(
   slots: readonly PieceSlot[],
   deck: DeckState,
   skipHandConsumption: boolean = false,
-  bandaidTrigger: boolean = false
+  bandaidTrigger: boolean = false,
+  roundInfo: RoundInfo | null = null
 ): { finalSlots: PieceSlot[]; finalDeck: DeckState } {
   const updatedDeck = skipHandConsumption ? deck : decrementRemainingHands(deck)
 
@@ -288,7 +290,8 @@ function handlePlacement(
     }
   }
 
-  const result = generateNewPieceSlotsFromDeck(updatedDeck)
+  const drawCount = getDrawCount(roundInfo)
+  const result = generateNewPieceSlotsFromDeckWithCount(updatedDeck, drawCount)
   return {
     finalSlots: result.slots,
     finalDeck: result.newDeck,
@@ -304,7 +307,8 @@ function resolveUnplaceableHand(
   slots: PieceSlot[],
   deck: DeckState,
   score: number,
-  targetScore: number
+  targetScore: number,
+  roundInfo: RoundInfo | null = null
 ): { finalSlots: PieceSlot[]; finalDeck: DeckState; phase: ReturnType<typeof determinePhase> } {
   let currentSlots = slots
   let currentDeck = deck
@@ -340,7 +344,8 @@ function resolveUnplaceableHand(
     }
 
     // 手札をリセットして新しくドロー
-    const result = generateNewPieceSlotsFromDeck(currentDeck)
+    const drawCount = getDrawCount(roundInfo)
+    const result = generateNewPieceSlotsFromDeckWithCount(currentDeck, drawCount)
     currentSlots = result.slots
     currentDeck = result.newDeck
     // ループで再チェック（新しい手札も配置不可の場合に対応）
@@ -474,7 +479,7 @@ function processPiecePlacement(
       : { newState: updatedMultState, bonusApplies: false }
 
   // 配置後の状態を計算
-  const { finalSlots, finalDeck } = handlePlacement(newSlots, newDeck, isNohand, bandaidTrigger)
+  const { finalSlots, finalDeck } = handlePlacement(newSlots, newDeck, isNohand, bandaidTrigger, state.roundInfo)
 
   // ライン消去判定
   const completedLines = findCompletedLines(newBoard)
@@ -600,7 +605,7 @@ function processPiecePlacement(
 
   // 配置不可チェック＆リドロー
   const resolved = resolveUnplaceableHand(
-    newBoard, finalSlots, finalDeck, state.score, state.targetScore
+    newBoard, finalSlots, finalDeck, state.score, state.targetScore, state.roundInfo
   )
 
   // 火山レリック発動判定
@@ -690,7 +695,9 @@ function createNextRoundState(currentState: GameState): GameState {
   // ボス条件「おじゃまブロック」の場合は配置
   let board = createEmptyBoard()
   if (roundInfo.bossCondition?.id === 'obstacle') {
-    board = placeObstacleOnBoard(board, rng)
+    for (let i = 0; i < OBSTACLE_BLOCK_COUNT; i++) {
+      board = placeObstacleOnBoard(board, rng)
+    }
   }
 
   const targetScore = calculateTargetScore(nextRound)
@@ -871,7 +878,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       )
 
       // 配置後の状態を計算
-      const { finalSlots, finalDeck } = handlePlacement(newSlots, state.deck)
+      const { finalSlots, finalDeck } = handlePlacement(newSlots, state.deck, false, false, state.roundInfo)
       const newPhase = determinePhase(
         state.score,
         state.targetScore,
@@ -913,7 +920,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
       // 配置不可チェック＆リドロー
       const resolved = resolveUnplaceableHand(
-        clearedBoard, [...state.pieceSlots], state.deck, state.score, state.targetScore
+        clearedBoard, [...state.pieceSlots], state.deck, state.score, state.targetScore, state.roundInfo
       )
 
       // スコアアニメーションがまだ再生中の場合はpendingPhaseに保留
