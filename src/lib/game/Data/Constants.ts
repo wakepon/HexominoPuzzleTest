@@ -575,6 +575,13 @@ export const ROUND_PROGRESS_STYLE = {
   conditionFontSize: 14,
   conditionColor: '#FF6666',
   conditionOffsetY: 120,
+  targetFontSize: 16,
+  targetOffsetY: 110,
+  targetBossOffsetY: 145,
+  rewardFontSize: 14,
+  rewardOffsetY: 135,
+  rewardBossOffsetY: 170,
+  rewardColor: '#FFD700',
 
   // クリア済みマーク
   clearedMarkFontSize: 48,
