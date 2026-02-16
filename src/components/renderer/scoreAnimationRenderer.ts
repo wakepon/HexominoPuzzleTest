@@ -26,12 +26,12 @@ export interface ScoreAnimationRenderResult {
  */
 export function renderScoreAnimation(
   ctx: CanvasRenderingContext2D,
-  scoreAnimation: ScoreAnimationState
+  scoreAnimation: ScoreAnimationState,
+  formulaY: number
 ): ScoreAnimationRenderResult {
   ctx.save()
 
   const panelX = 30
-  const formulaY = 165  // ラウンドスコア(y=127, h=28)の下、ゴールド(y=220)の上
   const now = Date.now()
   const step = scoreAnimation.steps[scoreAnimation.currentStepIndex]
 

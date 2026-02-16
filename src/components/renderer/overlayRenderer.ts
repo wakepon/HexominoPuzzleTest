@@ -2,8 +2,9 @@
  * オーバーレイの描画（ラウンドクリア演出、ゲームオーバー画面）
  */
 
-import { CanvasLayout } from '../../lib/game/types'
+import { CanvasLayout, RoundType } from '../../lib/game/types'
 import { ROUND_CLEAR_STYLE, GAME_OVER_STYLE, GAME_CLEAR_STYLE, ROUND_CONFIG } from '../../lib/game/Data/Constants'
+import { getBaseReward } from '../../lib/game/Services/RoundService'
 
 /**
  * ボタン領域の型
@@ -22,6 +23,8 @@ export function renderRoundClear(
   ctx: CanvasRenderingContext2D,
   round: number,
   goldReward: number,
+  roundType: RoundType,
+  remainingHands: number,
   layout: CanvasLayout
 ): void {
   const { fontSize, subFontSize, color, goldColor, backgroundColor, titleOffsetY, goldTextOffsetY } = ROUND_CLEAR_STYLE
@@ -42,10 +45,15 @@ export function renderRoundClear(
   ctx.fillStyle = color
   ctx.fillText(`Round ${round} Clear!`, centerX, centerY + titleOffsetY)
 
-  // ゴールド獲得表示
+  // 報酬内訳表示
+  const baseReward = getBaseReward(roundType)
   ctx.font = `bold ${subFontSize}px Arial, sans-serif`
   ctx.fillStyle = goldColor
-  ctx.fillText(`+${goldReward}G 獲得！`, centerX, centerY + goldTextOffsetY)
+  ctx.fillText(
+    `Reward ${baseReward}G + Bonus ${remainingHands}G = ${goldReward}G`,
+    centerX,
+    centerY + goldTextOffsetY
+  )
 
   ctx.restore()
 }

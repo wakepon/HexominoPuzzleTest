@@ -9,7 +9,7 @@ import {
   ENERGY_SAVE_RATIO,
   TWO_CARDS_DRAW_COUNT,
 } from '../Data/BossConditions'
-import type { BossCondition, RoundInfo } from '../Domain/Round/RoundTypes'
+import type { BossCondition, RoundInfo, RoundType } from '../Domain/Round/RoundTypes'
 import { calculateRoundInfo } from '../Domain/Round/RoundTypes'
 import type { RandomGenerator } from '../Utils/Random'
 
@@ -22,11 +22,27 @@ export function calculateTargetScore(round: number): number {
 }
 
 /**
- * ゴールド報酬を計算
- * 残りハンド数がそのまま報酬になる
+ * ラウンドタイプ別の基本報酬
  */
-export function calculateGoldReward(remainingHands: number): number {
-  return remainingHands
+const BASE_REWARD: Record<RoundType, number> = {
+  normal: 1,
+  elite: 2,
+  boss: 5,
+}
+
+/**
+ * 基本報酬を取得（UI表示用）
+ */
+export function getBaseReward(roundType: RoundType): number {
+  return BASE_REWARD[roundType]
+}
+
+/**
+ * ゴールド報酬を計算
+ * 基本報酬 + 残りハンド数
+ */
+export function calculateGoldReward(remainingHands: number, roundType: RoundType): number {
+  return BASE_REWARD[roundType] + remainingHands
 }
 
 /**

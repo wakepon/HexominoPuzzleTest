@@ -23,6 +23,7 @@ import type { DebugSettings } from '../lib/game/Domain/Debug'
 import type { RelicType } from '../lib/game/Domain/Effect/Relic'
 import { hasRelic } from '../lib/game/Domain/Effect/RelicEffectHandler'
 import { getBandaidCountdown, getTimingCountdown } from '../lib/game/Domain/Effect/RelicState'
+import { calculateGoldReward } from '../lib/game/Services/RoundService'
 import { resolveCopyTarget, isCopyRelicInactive } from '../lib/game/Domain/Effect/CopyRelicResolver'
 import type { RelicId } from '../lib/game/Domain/Core/Id'
 import type { TooltipState } from '../lib/game/Domain/Tooltip'
@@ -292,8 +293,8 @@ export function GameCanvas({
     }
 
     // スコアアニメーション描画
-    if (state.scoreAnimation?.isAnimating) {
-      scoreAnimationResultRef.current = renderScoreAnimation(ctx, state.scoreAnimation)
+    if (state.scoreAnimation?.isAnimating && statusPanelResultRef.current) {
+      scoreAnimationResultRef.current = renderScoreAnimation(ctx, state.scoreAnimation, statusPanelResultRef.current.formulaY)
     } else {
       scoreAnimationResultRef.current = null
     }
@@ -310,8 +311,8 @@ export function GameCanvas({
       buttonAreaRef.current = null
       shopRenderResultRef.current = null
     } else if (state.phase === 'round_clear') {
-      const goldReward = state.deck.remainingHands
-      renderRoundClear(ctx, state.round, goldReward, layout)
+      const goldReward = calculateGoldReward(state.deck.remainingHands, state.roundInfo.roundType)
+      renderRoundClear(ctx, state.round, goldReward, state.roundInfo.roundType, state.deck.remainingHands, layout)
       buttonAreaRef.current = null
       shopRenderResultRef.current = null
       roundProgressResultRef.current = null

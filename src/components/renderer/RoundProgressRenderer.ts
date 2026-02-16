@@ -4,6 +4,7 @@
 
 import type { CanvasLayout, RoundInfo, RoundType } from '../../lib/game/types'
 import { ROUND_PROGRESS_STYLE, ROUND_CONFIG } from '../../lib/game/Data/Constants'
+import { getBaseReward } from '../../lib/game/Services/RoundService'
 import type { ButtonArea } from './overlayRenderer'
 
 /**
@@ -186,7 +187,13 @@ export function renderRoundProgress(
   // 目標スコア表示
   ctx.font = `bold 20px Arial, sans-serif`
   ctx.fillStyle = '#FFFFFF'
-  ctx.fillText(`目標: ${targetScore}点`, centerX, centerY + 100)
+  ctx.fillText(`目標: ${targetScore}点`, centerX, centerY + 90)
+
+  // 報酬額表示
+  const baseReward = getBaseReward(roundInfo.roundType)
+  ctx.font = `bold 18px Arial, sans-serif`
+  ctx.fillStyle = '#FFD700'
+  ctx.fillText(`Reward ${baseReward}G`, centerX, centerY + 115)
 
   // 「ラウンド開始」ボタン
   const buttonX = centerX - style.buttonWidth / 2
