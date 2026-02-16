@@ -27,6 +27,8 @@ interface RoundCardInfo {
   roundType: RoundType
   state: CardState
   bossConditionName: string | null
+  targetScore: number | null
+  reward: number | null
 }
 
 /**
@@ -34,7 +36,8 @@ interface RoundCardInfo {
  */
 function generateSetCards(
   currentRound: number,
-  currentRoundInfo: RoundInfo
+  currentRoundInfo: RoundInfo,
+  targetScore: number
 ): RoundCardInfo[] {
   const setStartRound = (currentRoundInfo.setNumber - 1) * 3 + 1
   const types: RoundType[] = ['normal', 'elite', 'boss']
@@ -51,14 +54,18 @@ function generateSetCards(
       state = 'locked'
     }
 
+    const isCurrent = roundNumber === currentRound
+
     return {
       roundNumber,
       roundType: type,
       state,
       bossConditionName:
-        type === 'boss' && roundNumber === currentRound
+        type === 'boss' && isCurrent
           ? currentRoundInfo.bossCondition?.name ?? null
           : null,
+      targetScore: isCurrent ? targetScore : null,
+      reward: isCurrent ? getBaseReward(type) : null,
     }
   })
 }
@@ -138,6 +145,24 @@ function renderRoundCard(
         y + style.conditionOffsetY
       )
     }
+
+    const hasBossCondition = card.bossConditionName !== null
+
+    // 目標スコア
+    if (card.targetScore !== null) {
+      const targetY = hasBossCondition ? style.targetBossOffsetY : style.targetOffsetY
+      ctx.font = `bold ${style.targetFontSize}px Arial, sans-serif`
+      ctx.fillStyle = '#FFFFFF'
+      ctx.fillText(`目標: ${card.targetScore}点`, centerX, y + targetY)
+    }
+
+    // 報酬額
+    if (card.reward !== null) {
+      const rewardY = hasBossCondition ? style.rewardBossOffsetY : style.rewardOffsetY
+      ctx.font = `bold ${style.rewardFontSize}px Arial, sans-serif`
+      ctx.fillStyle = style.rewardColor
+      ctx.fillText(`Reward ${card.reward}G`, centerX, y + rewardY)
+    }
   }
 }
 
@@ -174,7 +199,7 @@ export function renderRoundProgress(
   )
 
   // 3枚のカードを描画
-  const cards = generateSetCards(currentRound, roundInfo)
+  const cards = generateSetCards(currentRound, roundInfo, targetScore)
   const totalWidth = style.cardWidth * 3 + style.cardGap * 2
   const startX = centerX - totalWidth / 2
 
@@ -183,17 +208,6 @@ export function renderRoundProgress(
     const cardY = centerY - style.cardHeight / 2 - 30
     renderRoundCard(ctx, card, cardX, cardY)
   })
-
-  // 目標スコア表示
-  ctx.font = `bold 20px Arial, sans-serif`
-  ctx.fillStyle = '#FFFFFF'
-  ctx.fillText(`目標: ${targetScore}点`, centerX, centerY + 90)
-
-  // 報酬額表示
-  const baseReward = getBaseReward(roundInfo.roundType)
-  ctx.font = `bold 18px Arial, sans-serif`
-  ctx.fillStyle = '#FFD700'
-  ctx.fillText(`Reward ${baseReward}G`, centerX, centerY + 115)
 
   // 「ラウンド開始」ボタン
   const buttonX = centerX - style.buttonWidth / 2
