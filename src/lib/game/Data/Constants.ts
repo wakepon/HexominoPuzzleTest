@@ -156,7 +156,7 @@ export const HD_STATUS_PANEL_STYLE = {
 export const DECK_CONFIG = {
   totalHands: 12,    // 配置可能回数
   drawCount: 3,      // 一度に引く枚数
-  // デッキに含めるミノのID（モノミノ1 + ドミノ2 + トロミノ6 = 9）
+  // デッキに含めるミノのID（モノミノ1 + ドミノ2 + トロミノ3 = 6）
   minoIds: [
     'mono-1',
     'dom-h',
@@ -164,9 +164,6 @@ export const DECK_CONFIG = {
     'tro-i-h',
     'tro-i-v',
     'tro-l-0',
-    'tro-l-90',
-    'tro-l-180',
-    'tro-l-270',
   ] as const,
 }
 
