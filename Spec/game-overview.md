@@ -63,14 +63,6 @@ Wooden Puzzle 風デッキ構築パズルブラウザゲーム。プレイヤー
 - 配置不可能な場合はミノが元のスロットに戻る
 - ミノを配置すると残り配置回数が1減少する
 
-### ストックシステム
-
-- ボード左側に最大2つのストック枠が配置されている
-- ストック枠にミノを一時保管できる（`hand_stock` レリック用機能）
-- ストック1（`stockSlot`）と ストック2（`stockSlot2`）の2スロット構成
-- ストック2は `hand_stock` レリックをコピーした場合に有効化される
-- 手札からストックへの移動、ストックから手札への移動、手札とストックの交換が可能
-
 ### ライン消去とスコア
 
 - 行または列のすべてのセルが埋まると、そのラインが消去される
@@ -100,7 +92,7 @@ Wooden Puzzle 風デッキ構築パズルブラウザゲーム。プレイヤー
 
 ### ラウンドシステム
 
-- 全24ラウンド構成（3ラウンドで1セット、合計8セット）
+- 全24ラウンド構成
 - 各ラウンドには目標スコアが設定されている
 - 目標スコアは画面上部中央に表示される
 - 目標スコア達成でラウンドクリア
@@ -123,16 +115,12 @@ Wooden Puzzle 風デッキ構築パズルブラウザゲーム。プレイヤー
 
 ボス条件は各セットに入る時に抽選され、同じセット内では固定。
 
-#### ゴールド報酬
-
-ラウンドクリア時のゴールド報酬は以下の計算式で決まる:
-```
-獲得ゴールド = ラウンドタイプ基本報酬 + 残りハンド数
-```
-
 ### ゴールドシステム
 
-- ラウンドクリア時にラウンドタイプに応じたゴールドを獲得
+- ラウンドクリア時にラウンドタイプに応じたゴールドを獲得:
+  - 雑魚ラウンド: 基本報酬（低）
+  - エリートラウンド: 基本報酬（中）
+  - ボスラウンド: 基本報酬（高）
 - ゴールドシール付きブロック消去時: 追加ゴールド獲得
 - ゴールドは画面左上に金色で表示される
 - ゴールドはショップでミノやレリックの購入に使用される
@@ -162,67 +150,42 @@ Wooden Puzzle 風デッキ構築パズルブラウザゲーム。プレイヤー
 - 価格はレアリティによって異なる
 - 詳細は[レリックシステム](./relic-system.md)を参照
 
-#### ショップリロール
-
-- ショップ内の商品をゴールドを消費して引き直すことができる
-- リロールコストは使用するたびに増加する
-
 #### 購入ルール
 
 - 所持ゴールドが価格以上の場合のみ購入可能
 - 購入済みアイテムは再購入不可
 - 購入は必須ではない（何も買わずに進行可能）
-- ショップを出ると次のラウンド進行画面に移行する
+- ショップを出ると次のラウンドが開始される
 
 ## ゲームフェーズ
-
-### フェーズ一覧と遷移
-
-```
-round_progress → playing → round_clear → shopping → round_progress
-                         ↘ game_over   → round_progress (リセット時)
-                                       → playing     (リセット時)
-              round_clear → game_clear → round_progress (リセット時)
-                                       → playing     (リセット時)
-```
-
-### round_progress（ラウンド進行画面）
-
-- ラウンド開始前に表示される画面
-- 現在のセット内のラウンド構成（雑魚/エリート/ボス）がカード形式で表示される
-- 各ラウンドのクリア状況・目標スコア・報酬が確認できる
-- 「開始」ボタンを押すと `playing` フェーズに移行する
-- ゲームオーバー・ゲームクリア後のリセット先にもなる
 
 ### playing（プレイ中）
 
 - 通常のゲームプレイ状態
 - ミノの配置とライン消去が可能
-- 目標スコア達成で `round_clear` へ遷移
-- 残り配置回数が0かつ目標未達成で `game_over` へ遷移
 
 ### round_clear（ラウンドクリア）
 
 - 目標スコア達成時に自動的に遷移
 - ゴールド獲得演出が表示される
-- 最終ラウンドでなければ `shopping` へ、最終ラウンドであれば `game_clear` へ遷移
+- 一定時間後に自動的にショップまたはゲームクリアに遷移
 
 ### shopping（ショップ）
 
-- ミノ・レリックの購入が可能
-- 「ショップを出る」ボタンで `round_progress` フェーズに進む
+- ミノの購入が可能
+- 「ショップを出る」ボタンで次のラウンドに進む
 
 ### game_over（ゲームオーバー）
 
 - 残り配置回数が0で目標未達成の場合に遷移
 - 到達ラウンド、最終スコア、獲得ゴールドが表示される
-- 「リセット」ボタンでゲーム再開（`round_progress` または `playing` へ遷移）
+- 「リセット」ボタンでゲーム再開
 
 ### game_clear（ゲームクリア）
 
 - 最終ラウンド（24ラウンド）をクリアした場合に遷移
 - 最終的な獲得ゴールドが表示される
-- 「リセット」ボタンでゲーム再開（`round_progress` または `playing` へ遷移）
+- 「リセット」ボタンでゲーム再開
 
 ## 操作方法
 
@@ -245,8 +208,6 @@ round_progress → playing → round_clear → shopping → round_progress
 
 - Shift + 1 キーでデッキの内容を表示/非表示
 - デッキ内のミノIDと次に引かれるミノがハイライト表示される
-- ゴールド・スコアの手動調整が可能
-- レリックの付与・削除が可能
 - 開発・デバッグ用の機能
 
 ## ビジュアルスタイル
@@ -255,27 +216,24 @@ round_progress → playing → round_clear → shopping → round_progress
 - ボード背景: ダークブラウン
 - セル背景: タン色
 - ブロック: シエナ系の茶色（ハイライト・影付き）
-- プレビュー: 半透明（茶色/赤）
+- プレビュー: 半透明（緑/赤）
 - ゴールド表示: 金色
 - オーバーレイ: 半透明黒背景
 
 ## 関連ファイル
 
-- `src/lib/game/Domain/GameState.ts` - ゲーム状態型定義
-- `src/lib/game/Domain/Round/GamePhase.ts` - ゲームフェーズ定義・遷移バリデーション
-- `src/lib/game/Domain/Round/RoundTypes.ts` - ラウンド情報・ボス条件型定義
-- `src/lib/game/Domain/Deck/DeckState.ts` - デッキ状態・ストックスロット型定義
-- `src/lib/game/Data/Constants.ts` - ゲーム定数（グリッドサイズ、色定義、ラウンド設定等）
-- `src/lib/game/Data/MinoDefinitions.ts` - ミノ形状定義（全307種類）
-- `src/lib/game/Services/RoundService.ts` - ラウンド・ゴールド計算ロジック
-- `src/lib/game/Services/DeckService.ts` - デッキ管理ロジック
-- `src/lib/game/Services/ShopService.ts` - ショップロジック
-- `src/lib/game/Services/LineService.ts` - ライン消去とスコア計算
-- `src/lib/game/Data/BossConditions.ts` - ボス条件定義
-- `src/lib/game/State/Actions/GameActions.ts` - 全アクション型定義
-- `src/hooks/useGame.ts` - ゲーム状態管理
-- `src/components/GameContainer.tsx` - ゲームコンテナコンポーネント
-- `src/components/GameCanvas.tsx` - Canvas描画コンポーネント
+- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/Data/Constants.ts` - ゲーム定数（グリッドサイズ、色定義、ラウンド設定等）
+- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/Domain/GameState.ts` - ゲーム状態型定義
+- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/Domain/Round/GamePhase.ts` - ゲームフェーズ定義
+- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/Data/MinoDefinitions.ts` - ミノ形状定義（全307種類）
+- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/Services/DeckService.ts` - デッキ管理ロジック
+- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/Services/RoundService.ts` - ラウンド・ゴールド計算
+- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/Services/ShopService.ts` - ショップロジック
+- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/Services/LineService.ts` - ライン消去とスコア計算
+- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/Data/BossConditions.ts` - ボス条件定義
+- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/hooks/useGame.ts` - ゲーム状態管理
+- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/components/GameContainer.tsx` - ゲームコンテナコンポーネント
+- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/components/GameCanvas.tsx` - Canvas描画コンポーネント
 
 ## 更新履歴
 
@@ -284,4 +242,3 @@ round_progress → playing → round_clear → shopping → round_progress
 - 2026-02-02: デッキシステム、ラウンド制、ゴールド、ショップ、ゲームフェーズ、デバッグウィンドウを追加
 - 2026-02-06: ローグライト要素追加（ラウンドセット、ボス条件、パターン・シール・レリック概要、ショップ拡張）
 - 2026-02-09: ファイルパス更新（Domain/Service/State層への構造変更を反映）
-- 2026-02-17: round_progressフェーズ追加、ストックシステム（2スロット）追加、フェーズ遷移図追加、ショップリロール追加、ゴールド報酬計算式追加、関連ファイルパス修正

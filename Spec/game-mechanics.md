@@ -53,7 +53,7 @@
 - ラウンド開始時に配置可能回数が設定される
 - ミノを配置するたびに1減少する
 - 0になると新しいミノを引けなくなる
-- ラウンドクリア時の残り回数がゴールド報酬に影響する
+- ラウンドクリア時の残り回数がゴールド報酬になる
 
 ### 自動補充
 
@@ -87,12 +87,12 @@ roundType = TYPES[positionInSet]  // normal, elite, boss
 
 ### ボス特殊条件
 
-ボスラウンドでは以下のいずれかの条件がランダムに適用される:
+ボスラウンドでは以下のいずれかの条件が適用される:
 
 | ID | 名前 | 効果 |
 |----|------|------|
-| `obstacle` | おじゃまブロック | ランダムな4マスが埋まっている（消去不可） |
-| `energy_save` | 省エネ | 配置可能数が減少（通常の一定割合） |
+| `obstacle` | おじゃまブロック | ランダムな1マスが埋まっている（消去不可） |
+| `energy_save` | 省エネ | 配置可能数が減少 |
 | `two_cards` | 手札2枚 | 手札が2枚になる（通常3枚） |
 
 **条件の適用:**
@@ -100,7 +100,7 @@ roundType = TYPES[positionInSet]  // normal, elite, boss
 // 最大配置数
 getMaxPlacements() {
     if (isBoss && bossCondition.id === 'energy_save') {
-        return 通常の配置数 × ENERGY_SAVE_RATIO（75%）
+        return 減少した配置数
     }
     return 通常の配置数
 }
@@ -115,8 +115,8 @@ getDrawCount() {
 ```
 
 **おじゃまブロックの配置:**
-- ラウンド開始時にランダムな位置に複数マス配置
-- セルは `pattern: 'obstacle'` としてマーク（ネガティブパターン）
+- ラウンド開始時にランダムな位置に配置
+- セルは `pattern: 'obstacle'` としてマーク
 - ライン消去で消えない
 
 **条件の抽選タイミング:**
@@ -127,7 +127,7 @@ getDrawCount() {
 
 - 各ラウンドに目標スコアが設定される
 - 目標スコアを達成するとラウンドクリア
-- 目標スコアはラウンドが進むにつれて増加する（初期値と増加量はパラメータ）
+- 目標スコアはラウンドが進むにつれて増加する
 
 ### ラウンドクリア条件
 
@@ -168,7 +168,7 @@ startNextRound() {
 
     // ボス条件: おじゃまブロック
     if (isBoss && bossCondition.id === 'obstacle') {
-        placeObstacleBlocks()  // 4マスをランダム配置
+        placeObstacle()
     }
 
     resetDeck()
@@ -182,16 +182,10 @@ startNextRound() {
 
 ## ゴールドシステム
 
-### ゴールド報酬計算
+### ゴールド獲得
 
-ラウンドクリア時の報酬:
-
-```
-goldReward = BASE_REWARD[roundType] + remainingHands
-```
-
-- ベース報酬はラウンドタイプごとに異なる（normal: 低、elite: 中、boss: 高）
-- 残りハンド数（残り配置回数）がそのまま加算される
+- ラウンドクリア時に残り配置回数がゴールド報酬として付与される
+- ゴールドはラウンド間で持ち越される
 
 ### ゴールドの用途
 
@@ -230,13 +224,49 @@ goldReward = BASE_REWARD[roundType] + remainingHands
 
 #### パターン付きブロックセット
 
-ブロック全体に特殊効果が付与される。詳細は[パターン・シールシステム](./pattern-seal-system.md)を参照。
+ブロック全体に特殊効果が付与:
+
+```
+{
+    type: 'pattern',
+    shape: ブロック形状,
+    pattern: { id: 'enhanced', name: '強化ブロック', ... },
+    price: サイズに応じて変動,
+    name: '強化ブロックセット'
+}
+```
+
+詳細は[パターン・シールシステム](./pattern-seal-system.md)を参照。
 
 #### シール付きブロックセット
 
-特定のセルに特殊効果が付与される。詳細は[パターン・シールシステム](./pattern-seal-system.md)を参照。
+特定のセルに特殊効果が付与:
+
+```
+{
+    type: 'seal',
+    shape: ブロック形状,
+    seal: { id: 'gold', name: 'ゴールドシール', ... },
+    sealPosition: { row: 0, col: 0 },  // シール位置（ランダム）
+    price: サイズに応じて変動,
+    name: 'ゴールドシールブロック'
+}
+```
+
+詳細は[パターン・シールシステム](./pattern-seal-system.md)を参照。
 
 ### レリック商品
+
+恒久的なパッシブ効果を持つアイテム:
+
+```
+{
+    type: 'relic',
+    relic: { id: 'chain_master', name: '連鎖の達人', ... },
+    price: レアリティに応じた価格,
+    rarity: 'rare'
+}
+```
 
 - 未所持のレリックからランダムに最大3つ選択
 - すべてのレリックを所持している場合は表示されない
@@ -262,6 +292,20 @@ goldReward = BASE_REWARD[roundType] + remainingHands
 
 - 所持ゴールドが価格以上
 - 商品が未購入
+
+### 商品カードUI
+
+- 効果アイコン
+- 商品名
+- ブロックプレビュー（ブロックセットの場合）
+- レアリティ表示（レリックの場合）
+- 説明文
+- 価格
+
+**状態表示:**
+- **通常**: クリック可能
+- **購入済み**: `sold` クラス、グレーアウト
+- **資金不足**: `disabled` クラス、価格が赤色
 
 ### ショップ退出
 
@@ -407,8 +451,8 @@ goldReward = BASE_REWARD[roundType] + remainingHands
 
 以下のセルはライン消去から除外される:
 
-- **石シール付きセル**: `seal === 'stone'`（`preventsClearing` フラグ）
-- **ネガティブパターンのセル**: `pattern === 'obstacle'` 等（`isNegative` フラグ）
+- **石シール付きセル**: `seal === 'stone'`
+- **おじゃまブロック**: `pattern === 'obstacle'`
 
 これらのセルが含まれている行・列は完成とみなされない。
 
@@ -417,182 +461,55 @@ goldReward = BASE_REWARD[roundType] + remainingHands
 - 完成した行と列のセルを収集
 - 重複するセル（行と列が交差する位置）は1回のみカウント
 - `Set` を使用して重複を除去
-- その後、石シール・ネガティブパターンのセルをフィルタリング
 
-## コンボカウンター
+### スコア計算
 
-- ライン消去が発生した回数をラウンド内で累積するカウンター
-- ライン消去が発生するたびにコンボカウントが増加する
-- コンボカウントはコンボボーナス（`combo` パターン効果）とは別の概念で、`calculateScoreBreakdown` に渡される
-- 詳細な条件はゲーム状態管理に依存する
+#### 基本計算
 
-## スコア計算
+スコア = (消去されたセル数 + ボーナス) × 消去されたライン数
 
-### 計算フロー概要
+例:
+- 1行のみ消去（6セル） × 1ライン = 6点
+- 1行 + 1列（11セル、交差1セル） × 2ライン = 22点
 
-スコアは以下の順序で計算される:
+#### パターン効果ボーナス
 
-```
-1. 消去対象セルを収集（石シール・ネガティブパターン除外）
-2. パターン効果を計算（乗算対象のブロック数を決定）
-3. シール効果（multiシール・arrowシール）を計算（乗算対象に加算）
-4. 基本スコア = totalBlocks × linesCleared
-5. コンボボーナスを加算
-6. luckyパターン抽選で乗算
-7. scoreシールボーナスを加算（乗算対象外）
-8. 乗算レリックを適用（relicDisplayOrder順）
-9. 加算レリックを適用（サイズボーナス、全消しボーナス、台本、コピー加算）
-10. finalScore確定
-```
+- **オーラ効果**: 隣接するオーラブロック（別セット）があるセルは+1
+- **苔効果**: 盤面端と接している辺の数だけ+1
 
-### 乗算対象ブロック数（totalBlocks）の計算
+詳細は[パターン・シールシステム](./pattern-seal-system.md)を参照。
 
-```
-totalBlocks =
-  baseBlocks            // 消去対象セル数
-  - chargeBlockCount    // chargeパターンセルの基礎分を除外
-  + enhancedBonus       // enhancedパターン付きセル1個につき+2
-  + auraBonus           // auraボーナス
-  + mossBonus           // mossボーナス
-  + chargeBonus         // chargeValue合算
-  + multiBonus          // multiシール1個につき+1
-  + arrowBonus          // arrowシール効果
-```
+#### レリック効果
 
-### パターン効果
+- **連鎖の達人**: 2ライン以上同時消去でスコア×1.5
+- **小さな幸運**: 3セルブロック配置でライン消去時+20点
+- **全消しボーナス**: 盤面完全消去時+20点
 
-| パターンID | 効果 |
-|-----------|------|
-| `enhanced` | 消去時に乗算対象を+2（1セルにつき） |
-| `aura` | 隣接する別セットのauraブロックがあるセルは乗算対象を+1（1セルあたり最大+1） |
-| `moss` | 消去時に盤面端と接している辺の数だけ乗算対象を加算 |
-| `charge` | 基礎ブロック数から除外され、代わりにchargeValueを加算 |
-| `lucky` | 消去時に一定確率でスコアが2倍になる抽選 |
-| `combo` | コンボカウントに応じて加算ボーナスが発生 |
-| `nohand` | 消去に参加しない特殊ブロック（詳細はパターンシステム参照） |
-| `feather` | パターン効果あり（詳細はパターンシステム参照） |
-| `obstacle` | ネガティブパターン。消去不可 |
+詳細は[レリックシステム](./relic-system.md)を参照。
 
-### シール効果
+#### シール効果
 
-| シールID | 効果の種別 | 内容 |
-|---------|-----------|------|
-| `multi` | 乗算対象加算 | 乗算対象ブロック数を+1（1個につき） |
-| `arrow_v` | 乗算対象加算 | 縦列が完成した場合に乗算対象を+一定量 |
-| `arrow_h` | 乗算対象加算 | 横行が完成した場合に乗算対象を+一定量 |
-| `score` | 加算ボーナス | 乗算後に加算（1個につき一定点） |
-| `gold` | ゴールド獲得 | 消去時にゴールドを+1 |
-| `stone` | 消去阻害 | 消去対象から除外（ライン完成を阻害） |
+- **ゴールドシール**: 消去時にゴールド+1
+- **スコアシール**: 消去時にスコア+5（乗算ではなく加算）
 
-### コンボボーナス
+詳細は[パターン・シールシステム](./pattern-seal-system.md)を参照。
 
-- ライン消去が連続するたびにボーナスが増加する（1回目は0、2回目以降は増加）
-- コンボカウントが増えるほどボーナスが大きくなる
+### スコア計算フロー
 
-### luckyパターン
-
-- 消去対象に `lucky` パターンのセルが含まれる場合に抽選が発生
-- 当選時はスコアが一定倍率になる
-- 外れた場合は倍率1.0（通常通り）
-
-### scoreBeforeRelics の計算
-
-```
-scoreBeforeRelics = (baseScore + comboBonus) × luckyMultiplier + sealScoreBonus
-```
-
-- sealScoreBonus（scoreシール）は `luckyMultiplier` の乗算外で後から加算される
-
-### レリック効果（乗算系）
-
-乗算レリックは `relicDisplayOrder`（所持レリックの表示順）に従って順番に適用される。
-
-| レリックID | 発動条件 | 効果 |
-|-----------|---------|------|
-| `chain_master` | 2ライン以上同時消去 | スコアに一定倍率を乗算（切り捨て） |
-| `single_line` | 1ラインのみ消去 | スコアに一定倍率を乗算 |
-| `takenoko` | 縦列のみ消去（横行なし） | 消去した列数を倍率として乗算 |
-| `kani` | 横行のみ消去（縦列なし） | 消去した行数を倍率として乗算 |
-| `nobi_takenoko` | 縦列のみ消去 | 累積倍率を乗算（縦列消しごとに増分、横行消しでリセット） |
-| `nobi_kani` | 横行のみ消去 | 累積倍率を乗算（横行消しごとに増分、縦列消しでリセット） |
-| `rensha` | ライン消去時 | 累積倍率を乗算（消去ごとに増分、消去なしでリセット） |
-| `timing` | 一定ハンド消費ごとのボーナスタイミング中 | スコアに一定倍率を乗算 |
-| `copy` | 1つ上のレリックに乗算効果がある場合 | 対象レリックと同じ乗算倍率をコピーして乗算 |
-
-**連射（rensha）増分:** ライン消去のたびに累積倍率が一定値（+2）ずつ増加する。
-
-**のびのび系増分:** 条件を満たす消去のたびに累積倍率が一定値（+0.5）ずつ増加する。
-
-**コピーレリックの乗算タイミング:** コピー対象レリックの直後に乗算が適用される（`relicDisplayOrder` 順）。
-
-### レリック効果（加算系）
-
-乗算レリック適用後に加算される:
-
-| レリックID | 発動条件 | 効果 |
-|-----------|---------|------|
-| `size_bonus_1` ～ `size_bonus_6` | 対応サイズのピースでライン消去 | スコアに一定値を加算 |
-| `full_clear_bonus` | 盤面を完全に空にした場合 | スコアに一定値を加算（+100） |
-| `script` | ラウンド開始時指定の2本のラインを揃えた場合 | 1本揃いで一定ボーナス加算、2本同時揃いでさらに大きいボーナス加算 |
-| `copy` | コピー対象が加算レリックの場合 | 対象レリックと同じ加算量をコピーして加算 |
-
-### finalScore の計算
-
-```
-finalScore =
-  scoreAfterRelicMultipliers  // 乗算レリック適用済みスコア
-  + sizeBonusTotal             // サイズボーナスレリック加算
-  + fullClearBonus             // 全消しボーナスレリック加算（+100）
-  + scriptBonus                // 台本レリック加算
-  + copyBonus                  // コピーレリック加算分
-```
-
-### スコア計算フロー（詳細）
-
-```
-1. cellsToRemove = getCellsToRemoveWithFilter(board, completedLines)
-   （石シール・ネガティブパターン除外済み）
-
-2. パターン効果計算:
-   enhancedBonus = enhanced付きセル数 × 2
-   auraBonus     = 別セットaura隣接セル数
-   mossBonus     = moss付きセルの端接触辺数合計
-   chargeBonus   = charge付きセルのchargeValue合計
-
-3. シール効果計算:
-   multiBonus    = multi付きセル数
-   arrowBonus    = 対応ライン完成時のarrow付きセル × 一定量
-   sealScoreBonus = score付きセル数 × 一定点
-   goldCount      = gold付きセル数（ゴールド付与用）
-
-4. totalBlocks = baseBlocks - chargeBlockCount
-                + enhancedBonus + auraBonus + mossBonus + chargeBonus
-                + multiBonus + arrowBonus
-
-5. baseScore = totalBlocks × linesCleared
-
-6. comboBonus = (comboCount - 1) × 2  // 1回目は0
-
-7. luckyMultiplier = lucky抽選結果（1 または 2）
-
-8. scoreBeforeRelics = (baseScore + comboBonus) × luckyMultiplier + sealScoreBonus
-
-9. 乗算レリック適用（relicDisplayOrder順）:
-   各レリックの倍率を Math.floor でスコアに乗算
-   copyレリックはコピー対象レリックの直後に乗算
-
-10. 加算レリック適用:
-    finalScore = scoreAfterRelicMultipliers
-               + sizeBonusTotal + fullClearBonus + scriptBonus + copyBonus
-```
+1. 消去対象セルを収集（石シール・おじゃまブロック除外）
+2. パターン効果を計算（オーラ、苔）
+3. `totalBlocks = baseBlocks + auraBonus + mossBonus`
+4. `score = totalBlocks × linesCleared`
+5. レリック効果を適用（連鎖の達人: ×1.5）
+6. シール効果を適用（ゴールド、スコア加算）
 
 ### スコア演出
 
 1. 画面中央に計算式表示
-2. パターンボーナスがあれば段階的に表示
-3. レリック効果があれば倍率・ボーナス表示
+2. オーラ・苔ボーナスがあれば段階的に表示
+3. レリック効果があれば倍率表示
 4. スコアカウンターのアニメーション
-5. 消去されるブロック上にポップアップ表示
+5. 消去されるブロック上に「+1」ポップアップ表示
 
 ### スコアとフェーズ判定
 
@@ -656,18 +573,20 @@ finalScore =
 用途:
 - デッキのシャッフル
 - ショップアイテムの選択
-- ボス条件の抽選
+- ミノの選択（デッキベースに移行したため直接的な使用は減少）
 
 ## 関連ファイル
 
-- `src/lib/game/Services/LineService.ts` - ライン消去ロジック
-- `src/lib/game/Services/RoundService.ts` - ラウンド管理・ゴールド計算
-- `src/lib/game/Data/Constants.ts` - ゲーム定数
-- `src/lib/game/Data/BossConditions.ts` - ボス条件マスターデータ
-- `src/lib/game/Domain/Effect/RelicEffectHandler.ts` - レリック効果計算
-- `src/lib/game/Domain/Effect/Relic.ts` - レリック定義・RELIC_EFFECT_VALUES
-- `src/lib/game/Domain/Effect/PatternEffectHandler.ts` - パターン効果計算・スコア計算統合
-- `src/lib/game/Domain/Effect/SealEffectHandler.ts` - シール効果計算
+- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/boardLogic.ts` - ボード管理ロジック
+- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/collisionDetection.ts` - 衝突判定
+- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/minoDefinitions.ts` - ミノ定義
+- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/deckLogic.ts` - デッキ管理
+- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/roundLogic.ts` - ラウンド・ゴールド計算
+- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/shopLogic.ts` - ショップロジック
+- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/lineLogic.ts` - ライン消去とスコア計算
+- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/random.ts` - 乱数生成器
+- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/components/renderer/previewRenderer.ts` - プレビュー描画
+- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/components/renderer/clearAnimationRenderer.ts` - 消去アニメーション描画
 
 ## 更新履歴
 
@@ -675,4 +594,3 @@ finalScore =
 - 2026-02-01: ミノシステム、生成ロジック、ライン消去、アニメーションを追加
 - 2026-02-02: デッキシステム、ラウンド制、ゴールド、ショップ、フェーズ判定を追加
 - 2026-02-06: ローグライト要素追加（ラウンドセット、ボス条件、パターン・シール効果、レリック効果、ショップ拡張、配置不可検出）
-- 2026-02-17: コードに基づき全面更新（ボス条件おじゃまブロック数修正、全消しボーナス+100に修正、スコア計算式を全レリック・パターン・シール反映で更新、コンボカウンター追加、ゴールド報酬計算式更新、連射増分+2・全消しボーナス+100を反映、legiDisplayOrder適用順序を明記）
