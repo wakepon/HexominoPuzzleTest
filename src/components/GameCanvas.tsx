@@ -23,7 +23,7 @@ import type { DebugSettings } from '../lib/game/Domain/Debug'
 import type { RelicType } from '../lib/game/Domain/Effect/Relic'
 import { hasRelic } from '../lib/game/Domain/Effect/RelicEffectHandler'
 import { getBandaidCountdown, getTimingCountdown } from '../lib/game/Domain/Effect/RelicState'
-import { calculateGoldReward } from '../lib/game/Services/RoundService'
+import { calculateGoldReward, calculateInterest } from '../lib/game/Services/RoundService'
 import { resolveCopyTarget, isCopyRelicInactive } from '../lib/game/Domain/Effect/CopyRelicResolver'
 import type { RelicId } from '../lib/game/Domain/Core/Id'
 import type { TooltipState } from '../lib/game/Domain/Tooltip'
@@ -312,7 +312,8 @@ export function GameCanvas({
       shopRenderResultRef.current = null
     } else if (state.phase === 'round_clear') {
       const goldReward = calculateGoldReward(state.deck.remainingHands, state.roundInfo.roundType)
-      renderRoundClear(ctx, state.round, goldReward, state.roundInfo.roundType, state.deck.remainingHands, layout)
+      const interest = calculateInterest(state.player.gold)
+      renderRoundClear(ctx, state.round, goldReward, interest, state.player.gold, layout)
       buttonAreaRef.current = null
       shopRenderResultRef.current = null
       roundProgressResultRef.current = null

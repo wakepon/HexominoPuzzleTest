@@ -46,6 +46,14 @@ export function calculateGoldReward(remainingHands: number, roundType: RoundType
 }
 
 /**
+ * 利息を計算
+ * 5Gにつき1G（切り捨て）
+ */
+export function calculateInterest(currentGold: number): number {
+  return Math.floor(Math.max(0, currentGold) / 5)
+}
+
+/**
  * ラウンドクリア判定
  */
 export function isRoundCleared(score: number, targetScore: number): boolean {
