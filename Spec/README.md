@@ -10,15 +10,20 @@
 3. [ミノシステム](./mino-system.md) - ミノ定義と生成システム（全307種類）
 
 ### ローグライト要素
-4. [パターン・シールシステム](./pattern-seal-system.md) - ブロックに付与する特殊効果（オーラ、苔、ゴールドシール等）
-5. [レリックシステム](./relic-system.md) - 恒久的なパッシブ効果アイテム（全消しボーナス、連鎖の達人等）
+4. [パターン・シールシステム](./pattern-seal-system.md) - ブロックに付与する特殊効果（全9パターン・全6シール）
+5. [レリックシステム](./relic-system.md) - 恒久的なパッシブ効果アイテム（全20種、倍率・加算・特殊効果）
 
 ### 技術仕様
-6. [データ構造](./data-structures.md) - 型定義とデータモデル（DeckState、GamePhase、ShopState、PlayerState等）
-7. [状態管理](./state-management.md) - ゲーム状態とアクション（ROUND/ADVANCE、SHOP/BUY_ITEM、SHOP/LEAVE等）
-8. [UI・描画システム](./ui-rendering.md) - Canvas描画とユーザーインタラクション
+6. [データ構造](./data-structures.md) - 型定義とデータモデル（DeckState、GamePhase、ShopState、PlayerState、RelicMultiplierState等）
+   - [効果計算型](./data-structures-effect-types.md) - スコア計算・レリック効果・アニメーション関連の型（ScoreBreakdown、RelicEffectResult、ScoreAnimationState等）
+7. [状態管理](./state-management.md) - ゲーム状態とアクション（全フィールド・全アクション定義、アニメーション状態管理）
+8. [UI・描画システム](./ui-rendering.md) - Canvas描画とユーザーインタラクション（全19レンダラー、スコアアニメーション）
 9. [レイアウトシステム](./layout-system.md) - HD固定レイアウト計算（1280x720）
 10. [アーキテクチャ](./Architecture.md) - コード構造とDomain/Service/State層の設計
+
+### その他
+11. [未実装機能](./UnimplementedFeatures.md) - 未実装機能の一覧（実装済み機能は棚卸し済み）
+12. [実装計画](./ImplementationPlan.md) - 初期実装計画（歴史的文書）
 
 ## 仕様書の管理方針
 
@@ -47,3 +52,13 @@ doc-updater エージェントを使用してコードから仕様書を生成�
   - セーブデータシステム追加（StorageService）
   - ツールチップシステム追加
   - レリック発動アニメーション追加
+- 2026-02-17: 全仕様書をコードベースに合わせて一括同期
+  - relic-system.md: 全20レリック対応に全面書き直し
+  - pattern-seal-system.md: パターン9種・シール6種に更新
+  - game-mechanics.md: スコア計算式全面更新、全消しボーナス+100、連射+2
+  - game-overview.md: round_progressフェーズ、ストック2スロット、フェーズ遷移図追加
+  - state-management.md: GameState全フィールド・全アクション同期
+  - data-structures.md: 新型追加、効果計算型をdata-structures-effect-types.mdに分割
+  - ui-rendering.md: 全19レンダラー、スコアアニメーション、レリックパネル等追加
+  - UnimplementedFeatures.md: 実装済み機能を棚卸し（残り4項目）
+  - README.md: 目次を全ファイルカバーに更新
