@@ -52,6 +52,9 @@ interface GameCanvasProps {
   onBuyItem: (itemIndex: number) => void
   onLeaveShop: () => void
   onRerollShop: () => void
+  onStartSellMode: () => void
+  onCancelSellMode: () => void
+  onSellRelic: (relicIndex: number) => void
   onUpdateDebugSettings: (updates: Partial<DebugSettings>) => void
   onDeleteSave: () => void
   onStartRound: () => void
@@ -90,6 +93,9 @@ export function GameCanvas({
   onBuyItem,
   onLeaveShop,
   onRerollShop,
+  onStartSellMode,
+  onCancelSellMode,
+  onSellRelic,
   onUpdateDebugSettings,
   onDeleteSave,
   onStartRound,
@@ -317,7 +323,7 @@ export function GameCanvas({
       shopRenderResultRef.current = null
       roundProgressResultRef.current = null
     } else if (state.phase === 'shopping' && state.shopState) {
-      shopRenderResultRef.current = renderShop(ctx, state.shopState, state.player.gold, layout, state.shopState.rerollCount)
+      shopRenderResultRef.current = renderShop(ctx, state.shopState, state.player.gold, layout, state.shopState.rerollCount, state.player.relicDisplayOrder)
       buttonAreaRef.current = null
       roundProgressResultRef.current = null
     } else if (state.phase === 'game_over') {
@@ -667,6 +673,32 @@ export function GameCanvas({
     const handleShopClick = (pos: Position): boolean => {
       const shopResult = shopRenderResultRef.current
       if (!shopResult || !state.shopState) return false
+
+      // 売却モード/入れ替えモード中
+      if (state.shopState.sellMode) {
+        // キャンセルボタンのクリック
+        if (shopResult.cancelSellButtonArea && isPointInArea(pos, shopResult.cancelSellButtonArea)) {
+          onCancelSellMode()
+          return true
+        }
+
+        // レリッククリック → 売却
+        for (const relicArea of shopResult.ownedRelicAreas) {
+          if (isPointInArea(pos, relicArea)) {
+            onSellRelic(relicArea.relicIndex)
+            return true
+          }
+        }
+
+        // 売却モード中は他のクリックをブロック
+        return true
+      }
+
+      // 売却ボタンのクリック
+      if (shopResult.sellButtonArea && isPointInArea(pos, shopResult.sellButtonArea)) {
+        onStartSellMode()
+        return true
+      }
 
       // リロールボタンのクリック
       if (isPointInArea(pos, shopResult.rerollButtonArea)) {
@@ -1413,7 +1445,7 @@ export function GameCanvas({
       window.removeEventListener('touchend', handleTouchEnd)
       window.removeEventListener('touchcancel', handleTouchEnd)
     }
-  }, [canvas, layout, state.pieceSlots, state.clearingAnimation, state.scoreAnimation, state.phase, state.shopState, state.player, state.board, state.dragState, state.deckViewOpen, onDragStart, onDragMove, onDragEnd, onReset, onBuyItem, onLeaveShop, onRerollShop, onStartRound, onOpenDeckView, onCloseDeckView, onAdvanceScoreStep, onSetFastForward, onReorderRelic, showDebugWindow, debugSettings, onUpdateDebugSettings])
+  }, [canvas, layout, state.pieceSlots, state.clearingAnimation, state.scoreAnimation, state.phase, state.shopState, state.player, state.board, state.dragState, state.deckViewOpen, onDragStart, onDragMove, onDragEnd, onReset, onBuyItem, onLeaveShop, onRerollShop, onStartSellMode, onCancelSellMode, onSellRelic, onStartRound, onOpenDeckView, onCloseDeckView, onAdvanceScoreStep, onSetFastForward, onReorderRelic, showDebugWindow, debugSettings, onUpdateDebugSettings])
 
   return (
     <canvas

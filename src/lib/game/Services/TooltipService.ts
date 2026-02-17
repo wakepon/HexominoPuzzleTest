@@ -9,7 +9,8 @@ import type { RelicId } from '../Domain/Core/Id'
 import { INITIAL_TOOLTIP_STATE } from '../Domain/Tooltip'
 import { getPatternDefinition } from '../Domain/Effect/Pattern'
 import { getSealDefinition } from '../Domain/Effect/Seal'
-import { getRelicDefinition } from '../Domain/Effect/Relic'
+import { getRelicDefinition, RELIC_DEFINITIONS } from '../Domain/Effect/Relic'
+import { calculateRelicSellPrice } from './ShopPriceCalculator'
 import { HD_LAYOUT, SHOP_STYLE, GRID_SIZE, RELIC_PANEL_STYLE } from '../Data/Constants'
 import { BlockDataMapUtils } from '../Domain/Piece/BlockData'
 import { isBlockShopItem, isRelicShopItem } from '../Domain/Shop/ShopTypes'
@@ -253,28 +254,31 @@ function hitTestRelicPanel(
 ): EffectInfo[] {
   if (ownedRelics.length === 0) return []
 
-  const { iconSize, iconGap } = RELIC_PANEL_STYLE
+  const { slotSize, slotGap } = RELIC_PANEL_STYLE
   const panelX = HD_LAYOUT.relicAreaX
   const startY = HD_LAYOUT.relicAreaY
-  const panelWidth = HD_LAYOUT.relicAreaWidth
 
   for (let i = 0; i < ownedRelics.length; i++) {
     const relicId = ownedRelics[i]
     const def = getRelicDefinition(relicId)
     if (!def) continue
 
-    // relicPanelRenderer.tsと同じ計算
-    const iconX = panelX + panelWidth / 2 - (iconSize + 8) / 2
-    const iconY = startY + 30 + i * (iconSize + iconGap + 10)
+    // relicPanelRenderer.tsと同じスロット座標計算
+    const slotY = startY + i * (slotSize + slotGap)
 
-    // アイコン領域内かチェック
+    // スロット全体（80x80）でヒット判定
     if (
-      pos.x >= iconX &&
-      pos.x < iconX + iconSize + 8 &&
-      pos.y >= iconY &&
-      pos.y < iconY + iconSize + 8
+      pos.x >= panelX &&
+      pos.x < panelX + slotSize &&
+      pos.y >= slotY &&
+      pos.y < slotY + slotSize
     ) {
-      return [{ name: def.name, description: def.description }]
+      // 売却額を計算して表示
+      const relicType = relicId as string
+      const relicDef = RELIC_DEFINITIONS[relicType as keyof typeof RELIC_DEFINITIONS]
+      const sellPrice = relicDef ? calculateRelicSellPrice(relicDef.price) : 0
+      const descWithSellPrice = `${def.description}\n売却額: ${sellPrice}G`
+      return [{ name: def.name, description: descWithSellPrice }]
     }
   }
 

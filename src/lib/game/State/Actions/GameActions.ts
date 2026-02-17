@@ -57,6 +57,9 @@ export type ShopAction =
   | { type: 'SHOP/BUY_ITEM'; itemIndex: number }
   | { type: 'SHOP/LEAVE' }
   | { type: 'SHOP/REROLL' }
+  | { type: 'SHOP/START_SELL_MODE' }
+  | { type: 'SHOP/CANCEL_SELL_MODE' }
+  | { type: 'SHOP/SELL_RELIC'; relicIndex: number }
 
 // ストックアクション
 export type StockAction =

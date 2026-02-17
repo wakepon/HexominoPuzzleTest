@@ -11,6 +11,9 @@ export const BASE_CELL_SIZE = 50
 // スロット数
 export const SLOT_COUNT = 3
 
+// レリック所持上限
+export const MAX_RELIC_SLOTS = 5
+
 // 色定義（木目調）
 export const COLORS = {
   // ボード関連
@@ -312,17 +315,46 @@ export const SHOP_STYLE = {
   rerollButtonGap: 15,                   // 店を出るボタンとの間隔
   rerollInitialCost: 3,                  // 初回コスト
   rerollCostIncrement: 1,               // 押すたびの増加量
+  // 売却ボタン
+  sellButtonWidth: 160,
+  sellButtonHeight: 50,
+  sellButtonColor: '#AA4444',
+  sellButtonTextColor: '#FFFFFF',
+  sellButtonFontSize: 16,
+  // 売却モード
+  sellModeRelicBoxWidth: 140,
+  sellModeRelicBoxHeight: 120,
+  sellModeRelicBoxGap: 15,
+  sellModeIconSize: 36,
+  sellModeNameFontSize: 13,
+  sellModePriceFontSize: 14,
+  sellModePriceColor: '#FFD700',
+  sellModeInfoFontSize: 18,
+  sellModeInfoColor: '#FFFFFF',
+  // 所持レリック一覧（ショップ上部）
+  ownedRelicIconSize: 22,
+  ownedRelicGap: 6,
+  ownedRelicOffsetY: -300,
+  ownedRelicCountFontSize: 14,
+  ownedRelicCountColor: '#AAAAAA',
+  // キャンセルボタン
+  cancelButtonWidth: 160,
+  cancelButtonHeight: 50,
+  cancelButtonColor: '#666666',
+  cancelButtonTextColor: '#FFFFFF',
+  cancelButtonFontSize: 18,
 }
 
-// レリックパネル表示スタイル（画面上部、ゴールドの右隣）
+// レリックパネル表示スタイル（ボード左側、正方形スロットデザイン）
 export const RELIC_PANEL_STYLE = {
-  iconSize: 24,
-  iconGap: 8,
-  paddingLeft: 100,             // ゴールド表示の右隣
-  paddingTop: 20,
-  backgroundColor: 'rgba(0, 0, 0, 0.3)',
-  borderRadius: 4,
-  padding: 4,
+  iconSize: 24,                                     // アイコンフォントサイズ計算用
+  slotSize: 80,                                    // 正方形スロットの一辺（= relicAreaWidth）
+  slotGap: 8,                                      // スロット間の隙間
+  slotBorderWidth: 2,                              // 枠線の太さ
+  slotBorderColor: '#8B7355',                      // 枠線の色（木目調）
+  slotEmptyBorderColor: '#555555',                 // 空スロットの枠線色
+  slotBackgroundColor: 'rgba(0, 0, 0, 0.3)',       // スロット背景
+  slotEmptyBackgroundColor: 'rgba(0, 0, 0, 0.15)', // 空スロット背景
 }
 
 // デバッグウィンドウ表示スタイル
