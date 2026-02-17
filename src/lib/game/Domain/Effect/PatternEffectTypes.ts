@@ -45,7 +45,7 @@ export interface ScoreBreakdown {
   // 2-C: カニ
   readonly kaniMultiplier: number // カニ倍率（行数、発動時は1以上）
   // 2-D: 連射
-  readonly renshaMultiplier: number // 連射倍率（累積、1.0から+0.5ずつ増加）
+  readonly renshaMultiplier: number // 連射倍率（累積、1.0から+2ずつ増加）
   // 2-E: のびのびタケノコ
   readonly nobiTakenokoMultiplier: number // のびのびタケノコ倍率（累積、1.0から+0.5ずつ増加）
   // 2-F: のびのびカニ
