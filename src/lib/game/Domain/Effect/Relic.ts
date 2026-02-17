@@ -10,7 +10,7 @@ import type { RelicId } from '../Core/Id'
 export const RELIC_EFFECT_VALUES = {
   CHAIN_MASTER_MULTIPLIER: 1.5,
   SIZE_BONUS_SCORE: 20,
-  FULL_CLEAR_BONUS: 20,
+  FULL_CLEAR_BONUS: 100,
   SINGLE_LINE_MULTIPLIER: 3,     // シングルライン: ×3
   RENSHA_INCREMENT: 0.5,         // 連射: +0.5ずつ
   NOBI_INCREMENT: 0.5,           // のびのび系: +0.5ずつ
