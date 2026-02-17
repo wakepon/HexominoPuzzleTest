@@ -133,7 +133,6 @@ export const getPatternDefinition = (
 export const SHOP_AVAILABLE_PATTERNS: PatternType[] = [
   'enhanced',
   'lucky',
-  'combo',
   'aura',
   'moss',
   'feather',
