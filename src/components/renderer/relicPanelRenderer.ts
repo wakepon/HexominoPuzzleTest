@@ -1,11 +1,11 @@
 /**
- * 所持レリックパネルの描画
+ * 所持レリックパネルの描画（正方形スロットデザイン）
  */
 
 import type { RelicId } from '../../lib/game/Domain/Core/Id'
 import type { CanvasLayout } from '../../lib/game/types'
 import { getRelicDefinition } from '../../lib/game/Domain/Effect/Relic'
-import { HD_LAYOUT, RELIC_PANEL_STYLE } from '../../lib/game/Data/Constants'
+import { HD_LAYOUT, MAX_RELIC_SLOTS, RELIC_PANEL_STYLE } from '../../lib/game/Data/Constants'
 
 /**
  * レリックアイコンの位置情報（ドラッグ&ドロップ用）
@@ -27,7 +27,36 @@ export interface RelicPanelRenderResult {
 }
 
 /**
- * 所持レリックパネルを描画（HDレイアウト: ボードの左側に縦配置）
+ * スロットのY座標を計算
+ */
+function getSlotY(index: number, startY: number): number {
+  const { slotSize, slotGap } = RELIC_PANEL_STYLE
+  return startY + index * (slotSize + slotGap)
+}
+
+/**
+ * グロー背景を描画するヘルパー
+ */
+function drawGlow(
+  ctx: CanvasRenderingContext2D,
+  slotX: number,
+  slotY: number,
+  slotSize: number,
+  shadowColor: string,
+  shadowBlur: number,
+  fillColor: string
+): void {
+  ctx.shadowColor = shadowColor
+  ctx.shadowBlur = shadowBlur
+  ctx.fillStyle = fillColor
+  ctx.beginPath()
+  ctx.roundRect(slotX, slotY, slotSize, slotSize, 6)
+  ctx.fill()
+  ctx.shadowBlur = 0
+}
+
+/**
+ * 所持レリックパネルを描画（HDレイアウト: ボードの左側に縦配置、正方形スロット）
  */
 export function renderRelicPanel(
   ctx: CanvasRenderingContext2D,
@@ -44,119 +73,96 @@ export function renderRelicPanel(
   timingBonusRelicId?: RelicId | null,
   copyLinkRelics?: ReadonlySet<RelicId>
 ): RelicPanelRenderResult {
-  const { iconSize, iconGap } = RELIC_PANEL_STYLE
-  const x = HD_LAYOUT.relicAreaX
+  const {
+    slotSize, slotBorderWidth,
+    slotBorderColor, slotEmptyBorderColor,
+    slotBackgroundColor, slotEmptyBackgroundColor,
+    iconSize,
+  } = RELIC_PANEL_STYLE
+  const panelX = HD_LAYOUT.relicAreaX
   const startY = HD_LAYOUT.relicAreaY
   const relicAreas: RelicIconArea[] = []
-  const itemHeight = iconSize + iconGap + 10
 
   ctx.save()
 
-  // レリック置き場のラベル
-  ctx.font = '12px Arial, sans-serif'
-  ctx.fillStyle = '#AAAAAA'
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'top'
-  ctx.fillText('レリック置き場', x + HD_LAYOUT.relicAreaWidth / 2, startY)
+  // 5枠分のスロット枠を常に描画
+  for (let i = 0; i < MAX_RELIC_SLOTS; i++) {
+    const slotY = getSlotY(i, startY)
+    const hasRelic = i < ownedRelics.length
 
-  // レリック置き場の背景
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.3)'
-  ctx.fillRect(x, startY + 20, HD_LAYOUT.relicAreaWidth, HD_LAYOUT.relicAreaHeight - 20)
+    // スロット背景
+    ctx.fillStyle = hasRelic ? slotBackgroundColor : slotEmptyBackgroundColor
+    ctx.beginPath()
+    ctx.roundRect(panelX, slotY, slotSize, slotSize, 4)
+    ctx.fill()
 
-  // レリックがある場合のみアイコンを描画
+    // スロット枠線
+    ctx.strokeStyle = hasRelic ? slotBorderColor : slotEmptyBorderColor
+    ctx.lineWidth = slotBorderWidth
+    ctx.beginPath()
+    ctx.roundRect(panelX, slotY, slotSize, slotSize, 4)
+    ctx.stroke()
+  }
+
+  // レリックアイコンを描画
   if (ownedRelics.length > 0) {
     ctx.font = `${iconSize + 8}px Arial, sans-serif`
     ctx.textAlign = 'center'
-    ctx.textBaseline = 'top'
+    ctx.textBaseline = 'middle'
 
     ownedRelics.forEach((relicId, index) => {
       const def = getRelicDefinition(relicId)
       if (!def) return
 
-      const iconX = x + HD_LAYOUT.relicAreaWidth / 2
-      let iconY = startY + 30 + index * itemHeight
+      const iconX = panelX + slotSize / 2
+      const slotY = getSlotY(index, startY)
+      let iconY = slotY + slotSize / 2
 
       // ドラッグ中のレリック位置調整
       const isDragTarget = dragState?.isDragging && dragState.dragIndex === index
       if (isDragTarget) {
-        // ドラッグ中のアイコンはカーソル位置に追従
-        iconY = dragState.currentY - iconSize / 2
+        iconY = dragState.currentY
         ctx.globalAlpha = 0.5
       }
 
       // ドロップ先インジケーター表示
       if (dragState?.isDragging && dragState.dropTargetIndex === index && dragState.dragIndex !== index) {
         ctx.fillStyle = 'rgba(255, 215, 0, 0.3)'
-        ctx.fillRect(x, startY + 30 + index * itemHeight - 2, HD_LAYOUT.relicAreaWidth, itemHeight)
+        ctx.beginPath()
+        ctx.roundRect(panelX, slotY, slotSize, slotSize, 4)
+        ctx.fill()
       }
 
-      // グレーアウト判定（火山レリックなど、発動不可時に半透明）
+      // グレーアウト判定
       const isGrayedOut = grayedOutRelics?.has(relicId) ?? false
-
-      // タイミングボーナス中の青色グロー（スコアアニメーションのハイライトより低優先）
       const isTimingBonus = timingBonusRelicId === relicId
-
-      // ハイライト描画（スコアアニメーション中）
       const isHighlighted = highlightedRelicId === relicId
+
       if (isGrayedOut && !isHighlighted && !isDragTarget) {
         ctx.globalAlpha = 0.3
       }
+
       if (isHighlighted) {
         // 金色グロー背景
-        const glowX = x + 4
-        const glowY = startY + 26 + index * itemHeight
-        const glowW = HD_LAYOUT.relicAreaWidth - 8
-        const glowH = itemHeight + 4
-
-        ctx.shadowColor = '#FFD700'
-        ctx.shadowBlur = 12
-        ctx.fillStyle = 'rgba(255, 215, 0, 0.25)'
-        ctx.beginPath()
-        ctx.roundRect(glowX, glowY, glowW, glowH, 6)
-        ctx.fill()
-        ctx.shadowBlur = 0
+        drawGlow(ctx, panelX, slotY, slotSize, '#FFD700', 12, 'rgba(255, 215, 0, 0.25)')
 
         // パルスアニメーション（拡大効果）
         const pulse = 1 + 0.15 * Math.sin(Date.now() / 200)
         ctx.save()
-        ctx.translate(iconX, iconY + iconSize / 2)
+        ctx.translate(iconX, iconY)
         ctx.scale(pulse, pulse)
-        ctx.translate(-iconX, -(iconY + iconSize / 2))
+        ctx.translate(-iconX, -iconY)
         ctx.fillStyle = '#FFFFFF'
         ctx.fillText(def.icon, iconX, iconY)
         ctx.restore()
       } else if (isTimingBonus && !isDragTarget) {
-        // 青系グロー（スコアアニメーションの金色と区別）
-        const glowX = x + 4
-        const glowY = startY + 26 + index * itemHeight
-        const glowW = HD_LAYOUT.relicAreaWidth - 8
-        const glowH = itemHeight + 4
-
-        ctx.shadowColor = '#00BFFF'
-        ctx.shadowBlur = 8
-        ctx.fillStyle = 'rgba(0, 191, 255, 0.2)'
-        ctx.beginPath()
-        ctx.roundRect(glowX, glowY, glowW, glowH, 6)
-        ctx.fill()
-        ctx.shadowBlur = 0
-
+        // 青系グロー
+        drawGlow(ctx, panelX, slotY, slotSize, '#00BFFF', 8, 'rgba(0, 191, 255, 0.2)')
         ctx.fillStyle = '#FFFFFF'
         ctx.fillText(def.icon, iconX, iconY)
       } else if (copyLinkRelics?.has(relicId) && !isDragTarget) {
         // 紫色グロー（コピーリンク表示）
-        const glowX = x + 4
-        const glowY = startY + 26 + index * itemHeight
-        const glowW = HD_LAYOUT.relicAreaWidth - 8
-        const glowH = itemHeight + 4
-
-        ctx.shadowColor = '#9370DB'
-        ctx.shadowBlur = 8
-        ctx.fillStyle = 'rgba(147, 112, 219, 0.2)'
-        ctx.beginPath()
-        ctx.roundRect(glowX, glowY, glowW, glowH, 6)
-        ctx.fill()
-        ctx.shadowBlur = 0
-
+        drawGlow(ctx, panelX, slotY, slotSize, '#9370DB', 8, 'rgba(147, 112, 219, 0.2)')
         ctx.fillStyle = '#FFFFFF'
         ctx.fillText(def.icon, iconX, iconY)
       } else {
@@ -168,14 +174,14 @@ export function renderRelicPanel(
         ctx.globalAlpha = 1.0
       }
 
-      // ヒット領域を記録
+      // ヒット領域を記録（スロット全体）
       relicAreas.push({
         relicId,
         index,
-        x: x,
-        y: startY + 30 + index * itemHeight,
-        width: HD_LAYOUT.relicAreaWidth,
-        height: itemHeight,
+        x: panelX,
+        y: slotY,
+        width: slotSize,
+        height: slotSize,
       })
     })
   }

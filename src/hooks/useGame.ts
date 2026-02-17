@@ -81,6 +81,18 @@ export function useGame() {
     dispatch({ type: 'SHOP/REROLL' })
   }, [])
 
+  const startSellMode = useCallback(() => {
+    dispatch({ type: 'SHOP/START_SELL_MODE' })
+  }, [])
+
+  const cancelSellMode = useCallback(() => {
+    dispatch({ type: 'SHOP/CANCEL_SELL_MODE' })
+  }, [])
+
+  const sellRelic = useCallback((relicIndex: number) => {
+    dispatch({ type: 'SHOP/SELL_RELIC', relicIndex })
+  }, [])
+
   const startRound = useCallback(() => {
     dispatch({ type: 'ROUND/START' })
   }, [])
@@ -171,6 +183,9 @@ export function useGame() {
       buyItem,
       leaveShop,
       rerollShop,
+      startSellMode,
+      cancelSellMode,
+      sellRelic,
       updateDebugSettings,
       deleteSave,
       startRound,

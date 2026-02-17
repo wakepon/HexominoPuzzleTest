@@ -16,7 +16,7 @@ import type { GameAction } from '../Actions/GameActions'
 import type { RelicEffectContext } from '../../Domain/Effect/RelicEffectTypes'
 import type { ScoreBonus } from '../../Events/GameEvent'
 import { isBlockShopItem, isRelicShopItem } from '../../Domain/Shop/ShopTypes'
-import { addRelic, removeRelic, addGold, subtractGold } from './PlayerReducer'
+import { addRelic, removeRelic, sellRelic, addGold, subtractGold } from './PlayerReducer'
 import {
   emitPiecePlaced,
   emitLinesCompleted,
@@ -87,11 +87,12 @@ import {
   shuffleCurrentDeck,
   getRerollCost,
 } from '../../Services/ShopService'
+import { calculateRelicSellPrice } from '../../Services/ShopPriceCalculator'
 import { getPiecePattern, createPieceWithPattern } from '../../Services/PieceService'
 import { DefaultRandom } from '../../Utils/Random'
-import { CLEAR_ANIMATION, RELIC_EFFECT_STYLE, GRID_SIZE } from '../../Data/Constants'
+import { CLEAR_ANIMATION, RELIC_EFFECT_STYLE, GRID_SIZE, MAX_RELIC_SLOTS } from '../../Data/Constants'
 import { OBSTACLE_BLOCK_COUNT } from '../../Data/BossConditions'
-import { RELIC_EFFECT_VALUES } from '../../Domain/Effect/Relic'
+import { RELIC_DEFINITIONS, RELIC_EFFECT_VALUES } from '../../Domain/Effect/Relic'
 import { getMinoById } from '../../Data/MinoDefinitions'
 import { saveGameState, clearGameState } from '../../Services/StorageService'
 import type { RelicMultiplierState } from '../../Domain/Effect/RelicState'
@@ -1270,6 +1271,20 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       // RelicShopItemの場合はレリックをプレイヤーに追加
       let newRelicMultiplierState = state.relicMultiplierState
       if (isRelicShopItem(item)) {
+        // レリック所持上限チェック: 上限に達している場合は入れ替えモードに入る
+        if (state.player.ownedRelics.length >= MAX_RELIC_SLOTS) {
+          const updatedState = {
+            ...state,
+            shopState: {
+              ...state.shopState,
+              sellMode: true,
+              pendingPurchaseIndex: itemIndex,
+            },
+          }
+          saveGameState(updatedState)
+          return updatedState
+        }
+
         newPlayer = addRelic(newPlayer, item.relicId)
 
         // コピーレリック購入時にcopyRelicStateを初期化
@@ -1322,6 +1337,132 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       saveGameState(rerollState)
 
       return rerollState
+    }
+
+    case 'SHOP/START_SELL_MODE': {
+      if (state.phase !== 'shopping' || !state.shopState) return state
+      const updatedState = {
+        ...state,
+        shopState: {
+          ...state.shopState,
+          sellMode: true,
+        },
+      }
+      saveGameState(updatedState)
+      return updatedState
+    }
+
+    case 'SHOP/CANCEL_SELL_MODE': {
+      if (state.phase !== 'shopping' || !state.shopState) return state
+      const updatedState = {
+        ...state,
+        shopState: {
+          ...state.shopState,
+          sellMode: false,
+          pendingPurchaseIndex: null,
+        },
+      }
+      saveGameState(updatedState)
+      return updatedState
+    }
+
+    case 'SHOP/SELL_RELIC': {
+      if (state.phase !== 'shopping' || !state.shopState) return state
+
+      const { relicIndex } = action
+      const relicId = state.player.relicDisplayOrder[relicIndex]
+      if (!relicId) return state
+
+      // レリック定義から価格を取得し、売却額を計算
+      const relicType = relicId as string
+      const relicDef = RELIC_DEFINITIONS[relicType as keyof typeof RELIC_DEFINITIONS]
+      if (!relicDef) return state
+
+      const sellPrice = calculateRelicSellPrice(relicDef.price)
+
+      // プレイヤーからレリック削除 + ゴールド加算
+      let newPlayer = sellRelic(state.player, relicId)
+      newPlayer = addGold(newPlayer, sellPrice)
+
+      // hand_stockを売却した場合、ストック枠もクリア（stockSlot2含む）
+      let newDeck = state.deck
+      if (relicType === 'hand_stock') {
+        newDeck = { ...state.deck, stockSlot: null, stockSlot2: null }
+      }
+
+      // コピーレリック関連の状態更新
+      let newRelicMultiplierState = state.relicMultiplierState
+      if (relicId === ('copy' as RelicId)) {
+        newRelicMultiplierState = {
+          ...newRelicMultiplierState,
+          copyRelicState: null,
+        }
+      } else if (hasRelic(newPlayer.ownedRelics, 'copy')) {
+        const newTarget = resolveCopyTarget(newPlayer.relicDisplayOrder)
+        newRelicMultiplierState = {
+          ...newRelicMultiplierState,
+          copyRelicState: createInitialCopyRelicState(newTarget),
+        }
+      }
+
+      // pendingPurchaseIndexがある場合: 保留していた商品の購入処理を実行
+      if (state.shopState.pendingPurchaseIndex !== null) {
+        const pendingIndex = state.shopState.pendingPurchaseIndex
+        const pendingItem = state.shopState.items[pendingIndex]
+
+        if (pendingItem && !pendingItem.purchased && isRelicShopItem(pendingItem) && canAfford(newPlayer.gold, pendingItem.price) && newPlayer.ownedRelics.length < MAX_RELIC_SLOTS) {
+          // ゴールド消費
+          newPlayer = subtractGold(newPlayer, pendingItem.price)
+          // レリック追加
+          newPlayer = addRelic(newPlayer, pendingItem.relicId)
+
+          // コピーレリック購入時にcopyRelicStateを初期化
+          if (pendingItem.relicId === ('copy' as RelicId)) {
+            const target = resolveCopyTarget(newPlayer.relicDisplayOrder)
+            newRelicMultiplierState = {
+              ...newRelicMultiplierState,
+              copyRelicState: createInitialCopyRelicState(target),
+            }
+          } else if (hasRelic(newPlayer.ownedRelics, 'copy')) {
+            const newTarget = resolveCopyTarget(newPlayer.relicDisplayOrder)
+            newRelicMultiplierState = {
+              ...newRelicMultiplierState,
+              copyRelicState: createInitialCopyRelicState(newTarget),
+            }
+          }
+
+          // 商品を購入済みに
+          const newShopState = markItemAsPurchased(state.shopState, pendingIndex)
+          const updatedState = {
+            ...state,
+            player: newPlayer,
+            deck: newDeck,
+            shopState: {
+              ...newShopState,
+              sellMode: false,
+              pendingPurchaseIndex: null,
+            },
+            relicMultiplierState: newRelicMultiplierState,
+          }
+          saveGameState(updatedState)
+          return updatedState
+        }
+      }
+
+      // 通常売却: sellMode終了
+      const updatedState = {
+        ...state,
+        player: newPlayer,
+        deck: newDeck,
+        shopState: {
+          ...state.shopState,
+          sellMode: false,
+          pendingPurchaseIndex: null,
+        },
+        relicMultiplierState: newRelicMultiplierState,
+      }
+      saveGameState(updatedState)
+      return updatedState
     }
 
     case 'SHOP/LEAVE': {

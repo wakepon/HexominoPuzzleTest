@@ -57,3 +57,10 @@ export function calculatePiecePrice(piece: Piece): number {
 export function calculateSalePrice(originalPrice: number): number {
   return Math.floor(originalPrice * (1 - SALE_DISCOUNT_RATE))
 }
+
+/**
+ * レリック売却価格を計算（購入価格の半額、切り下げ）
+ */
+export function calculateRelicSellPrice(price: number): number {
+  return Math.floor(price / 2)
+}
