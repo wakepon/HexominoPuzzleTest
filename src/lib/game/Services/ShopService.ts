@@ -261,6 +261,8 @@ export function createShopState(
   return {
     items: itemsWithSale,
     rerollCount: 0,
+    sellMode: false,
+    pendingPurchaseIndex: null,
   }
 }
 

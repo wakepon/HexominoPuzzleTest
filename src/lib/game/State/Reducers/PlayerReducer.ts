@@ -21,6 +21,13 @@ export function addRelic(player: PlayerState, relicId: RelicId): PlayerState {
 }
 
 /**
+ * レリックを売却（removeRelicと同じ処理だが意味的に分離）
+ */
+export function sellRelic(player: PlayerState, relicId: RelicId): PlayerState {
+  return removeRelic(player, relicId)
+}
+
+/**
  * レリックを削除（デバッグ用）
  */
 export function removeRelic(player: PlayerState, relicId: RelicId): PlayerState {

@@ -314,6 +314,8 @@ function deserializeShopState(serialized: SerializedShopState | null): ShopState
   return {
     items: serialized.items.map(deserializeShopItem),
     rerollCount: serialized.rerollCount ?? 0,
+    sellMode: false,
+    pendingPurchaseIndex: null,
   }
 }
 

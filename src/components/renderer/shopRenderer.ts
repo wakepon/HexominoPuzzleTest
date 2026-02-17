@@ -15,11 +15,13 @@ import {
   SEAL_SYMBOL_STYLE,
   RARITY_COLORS,
 } from '../../lib/game/Data/Constants'
+import type { RelicId } from '../../lib/game/Domain/Core/Id'
 import { canAfford, getRerollCost } from '../../lib/game/Services/ShopService'
+import { calculateRelicSellPrice } from '../../lib/game/Services/ShopPriceCalculator'
 import { isBlockShopItem, isRelicShopItem } from '../../lib/game/Domain/Shop/ShopTypes'
 import { getPatternDefinition } from '../../lib/game/Domain/Effect/Pattern'
 import { getSealDefinition } from '../../lib/game/Domain/Effect/Seal'
-import { getRelicDefinition } from '../../lib/game/Domain/Effect/Relic'
+import { getRelicDefinition, RELIC_DEFINITIONS } from '../../lib/game/Domain/Effect/Relic'
 import { BlockDataMapUtils } from '../../lib/game/Domain/Piece/BlockData'
 import { ButtonArea } from './overlayRenderer'
 
@@ -31,12 +33,22 @@ export interface ShopItemArea extends ButtonArea {
 }
 
 /**
+ * 所持レリック領域情報（売却モード時のクリック判定用）
+ */
+export interface OwnedRelicArea extends ButtonArea {
+  relicIndex: number
+}
+
+/**
  * ショップ描画結果（クリック判定用）
  */
 export interface ShopRenderResult {
   itemAreas: ShopItemArea[]
   leaveButtonArea: ButtonArea
   rerollButtonArea: ButtonArea
+  sellButtonArea: ButtonArea | null
+  ownedRelicAreas: OwnedRelicArea[]
+  cancelSellButtonArea: ButtonArea | null
 }
 
 /**
@@ -468,12 +480,191 @@ function renderRelicShopItem(
 /**
  * ショップ画面を描画
  */
+/**
+ * 売却モードの描画
+ */
+function renderSellMode(
+  ctx: CanvasRenderingContext2D,
+  ownedRelics: readonly RelicId[],
+  _gold: number,
+  layout: CanvasLayout,
+  pendingPurchaseIndex: number | null,
+  shopState: ShopState
+): { ownedRelicAreas: OwnedRelicArea[]; cancelButtonArea: ButtonArea } {
+  const {
+    sellModeRelicBoxWidth,
+    sellModeRelicBoxHeight,
+    sellModeRelicBoxGap,
+    sellModeIconSize,
+    sellModeNameFontSize,
+    sellModePriceFontSize,
+    sellModePriceColor,
+    sellModeInfoFontSize,
+    sellModeInfoColor,
+    cancelButtonWidth,
+    cancelButtonHeight,
+    cancelButtonColor,
+    cancelButtonTextColor,
+    cancelButtonFontSize,
+    itemBorderColor,
+    itemBorderWidth,
+    itemBackgroundColor,
+  } = SHOP_STYLE
+
+  const centerX = layout.canvasWidth / 2
+  const centerY = layout.canvasHeight / 2
+
+  // 案内テキスト
+  ctx.font = `bold ${sellModeInfoFontSize}px Arial, sans-serif`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillStyle = sellModeInfoColor
+
+  if (pendingPurchaseIndex !== null) {
+    const pendingItem = shopState.items[pendingPurchaseIndex]
+    if (pendingItem && isRelicShopItem(pendingItem)) {
+      const pendingDef = getRelicDefinition(pendingItem.relicId)
+      const pendingName = pendingDef?.name ?? ''
+      ctx.fillText(`${pendingName} を購入するために、売却するレリックを選んでください`, centerX, centerY - 200)
+    }
+  } else {
+    ctx.fillText('売却するレリックを選んでください', centerX, centerY - 200)
+  }
+
+  // 所持レリック一覧を描画
+  const totalWidth = sellModeRelicBoxWidth * ownedRelics.length + sellModeRelicBoxGap * (ownedRelics.length - 1)
+  const startX = centerX - totalWidth / 2
+  const boxY = centerY - sellModeRelicBoxHeight / 2 - 30
+
+  const ownedRelicAreas: OwnedRelicArea[] = []
+
+  ownedRelics.forEach((relicId, index) => {
+    const def = getRelicDefinition(relicId)
+    if (!def) return
+
+    const relicType = relicId as string
+    const relicDef = RELIC_DEFINITIONS[relicType as keyof typeof RELIC_DEFINITIONS]
+    const sellPrice = relicDef ? calculateRelicSellPrice(relicDef.price) : 0
+
+    const boxX = startX + index * (sellModeRelicBoxWidth + sellModeRelicBoxGap)
+
+    // ボックス背景
+    ctx.fillStyle = itemBackgroundColor
+    ctx.fillRect(boxX, boxY, sellModeRelicBoxWidth, sellModeRelicBoxHeight)
+
+    // ボックス枠線
+    ctx.strokeStyle = itemBorderColor
+    ctx.lineWidth = itemBorderWidth
+    ctx.strokeRect(boxX, boxY, sellModeRelicBoxWidth, sellModeRelicBoxHeight)
+
+    // アイコン
+    ctx.font = `${sellModeIconSize}px Arial, sans-serif`
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText(def.icon, boxX + sellModeRelicBoxWidth / 2, boxY + 35)
+
+    // 名前
+    ctx.font = `bold ${sellModeNameFontSize}px Arial, sans-serif`
+    ctx.fillStyle = '#FFFFFF'
+    ctx.fillText(def.name, boxX + sellModeRelicBoxWidth / 2, boxY + 70)
+
+    // 売却額
+    ctx.font = `bold ${sellModePriceFontSize}px Arial, sans-serif`
+    ctx.fillStyle = sellModePriceColor
+    ctx.fillText(`売却: ${sellPrice}G`, boxX + sellModeRelicBoxWidth / 2, boxY + 95)
+
+    ownedRelicAreas.push({
+      relicIndex: index,
+      x: boxX,
+      y: boxY,
+      width: sellModeRelicBoxWidth,
+      height: sellModeRelicBoxHeight,
+    })
+  })
+
+  // キャンセルボタン
+  const cancelButtonX = centerX - cancelButtonWidth / 2
+  const cancelButtonY = boxY + sellModeRelicBoxHeight + 40
+
+  ctx.fillStyle = cancelButtonColor
+  ctx.beginPath()
+  ctx.roundRect(cancelButtonX, cancelButtonY, cancelButtonWidth, cancelButtonHeight, 8)
+  ctx.fill()
+
+  ctx.font = `bold ${cancelButtonFontSize}px Arial, sans-serif`
+  ctx.fillStyle = cancelButtonTextColor
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText('キャンセル', cancelButtonX + cancelButtonWidth / 2, cancelButtonY + cancelButtonHeight / 2)
+
+  return {
+    ownedRelicAreas,
+    cancelButtonArea: {
+      x: cancelButtonX,
+      y: cancelButtonY,
+      width: cancelButtonWidth,
+      height: cancelButtonHeight,
+    },
+  }
+}
+
+/**
+ * 所持レリック一覧をショップ上部に描画
+ */
+function renderOwnedRelicIcons(
+  ctx: CanvasRenderingContext2D,
+  ownedRelics: readonly RelicId[],
+  layout: CanvasLayout
+): void {
+  if (ownedRelics.length === 0) return
+
+  const {
+    ownedRelicIconSize,
+    ownedRelicGap,
+    ownedRelicOffsetY,
+    ownedRelicCountFontSize,
+    ownedRelicCountColor,
+  } = SHOP_STYLE
+
+  const centerX = layout.canvasWidth / 2
+  const centerY = layout.canvasHeight / 2
+  const y = centerY + ownedRelicOffsetY
+
+  // 「所持レリック (n/5)」ラベル
+  ctx.font = `bold ${ownedRelicCountFontSize}px Arial, sans-serif`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillStyle = ownedRelicCountColor
+  ctx.fillText(`所持レリック (${ownedRelics.length}/5)`, centerX, y)
+
+  // アイコン一覧
+  const totalWidth = ownedRelics.length * ownedRelicIconSize + (ownedRelics.length - 1) * ownedRelicGap
+  const startX = centerX - totalWidth / 2
+
+  ownedRelics.forEach((relicId, index) => {
+    const def = getRelicDefinition(relicId)
+    if (!def) return
+
+    const iconX = startX + index * (ownedRelicIconSize + ownedRelicGap) + ownedRelicIconSize / 2
+    const iconY = y + 22
+
+    ctx.font = `${ownedRelicIconSize}px Arial, sans-serif`
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText(def.icon, iconX, iconY)
+  })
+}
+
+/**
+ * ショップ画面を描画
+ */
 export function renderShop(
   ctx: CanvasRenderingContext2D,
   shopState: ShopState,
   gold: number,
   layout: CanvasLayout,
-  rerollCount: number
+  rerollCount: number,
+  ownedRelics: readonly RelicId[] = []
 ): ShopRenderResult {
   const {
     backgroundColor,
@@ -511,8 +702,28 @@ export function renderShop(
   ctx.fillStyle = '#FFD700'
   ctx.fillText(`所持金: ${gold}G`, centerX, centerY + goldDisplayOffsetY)
 
+  // 売却モード/入れ替えモードの場合は専用UIを描画
+  if (shopState.sellMode) {
+    const sellResult = renderSellMode(ctx, ownedRelics, gold, layout, shopState.pendingPurchaseIndex, shopState)
+    ctx.restore()
+    return {
+      itemAreas: [],
+      rerollButtonArea: { x: -1, y: -1, width: 0, height: 0 },
+      leaveButtonArea: { x: -1, y: -1, width: 0, height: 0 },
+      sellButtonArea: null,
+      ownedRelicAreas: sellResult.ownedRelicAreas,
+      cancelSellButtonArea: sellResult.cancelButtonArea,
+    }
+  }
+
+  // 所持レリック一覧を描画（通常モード）
+  renderOwnedRelicIcons(ctx, ownedRelics, layout)
+
   // タイトル
   ctx.fillStyle = titleColor
+  ctx.font = `bold ${titleFontSize}px Arial, sans-serif`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
   ctx.fillText('ブロックを購入しますか？', centerX, centerY + titleOffsetY)
 
   // ブロック商品とレリック商品を分離
@@ -604,8 +815,19 @@ export function renderShop(
     : blockBoxY + boxHeight                                      // ブロック行の下端
   const buttonY = contentBottomY + leaveButtonGap
 
-  // 2つのボタンの合計幅を計算して中央寄せ
+  // 売却ボタンの表示判定（レリックを所持している場合のみ）
+  const showSellButton = ownedRelics.length > 0
+  const {
+    sellButtonWidth,
+    sellButtonHeight,
+    sellButtonColor,
+    sellButtonTextColor,
+    sellButtonFontSize,
+  } = SHOP_STYLE
+
+  // ボタンの合計幅を計算して中央寄せ
   const totalButtonWidth = rerollButtonWidth + rerollButtonGap + leaveButtonWidth
+    + (showSellButton ? rerollButtonGap + sellButtonWidth : 0)
   const buttonsStartX = centerX - totalButtonWidth / 2
 
   // リロールボタン
@@ -642,6 +864,30 @@ export function renderShop(
   ctx.textBaseline = 'middle'
   ctx.fillText('店を出る', leaveButtonX + leaveButtonWidth / 2, buttonY + leaveButtonHeight / 2)
 
+  // 売却ボタン
+  let sellButtonArea: ButtonArea | null = null
+  if (showSellButton) {
+    const sellButtonX = leaveButtonX + leaveButtonWidth + rerollButtonGap
+
+    ctx.fillStyle = sellButtonColor
+    ctx.beginPath()
+    ctx.roundRect(sellButtonX, buttonY, sellButtonWidth, sellButtonHeight, 8)
+    ctx.fill()
+
+    ctx.font = `bold ${sellButtonFontSize}px Arial, sans-serif`
+    ctx.fillStyle = sellButtonTextColor
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText('レリック売却', sellButtonX + sellButtonWidth / 2, buttonY + sellButtonHeight / 2)
+
+    sellButtonArea = {
+      x: sellButtonX,
+      y: buttonY,
+      width: sellButtonWidth,
+      height: sellButtonHeight,
+    }
+  }
+
   ctx.restore()
 
   return {
@@ -658,5 +904,8 @@ export function renderShop(
       width: leaveButtonWidth,
       height: leaveButtonHeight,
     },
+    sellButtonArea,
+    ownedRelicAreas: [],
+    cancelSellButtonArea: null,
   }
 }
