@@ -226,8 +226,20 @@ interface RelicShopItem {
   readonly onSale: boolean
 }
 
-type ShopItem = BlockShopItem | RelicShopItem
+// 護符商品（追加予定）
+interface AmuletShopItem {
+  readonly type: 'amulet'
+  readonly amuletId: AmuletId
+  readonly price: number
+  readonly originalPrice: number
+  readonly purchased: boolean
+  readonly onSale: boolean
+}
+
+type ShopItem = BlockShopItem | RelicShopItem | AmuletShopItem
 ```
+
+> ※`AmuletShopItem` は未実装。現状は `BlockShopItem | RelicShopItem`。
 
 ### ShopState
 
@@ -304,8 +316,10 @@ interface RelicDefinition {
 レリックのレアリティ。
 
 ```typescript
-type RelicRarity = 'common' | 'rare' | 'epic'
+type RelicRarity = 'common' | 'uncommon' | 'rare' | 'epic'
 ```
+
+> ※現状のコードでは `'common' | 'rare' | 'epic'`。`uncommon` は未追加。
 
 ### PlayerState
 
@@ -315,16 +329,20 @@ type RelicRarity = 'common' | 'rare' | 'epic'
 interface PlayerState {
   readonly gold: number
   readonly earnedGold: number
-  readonly ownedRelics: readonly RelicId[]
-  readonly relicDisplayOrder: readonly RelicId[]
+  readonly ownedRelics: readonly RelicId[]         // 最大5枠（変更予定）
+  readonly relicDisplayOrder: readonly RelicId[]   // 最大5枠（変更予定）
+  readonly amuletStock: readonly Amulet[]          // 護符ストック（最大2個、追加予定）
 }
 ```
 
 **プロパティ:**
 - `gold`: 現在の所持ゴールド
 - `earnedGold`: ゲーム開始から獲得した累計ゴールド（リザルト表示用）
-- `ownedRelics`: 現在所持しているレリックのIDリスト
-- `relicDisplayOrder`: レリックの表示順（UIでの並び順管理用）
+- `ownedRelics`: 現在所持しているレリックのIDリスト（所持上限5枠予定）
+- `relicDisplayOrder`: レリックの表示順（UIでの並び順管理用、乗算適用順）
+- `amuletStock`: 護符のストック（最大2個、追加予定）
+
+> ※現状は `ownedRelics` に所持上限なし。`amuletStock` は未実装。
 
 ### RelicMultiplierState
 
@@ -375,6 +393,43 @@ interface CopyRelicState {
 **プロパティ:**
 - `targetRelicId`: コピー対象のレリックID（未設定時はnull）
 - その他: コピー先のレリック動作をシミュレートするための独立カウンター群
+
+## 護符関連（追加予定）
+
+### AmuletId
+
+護符の識別子。
+
+```typescript
+type AmuletId = 'sculpt' | 'pattern_add' | 'seal_add' | 'vanish'
+```
+
+### Amulet
+
+護符のインスタンス。
+
+```typescript
+interface Amulet {
+  readonly id: AmuletId
+  readonly price: number  // 購入時の価格（売却額計算に使用）
+}
+```
+
+### AmuletDefinition
+
+護符の定義。
+
+```typescript
+interface AmuletDefinition {
+  readonly id: AmuletId
+  readonly name: string           // 例: '造形の護符'
+  readonly description: string
+  readonly minPrice: number       // 最低価格
+  readonly maxPrice: number       // 最高価格
+}
+```
+
+> ※護符関連型はすべて未実装。
 
 ## 台本レリック関連
 
@@ -694,8 +749,9 @@ GameState
 │   └── stockSlot2: Piece | null
 ├── PlayerState
 │   ├── gold, earnedGold
-│   ├── ownedRelics: RelicId[]
-│   └── relicDisplayOrder: RelicId[]
+│   ├── ownedRelics: RelicId[]     // 最大5枠（予定）
+│   ├── relicDisplayOrder: RelicId[]
+│   └── amuletStock: Amulet[]     // 最大2個（追加予定）
 ├── RelicMultiplierState
 │   └── copyRelicState: CopyRelicState | null
 ├── scriptRelicLines: ScriptRelicLines | null
@@ -708,7 +764,7 @@ GameState
 ├── ScoreAnimationState | null
 │   └── steps: FormulaStep[]
 └── ShopState | null
-    └── items: ShopItem[] (BlockShopItem | RelicShopItem)
+    └── items: ShopItem[] (BlockShopItem | RelicShopItem | AmuletShopItem)
 ```
 
 ## データフロー
@@ -782,6 +838,7 @@ interface TooltipContent {
 - 2026-02-02: DeckState、GamePhase、ShopItem、ShopState、新アクション型を追加
 - 2026-02-06: ローグライト要素追加（Cell拡張、パターン・シール型、レリック型、ラウンド型、ShopItem拡張、GameState拡張、新アクション）
 - 2026-02-09: Domain/Service層への構造変更を反映、readonly型の追加、PlayerState統合、BlockData追加、アクション型プレフィックス化、TooltipState追加
+- 2026-02-17: レリック中心設計を反映（RelicRarity uncommon追加、PlayerState所持上限・amuletStock追加、AmuletShopItem追加、護符関連型追加、型の関連図更新）
 - 2026-02-17: コードベースに合わせて更新
   - GameState: scoreAnimation, pendingPhase, volcanoEligible, deckViewOpen, scriptRelicLines, relicMultiplierState を追加
   - DeckState: stockSlot, stockSlot2 を追加
