@@ -75,6 +75,7 @@ import {
   calculateTargetScore,
   isFinalRound,
   calculateGoldReward,
+  calculateInterest,
   createRoundInfo,
   getMaxPlacements,
   getDrawCount,
@@ -1199,10 +1200,12 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       // 最終ラウンドならゲームクリア（ショップをスキップ）
       if (isFinalRound(state.round)) {
         const goldReward = calculateGoldReward(state.deck.remainingHands, state.roundInfo.roundType)
+        const interest = calculateInterest(state.player.gold)
+        const totalGold = goldReward + interest
 
         // イベント発火: ラウンドクリア + ゴールド獲得
-        emitRoundCleared(state.round, state.score, goldReward)
-        emitGoldGained(goldReward, 'round_clear')
+        emitRoundCleared(state.round, state.score, totalGold)
+        emitGoldGained(totalGold, 'round_clear')
 
         // ゲームクリア時は保存データを削除
         clearGameState()
@@ -1210,7 +1213,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         return {
           ...state,
           phase: 'game_clear',
-          player: addGold(state.player, goldReward),
+          player: addGold(state.player, totalGold),
           shopState: null,
         }
       }
@@ -1218,15 +1221,17 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       // ショップへ遷移（デバッグ用の確率オーバーライドを適用）
       const rng = new DefaultRandom()
       const goldReward = calculateGoldReward(state.deck.remainingHands, state.roundInfo.roundType)
+      const interest = calculateInterest(state.player.gold)
+      const totalGold = goldReward + interest
 
       // イベント発火: ラウンドクリア + ゴールド獲得
-      emitRoundCleared(state.round, state.score, goldReward)
-      emitGoldGained(goldReward, 'round_clear')
+      emitRoundCleared(state.round, state.score, totalGold)
+      emitGoldGained(totalGold, 'round_clear')
 
       const newState = {
         ...state,
         phase: 'shopping' as const,
-        player: addGold(state.player, goldReward),
+        player: addGold(state.player, totalGold),
         shopState: createShopState(rng, state.player.ownedRelics, action.probabilityOverride),
       }
 
