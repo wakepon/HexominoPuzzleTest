@@ -102,6 +102,7 @@ interface SavedGameState {
   // プレイヤー関連
   readonly player: {
     readonly gold: number
+    readonly earnedGold?: number
     readonly ownedRelics: readonly RelicId[]
     readonly relicDisplayOrder?: readonly RelicId[]
   }
@@ -458,6 +459,8 @@ export function restoreGameState(
     roundInfo: saved.roundInfo,
     player: {
       gold: saved.player.gold,
+      // マイグレーション対応: 古いセーブデータにはearnedGoldがない
+      earnedGold: saved.player.earnedGold ?? 0,
       // マイグレーション対応: small_luck → size_bonus_3 にリネーム
       ownedRelics: [...saved.player.ownedRelics].map(
         r => r === 'small_luck' ? 'size_bonus_3' : r

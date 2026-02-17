@@ -43,6 +43,7 @@ export function addGold(player: PlayerState, amount: number): PlayerState {
   return {
     ...player,
     gold: player.gold + amount,
+    earnedGold: player.earnedGold + amount,
   }
 }
 
@@ -71,6 +72,7 @@ export function subtractGold(player: PlayerState, amount: number): PlayerState {
 export function resetPlayerState(initialGold: number): PlayerState {
   return {
     gold: initialGold,
+    earnedGold: 0,
     ownedRelics: [],
     relicDisplayOrder: [],
   }

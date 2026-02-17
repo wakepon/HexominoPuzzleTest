@@ -321,11 +321,11 @@ export function GameCanvas({
       buttonAreaRef.current = null
       roundProgressResultRef.current = null
     } else if (state.phase === 'game_over') {
-      buttonAreaRef.current = renderGameOver(ctx, state.round, state.score, state.player.gold, layout)
+      buttonAreaRef.current = renderGameOver(ctx, state.round, state.score, state.player.earnedGold, layout)
       shopRenderResultRef.current = null
       roundProgressResultRef.current = null
     } else if (state.phase === 'game_clear') {
-      buttonAreaRef.current = renderGameClear(ctx, state.player.gold, layout)
+      buttonAreaRef.current = renderGameClear(ctx, state.player.earnedGold, layout)
       shopRenderResultRef.current = null
       roundProgressResultRef.current = null
     } else {
