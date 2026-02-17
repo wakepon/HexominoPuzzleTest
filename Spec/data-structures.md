@@ -110,17 +110,6 @@ interface MinoDefinition {
 - `shape`: ミノの形状
 - `cellCount`: セル数
 
-### CategoryWeights
-
-カテゴリ別の重み。
-
-```typescript
-type CategoryWeights = Record<MinoCategory, number>
-```
-
-**用途:**
-ミノ生成時の各カテゴリの出現確率を制御する（現在はデッキベースに移行）。
-
 ### Piece
 
 実際にゲーム内で使用されるブロック。
@@ -180,9 +169,6 @@ interface PieceSlot {
 - `piece`: スロットに配置されているブロック（配置済みの場合は `null`）
 - `position`: スロットの画面上の位置（レイアウト計算で設定）
 
-**不変性:**
-すべてのプロパティは `readonly` で定義されている。
-
 ## デッキ関連
 
 ### DeckState
@@ -195,6 +181,8 @@ interface DeckState {
   readonly allMinos: readonly MinoId[]
   readonly remainingHands: number
   readonly purchasedPieces: ReadonlyMap<MinoId, Piece>
+  readonly stockSlot: Piece | null
+  readonly stockSlot2: Piece | null
 }
 ```
 
@@ -203,6 +191,8 @@ interface DeckState {
 - `allMinos`: 全カードリスト（再シャッフル用、購入したミノも含む）
 - `remainingHands`: 残りの配置可能回数（ラウンド開始時にリセット）
 - `purchasedPieces`: 購入したPieceの情報マップ（パターン・シール復元用）
+- `stockSlot`: ストック枠（hand_stockレリック用）
+- `stockSlot2`: ストック枠2（コピーレリックでhand_stockをコピー時に使用）
 
 **購入したPieceの扱い:**
 - ショップで購入したパターン/シール付きPieceは `purchasedPieces` に保存される
@@ -236,24 +226,20 @@ interface RelicShopItem {
   readonly onSale: boolean
 }
 
-type ShopItem = BlockShopItem | RelicShopItem
+// 護符商品（追加予定）
+interface AmuletShopItem {
+  readonly type: 'amulet'
+  readonly amuletId: AmuletId
+  readonly price: number
+  readonly originalPrice: number
+  readonly purchased: boolean
+  readonly onSale: boolean
+}
+
+type ShopItem = BlockShopItem | RelicShopItem | AmuletShopItem
 ```
 
-**プロパティ:**
-- `type`: アイテムの種類（'block' または 'relic'）
-- `price`: 実際の販売価格（セール適用後）
-- `originalPrice`: 元の価格（セール表示用）
-- `purchased`: 購入済みかどうか
-- `onSale`: セール中かどうか
-- その他: アイテム種類に応じた固有プロパティ
-
-**ブロック商品:**
-- Pieceを直接持つ（パターン・シール情報はPiece.blocksに含まれる）
-- 価格はセル数 + パターン/シールの付加価値で計算
-
-**レリック商品:**
-- RelicIdを持つ
-- 価格はレアリティで決定
+> ※`AmuletShopItem` は未実装。現状は `BlockShopItem | RelicShopItem`。
 
 ### ShopState
 
@@ -266,10 +252,7 @@ interface ShopState {
 ```
 
 **プロパティ:**
-- `items`: 販売中のアイテムリスト（ブロックセット3種 + レリック最大3種）
-
-**不変性:**
-すべてのプロパティは `readonly` で定義されている。
+- `items`: 販売中のアイテムリスト（ブロックセット複数 + レリック複数）
 
 ## パターン・シール関連
 
@@ -279,16 +262,11 @@ interface ShopState {
 
 ```typescript
 interface PatternDefinition {
-  id: string             // パターンID（例: 'enhanced', 'aura', 'moss'）
-  name: string           // 表示名
-  description: string    // 効果説明
+  id: string
+  name: string
+  description: string
 }
 ```
-
-**プロパティ:**
-- `id`: パターンの識別子
-- `name`: パターンの表示名
-- `description`: パターン効果の説明
 
 ### SealDefinition
 
@@ -296,16 +274,11 @@ interface PatternDefinition {
 
 ```typescript
 interface SealDefinition {
-  id: string             // シールID（例: 'gold', 'score', 'stone'）
-  name: string           // 表示名
-  description: string    // 効果説明
+  id: string
+  name: string
+  description: string
 }
 ```
-
-**プロパティ:**
-- `id`: シールの識別子
-- `name`: シールの表示名
-- `description`: シール効果の説明
 
 ### BlockData
 
@@ -317,10 +290,6 @@ interface BlockData {
   readonly seal: SealId | null
 }
 ```
-
-**プロパティ:**
-- `pattern`: ブロックセット全体に適用されるパターン
-- `seal`: この特定のブロックに適用されるシール
 
 **用途:**
 - Piece.blocks（BlockDataMap）の値として使用される
@@ -334,28 +303,23 @@ interface BlockData {
 
 ```typescript
 interface RelicDefinition {
-  id: string             // レリックID
-  name: string           // 表示名
-  description: string    // 効果説明
-  rarity: RelicRarity    // レアリティ
-  price: number          // 購入価格
+  id: string
+  name: string
+  description: string
+  rarity: RelicRarity
+  price: number
 }
 ```
-
-**プロパティ:**
-- `id`: レリックの識別子
-- `name`: レリックの表示名
-- `description`: レリック効果の説明
-- `rarity`: レアリティ（common, rare, epic）
-- `price`: ショップでの購入価格
 
 ### RelicRarity
 
 レリックのレアリティ。
 
 ```typescript
-type RelicRarity = 'common' | 'rare' | 'epic'
+type RelicRarity = 'common' | 'uncommon' | 'rare' | 'epic'
 ```
+
+> ※現状のコードでは `'common' | 'rare' | 'epic'`。`uncommon` は未追加。
 
 ### PlayerState
 
@@ -364,16 +328,183 @@ type RelicRarity = 'common' | 'rare' | 'epic'
 ```typescript
 interface PlayerState {
   readonly gold: number
-  readonly ownedRelics: readonly RelicId[]
+  readonly earnedGold: number
+  readonly ownedRelics: readonly RelicId[]         // 最大5枠（変更予定）
+  readonly relicDisplayOrder: readonly RelicId[]   // 最大5枠（変更予定）
+  readonly amuletStock: readonly Amulet[]          // 護符ストック（最大2個、追加予定）
 }
 ```
 
 **プロパティ:**
-- `gold`: 所持ゴールド
-- `ownedRelics`: 現在所持しているレリックのIDリスト
+- `gold`: 現在の所持ゴールド
+- `earnedGold`: ゲーム開始から獲得した累計ゴールド（リザルト表示用）
+- `ownedRelics`: 現在所持しているレリックのIDリスト（所持上限5枠予定）
+- `relicDisplayOrder`: レリックの表示順（UIでの並び順管理用、乗算適用順）
+- `amuletStock`: 護符のストック（最大2個、追加予定）
 
-**不変性:**
-すべてのプロパティは `readonly` で定義されている。
+> ※現状は `ownedRelics` に所持上限なし。`amuletStock` は未実装。
+
+### RelicMultiplierState
+
+倍率系レリックの状態を一元管理する。
+
+```typescript
+interface RelicMultiplierState {
+  readonly nobiTakenokoMultiplier: number  // のびのびタケノコ倍率
+  readonly nobiKaniMultiplier: number      // のびのびカニ倍率
+  readonly renshaMultiplier: number        // 連射倍率
+  readonly bandaidCounter: number          // 絆創膏カウンター（発動でリセット）
+  readonly timingCounter: number           // タイミングカウンター
+  readonly timingBonusActive: boolean      // タイミングボーナス待機中フラグ
+  readonly copyRelicState: CopyRelicState | null  // コピーレリック状態（未所持時はnull）
+}
+```
+
+**プロパティ:**
+- `nobiTakenokoMultiplier`: のびのびタケノコレリックの累積倍率（初期値1.0）
+- `nobiKaniMultiplier`: のびのびカニレリックの累積倍率（初期値1.0）
+- `renshaMultiplier`: 連射レリックの累積倍率（初期値1.0）
+- `bandaidCounter`: 絆創膏カウンター（ハンド消費ごとにカウントし、一定回数で発動）
+- `timingCounter`: タイミングカウンター（ハンド消費ごとに増加）
+- `timingBonusActive`: タイミングボーナスが発動待機中かどうか
+- `copyRelicState`: コピーレリック所持時のみ非null
+
+**更新タイミング:**
+- ライン消去時に連射・のびのび系の倍率を更新
+- ハンド消費時に絆創膏・タイミングのカウンターを更新
+- ラウンド開始時にすべてリセット
+
+### CopyRelicState
+
+コピーレリック専用の状態（独立カウンター管理）。
+
+```typescript
+interface CopyRelicState {
+  readonly targetRelicId: RelicId | null
+  readonly timingCounter: number
+  readonly timingBonusActive: boolean
+  readonly bandaidCounter: number
+  readonly renshaMultiplier: number
+  readonly nobiTakenokoMultiplier: number
+  readonly nobiKaniMultiplier: number
+}
+```
+
+**プロパティ:**
+- `targetRelicId`: コピー対象のレリックID（未設定時はnull）
+- その他: コピー先のレリック動作をシミュレートするための独立カウンター群
+
+## 護符関連（追加予定）
+
+### AmuletId
+
+護符の識別子。
+
+```typescript
+type AmuletId = 'sculpt' | 'pattern_add' | 'seal_add' | 'vanish'
+```
+
+### Amulet
+
+護符のインスタンス。
+
+```typescript
+interface Amulet {
+  readonly id: AmuletId
+  readonly price: number  // 購入時の価格（売却額計算に使用）
+}
+```
+
+### AmuletDefinition
+
+護符の定義。
+
+```typescript
+interface AmuletDefinition {
+  readonly id: AmuletId
+  readonly name: string           // 例: '造形の護符'
+  readonly description: string
+  readonly minPrice: number       // 最低価格
+  readonly maxPrice: number       // 最高価格
+}
+```
+
+> ※護符関連型はすべて未実装。
+
+## 台本レリック関連
+
+### ScriptLineTarget
+
+台本レリックが指定するラインの種類（行または列）。
+
+```typescript
+type ScriptLineTarget =
+  | { readonly type: 'row'; readonly index: number }
+  | { readonly type: 'col'; readonly index: number }
+```
+
+### ScriptRelicLines
+
+台本レリックが指定する2本のライン。
+
+```typescript
+interface ScriptRelicLines {
+  readonly target1: ScriptLineTarget
+  readonly target2: ScriptLineTarget
+}
+```
+
+**用途:**
+- ゲーム状態 `scriptRelicLines` に格納され、スコア計算で参照される
+- 台本レリックが所持されている場合、指定した2本のラインを揃えるとボーナス
+
+## ライン消去関連
+
+### CompletedLines
+
+完成したラインの情報。
+
+```typescript
+interface CompletedLines {
+  rows: number[]
+  columns: number[]
+}
+```
+
+### ClearingCell
+
+消去対象のセル座標。
+
+```typescript
+interface ClearingCell {
+  readonly x: number
+  readonly y: number
+  // 新しいコード用エイリアス
+  readonly row: number
+  readonly col: number
+}
+```
+
+**注意:** `x`/`y` は後方互換性のために保持。新しいコードでは `row`/`col` を使用推奨。
+
+### ClearingAnimationState
+
+消去アニメーション状態。
+
+```typescript
+interface ClearingAnimationState {
+  readonly isAnimating: boolean
+  readonly cells: readonly ClearingCell[]
+  readonly startTime: number
+  readonly duration: number
+}
+```
+
+## スコア計算・レリック効果・アニメーション関連
+
+スコア計算・レリック効果・アニメーション関連の型定義は分割ファイルを参照。
+
+- [data-structures-effect-types.md](./data-structures-effect-types.md) - スコア計算型（PatternEffectResult, ScoreBreakdown等）、レリック効果型（RelicEffectContext, RelicEffectResult等）、アニメーション型（ScoreAnimationState, FormulaStep等）
 
 ## ラウンド関連
 
@@ -396,9 +527,9 @@ type RoundType = 'normal' | 'elite' | 'boss'
 
 ```typescript
 interface BossCondition {
-  id: string             // 条件ID
-  name: string           // 表示名
-  description: string    // 条件説明
+  id: string
+  name: string
+  description: string
 }
 ```
 
@@ -428,9 +559,6 @@ interface RoundInfo {
 - `roundType`: ラウンドタイプ（normal, elite, boss）
 - `bossCondition`: ボス条件（ボスラウンドの場合のみ非null）
 
-**不変性:**
-すべてのプロパティは `readonly` で定義されている。
-
 ## ドラッグ関連
 
 ### DragState
@@ -456,43 +584,6 @@ interface DragState {
 - `startPos`: ドラッグ開始位置（スクリーン座標）
 - `boardPos`: ボード上の位置（グリッド座標、ボード外の場合は `null`）
 
-## ライン消去関連
-
-### CompletedLines
-
-完成したラインの情報。
-
-```typescript
-interface CompletedLines {
-  rows: number[]      // 完成した行のインデックス配列
-  columns: number[]   // 完成した列のインデックス配列
-}
-```
-
-### ClearingCell
-
-消去対象のセル座標。
-
-```typescript
-interface ClearingCell {
-  x: number
-  y: number
-}
-```
-
-### ClearingAnimationState
-
-消去アニメーション状態。
-
-```typescript
-interface ClearingAnimationState {
-  isAnimating: boolean
-  cells: ClearingCell[]        // 消去対象セル
-  startTime: number            // アニメーション開始時刻
-  duration: number             // アニメーション継続時間（ms）
-}
-```
-
 ## ゲーム状態
 
 ### GamePhase
@@ -517,20 +608,45 @@ type GamePhase = 'playing' | 'round_clear' | 'shopping' | 'round_progress' | 'ga
 
 ```typescript
 interface GameState {
+  // ボード関連
   readonly board: Board
   readonly pieceSlots: readonly PieceSlot[]
   readonly deck: DeckState
+
+  // UI関連
   readonly dragState: DragState
   readonly clearingAnimation: ClearingAnimationState | null
   readonly relicActivationAnimation: RelicActivationAnimationState | null
+  readonly scoreAnimation: ScoreAnimationState | null
+
+  // ラウンド関連
   readonly phase: GamePhase
+  readonly pendingPhase: GamePhase | null
   readonly round: number
   readonly roundInfo: RoundInfo
   readonly score: number
   readonly targetScore: number
+
+  // プレイヤー関連
   readonly player: PlayerState
+
+  // ショップ関連
   readonly shopState: ShopState | null
+
+  // コンボ状態
   readonly comboCount: number
+
+  // レリック倍率状態
+  readonly relicMultiplierState: RelicMultiplierState
+
+  // 台本レリック指定ライン
+  readonly scriptRelicLines: ScriptRelicLines | null
+
+  // 火山レリック発動可能フラグ
+  readonly volcanoEligible: boolean
+
+  // UI状態
+  readonly deckViewOpen: boolean
 }
 ```
 
@@ -539,9 +655,11 @@ interface GameState {
 - `pieceSlots`: ブロックスロットの配列（通常3つ、ボス条件で2つの場合あり）
 - `deck`: デッキ状態
 - `dragState`: ドラッグ操作の状態
-- `clearingAnimation`: 消去アニメーション状態（アニメーション中のみ）
+- `clearingAnimation`: 消去アニメーション状態（アニメーション中のみ非null）
 - `relicActivationAnimation`: レリック発動アニメーション状態
+- `scoreAnimation`: スコア計算式アニメーション状態（アニメーション中のみ非null）
 - `phase`: 現在のゲームフェーズ
+- `pendingPhase`: 保留中のフェーズ（アニメーション完了後に遷移するフェーズ）
 - `round`: 現在のラウンド番号（1から24）
 - `roundInfo`: ラウンド詳細情報（タイプ、セット番号、ボス条件等）
 - `score`: 現在ラウンドのスコア（ラウンド開始時にリセット）
@@ -549,6 +667,10 @@ interface GameState {
 - `player`: プレイヤー状態（ゴールド、所持レリック）
 - `shopState`: ショップ状態（shoppingフェーズでのみ非null）
 - `comboCount`: コンボカウント（コンボパターン効果用）
+- `relicMultiplierState`: 倍率系レリックの累積状態
+- `scriptRelicLines`: 台本レリックが指定した2本のライン（所持時のみ非null）
+- `volcanoEligible`: 火山レリックの発動条件（ラウンド中にライン消去がなければtrue）
+- `deckViewOpen`: デッキビューが開かれているかどうか
 
 **不変性:**
 すべてのプロパティは `readonly` で定義されている。
@@ -591,49 +713,20 @@ interface CanvasLayout {
 
 ゲーム状態を変更するアクション。プレフィックス形式で分類されている。
 
-```typescript
-// ボードアクション
-type BoardAction =
-  | { type: 'BOARD/PLACE_PIECE'; slotIndex: number; position: Position }
+**アクション一覧:**
 
-// UIアクション
-type UIAction =
-  | { type: 'UI/START_DRAG'; slotIndex: number; startPos: Position }
-  | { type: 'UI/UPDATE_DRAG'; currentPos: Position; boardPos: Position | null }
-  | { type: 'UI/END_DRAG' }
-
-// ゲームアクション
-type GameCoreAction =
-  | { type: 'GAME/RESET' }
-
-// アニメーションアクション
-type AnimationAction =
-  | { type: 'ANIMATION/END_CLEAR' }
-  | { type: 'ANIMATION/END_RELIC_ACTIVATION' }
-
-// ラウンドアクション
-type RoundAction =
-  | { type: 'ROUND/ADVANCE'; probabilityOverride?: ProbabilityOverride }
-
-// ショップアクション
-type ShopAction =
-  | { type: 'SHOP/BUY_ITEM'; itemIndex: number }
-  | { type: 'SHOP/LEAVE' }
-
-type GameAction = BoardAction | UIAction | GameCoreAction | AnimationAction | RoundAction | ShopAction
-```
-
-**アクション種類:**
-1. `BOARD/PLACE_PIECE`: ブロックを指定位置に配置
-2. `UI/START_DRAG`: ドラッグ開始
-3. `UI/UPDATE_DRAG`: ドラッグ中の位置更新
-4. `UI/END_DRAG`: ドラッグ終了
-5. `GAME/RESET`: ゲームリセット
-6. `ANIMATION/END_CLEAR`: 消去アニメーション終了
-7. `ANIMATION/END_RELIC_ACTIVATION`: レリック発動アニメーション終了
-8. `ROUND/ADVANCE`: ラウンド進行（round_clearフェーズから次フェーズへ）
-9. `SHOP/BUY_ITEM`: ショップアイテム購入
-10. `SHOP/LEAVE`: ショップ退出
+| アクション | 説明 |
+|---|---|
+| `BOARD/PLACE_PIECE` | ブロックを指定位置に配置 |
+| `UI/START_DRAG` | ドラッグ開始 |
+| `UI/UPDATE_DRAG` | ドラッグ中の位置更新 |
+| `UI/END_DRAG` | ドラッグ終了 |
+| `GAME/RESET` | ゲームリセット |
+| `ANIMATION/END_CLEAR` | 消去アニメーション終了 |
+| `ANIMATION/END_RELIC_ACTIVATION` | レリック発動アニメーション終了 |
+| `ROUND/ADVANCE` | ラウンド進行（round_clearフェーズから次フェーズへ） |
+| `SHOP/BUY_ITEM` | ショップアイテム購入 |
+| `SHOP/LEAVE` | ショップ退出 |
 
 **プレフィックスによる分類:**
 - `BOARD/`: ボード操作
@@ -642,6 +735,37 @@ type GameAction = BoardAction | UIAction | GameCoreAction | AnimationAction | Ro
 - `ANIMATION/`: アニメーション
 - `ROUND/`: ラウンド進行
 - `SHOP/`: ショップ操作
+
+## 型の関連図
+
+```
+GameState
+├── Board (Cell[][]）
+├── PieceSlot[] → Piece → BlockDataMap (BlockData)
+├── DeckState
+│   ├── cards: MinoId[]
+│   ├── purchasedPieces: Map<MinoId, Piece>
+│   ├── stockSlot: Piece | null
+│   └── stockSlot2: Piece | null
+├── PlayerState
+│   ├── gold, earnedGold
+│   ├── ownedRelics: RelicId[]     // 最大5枠（予定）
+│   ├── relicDisplayOrder: RelicId[]
+│   └── amuletStock: Amulet[]     // 最大2個（追加予定）
+├── RelicMultiplierState
+│   └── copyRelicState: CopyRelicState | null
+├── scriptRelicLines: ScriptRelicLines | null
+│   ├── target1: ScriptLineTarget
+│   └── target2: ScriptLineTarget
+├── DragState
+├── ClearingAnimationState | null
+├── RelicActivationAnimationState | null
+│   └── activatedRelics: ActivatedRelicInfo[]
+├── ScoreAnimationState | null
+│   └── steps: FormulaStep[]
+└── ShopState | null
+    └── items: ShopItem[] (BlockShopItem | RelicShopItem | AmuletShopItem)
+```
 
 ## データフロー
 
@@ -668,7 +792,7 @@ GameState (新しい状態)
 - `DeckState` 更新時はスプレッド演算子で新オブジェクト生成
 - `GameState` 更新時はスプレッド演算子で新オブジェクト生成
 
-## 新規追加型
+## UI関連型
 
 ### TooltipState
 
@@ -688,29 +812,24 @@ interface TooltipContent {
 }
 ```
 
-**プロパティ:**
-- `isVisible`: ツールチップが表示中かどうか
-- `content`: 表示内容（名前、説明、効果リスト）
-- `position`: 表示位置（スクリーン座標）
-
 ## 関連ファイル
 
-- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/Domain/GameState.ts` - GameState定義
-- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/Domain/Board/` - ボード関連型
-- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/Domain/Piece/` - ピース関連型
-- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/Domain/Deck/` - デッキ関連型
-- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/Domain/Shop/` - ショップ関連型
-- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/Domain/Effect/` - エフェクト関連型（パターン、シール、レリック）
-- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/Domain/Round/` - ラウンド関連型
-- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/Domain/Player/` - プレイヤー関連型
-- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/State/Actions/GameActions.ts` - アクション型定義
-- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/Data/MinoDefinitions.ts` - ミノ定義
-- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/Services/BoardService.ts` - ボード操作
-- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/Services/DeckService.ts` - デッキ管理
-- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/Services/RoundService.ts` - ラウンド・ゴールド計算
-- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/Services/ShopService.ts` - ショップロジック
-- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/lib/game/Utils/Random.ts` - 乱数生成器
-- `/Users/kenwatanabe/Projects/HexominoPuzzleTest/src/hooks/useGame.ts` - 状態管理
+- `src/lib/game/Domain/GameState.ts` - GameState定義
+- `src/lib/game/Domain/Board/` - ボード関連型
+- `src/lib/game/Domain/Piece/` - ピース関連型
+- `src/lib/game/Domain/Deck/DeckState.ts` - デッキ関連型
+- `src/lib/game/Domain/Shop/` - ショップ関連型
+- `src/lib/game/Domain/Effect/RelicState.ts` - レリック状態型（RelicMultiplierState, CopyRelicState）
+- `src/lib/game/Domain/Effect/RelicEffectTypes.ts` - レリック効果型
+- `src/lib/game/Domain/Effect/PatternEffectTypes.ts` - パターン・スコア計算型
+- `src/lib/game/Domain/Effect/SealEffectTypes.ts` - シール効果型
+- `src/lib/game/Domain/Effect/ScriptRelicState.ts` - 台本レリック状態型
+- `src/lib/game/Domain/Round/` - ラウンド関連型
+- `src/lib/game/Domain/Player/PlayerState.ts` - プレイヤー関連型
+- `src/lib/game/Domain/Animation/AnimationState.ts` - アニメーション状態型
+- `src/lib/game/Domain/Animation/ScoreAnimationState.ts` - スコアアニメーション状態型
+- `src/lib/game/State/Actions/GameActions.ts` - アクション型定義
+- `src/lib/game/Data/MinoDefinitions.ts` - ミノ定義
 
 ## 更新履歴
 
@@ -719,3 +838,12 @@ interface TooltipContent {
 - 2026-02-02: DeckState、GamePhase、ShopItem、ShopState、新アクション型を追加
 - 2026-02-06: ローグライト要素追加（Cell拡張、パターン・シール型、レリック型、ラウンド型、ShopItem拡張、GameState拡張、新アクション）
 - 2026-02-09: Domain/Service層への構造変更を反映、readonly型の追加、PlayerState統合、BlockData追加、アクション型プレフィックス化、TooltipState追加
+- 2026-02-17: レリック中心設計を反映（RelicRarity uncommon追加、PlayerState所持上限・amuletStock追加、AmuletShopItem追加、護符関連型追加、型の関連図更新）
+- 2026-02-17: コードベースに合わせて更新
+  - GameState: scoreAnimation, pendingPhase, volcanoEligible, deckViewOpen, scriptRelicLines, relicMultiplierState を追加
+  - DeckState: stockSlot, stockSlot2 を追加
+  - PlayerState: earnedGold, relicDisplayOrder を追加
+  - ClearingCell: row/col エイリアスを追加
+  - 新規型を追加: RelicMultiplierState, CopyRelicState, ScriptRelicLines, ScriptLineTarget
+  - 型の関連図を追加
+  - 効果計算型（PatternEffectResult, ScoreBreakdown, RelicEffectResult, ScoreAnimationState等）を data-structures-effect-types.md に分割
