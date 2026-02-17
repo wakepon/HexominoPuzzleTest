@@ -172,7 +172,7 @@ function updateCopyRelicCounters(
     if (totalLines === 0) {
       updated = { ...updated, renshaMultiplier: 1.0 }
     } else {
-      updated = { ...updated, renshaMultiplier: updated.renshaMultiplier + 0.5 }
+      updated = { ...updated, renshaMultiplier: updated.renshaMultiplier + RELIC_EFFECT_VALUES.RENSHA_INCREMENT }
     }
   }
 
@@ -1403,10 +1403,24 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         i === action.slotIndex ? { ...s, piece: currentStock } : s
       )
 
+      const newDeck = { ...state.deck, stockSlot: pieceToStock }
+
+      // 手札が全て空になった場合、ドロー処理を実行
+      if (areAllSlotsEmpty(newSlots) && newDeck.remainingHands > 0) {
+        const drawCount = getDrawCount(state.roundInfo)
+        const result = generateNewPieceSlotsFromDeckWithCount(newDeck, drawCount)
+        return {
+          ...state,
+          pieceSlots: result.slots,
+          deck: result.newDeck,
+          dragState: initialDragState,
+        }
+      }
+
       return {
         ...state,
         pieceSlots: newSlots,
-        deck: { ...state.deck, stockSlot: pieceToStock },
+        deck: newDeck,
         dragState: initialDragState,
       }
     }
@@ -1476,10 +1490,24 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         i === action.slotIndex ? { ...s, piece: currentStock2 } : s
       )
 
+      const newDeck = { ...state.deck, stockSlot2: pieceToStock2 }
+
+      // 手札が全て空になった場合、ドロー処理を実行
+      if (areAllSlotsEmpty(newSlots) && newDeck.remainingHands > 0) {
+        const drawCount = getDrawCount(state.roundInfo)
+        const result = generateNewPieceSlotsFromDeckWithCount(newDeck, drawCount)
+        return {
+          ...state,
+          pieceSlots: result.slots,
+          deck: result.newDeck,
+          dragState: initialDragState,
+        }
+      }
+
       return {
         ...state,
         pieceSlots: newSlots,
-        deck: { ...state.deck, stockSlot2: pieceToStock2 },
+        deck: newDeck,
         dragState: initialDragState,
       }
     }
