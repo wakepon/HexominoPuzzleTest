@@ -34,7 +34,7 @@ export interface ScoreBreakdown {
   readonly goldCount: number // goldシール数（スコアには影響しないがReducerで使用）
   // レリック効果
   readonly chainMasterMultiplier: number // 連鎖の達人倍率（1.0 or 1.5）
-  readonly sizeBonusTotal: number // サイズボーナス（0 or 20）
+  readonly sizeBonusTotal: number // サイズボーナス（消去ブロック数 or 0）
   readonly sizeBonusRelicId: RelicId | null // 発動したサイズボーナスレリックID
   readonly fullClearMultiplier: number // 全消し倍率（1 or 5）
   readonly relicBonusTotal: number // レリック加算ボーナス合計

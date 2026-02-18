@@ -308,7 +308,6 @@ export function calculateScoreBreakdown(
     : DEFAULT_RELIC_EFFECTS
   const {
     chainMasterMultiplier,
-    sizeBonusTotal,
     fullClearMultiplier,
     singleLineMultiplier,
     takenokoMultiplier,
@@ -321,7 +320,17 @@ export function calculateScoreBreakdown(
   } = relicEffects
 
   // コピーレリック効果
-  const { copyTargetRelicId, copyMultiplier, copyBonus } = relicEffects
+  const { copyTargetRelicId, copyMultiplier, copyBonus: originalCopyBonus } = relicEffects
+
+  // サイズボーナス: 発動時は消去ブロック数（各ブロック+1点）に上書き
+  const actualSizeBonusTotal = relicEffects.activations.sizeBonusActiveRelicId !== null
+    ? baseBlocks
+    : 0
+
+  // コピーレリックがsize_bonusを対象にしている場合、copyBonusも上書き
+  const isCopyTargetSizeBonus = copyTargetRelicId !== null &&
+    (copyTargetRelicId as string).startsWith('size_bonus_')
+  const actualCopyBonus = isCopyTargetSizeBonus ? actualSizeBonusTotal : originalCopyBonus
 
   // 最終スコア計算（relicDisplayOrder に基づく動的順序）
   // 乗算レリックの倍率マップ
@@ -357,7 +366,7 @@ export function calculateScoreBreakdown(
   }
 
   // 加算レリック（サイズボーナス + 台本 + コピー加算）
-  const finalScore = scoreAfterRelicMultipliers + sizeBonusTotal + scriptBonus + copyBonus
+  const finalScore = scoreAfterRelicMultipliers + actualSizeBonusTotal + scriptBonus + actualCopyBonus
 
   return {
     baseBlocks,
@@ -375,10 +384,10 @@ export function calculateScoreBreakdown(
     sealScoreBonus,
     goldCount,
     chainMasterMultiplier,
-    sizeBonusTotal,
+    sizeBonusTotal: actualSizeBonusTotal,
     sizeBonusRelicId: relicEffects.activations.sizeBonusActiveRelicId,
     fullClearMultiplier,
-    relicBonusTotal: sizeBonusTotal + scriptBonus + copyBonus,
+    relicBonusTotal: actualSizeBonusTotal + scriptBonus + actualCopyBonus,
     singleLineMultiplier,
     takenokoMultiplier,
     kaniMultiplier,
@@ -389,7 +398,7 @@ export function calculateScoreBreakdown(
     timingMultiplier,
     copyTargetRelicId,
     copyMultiplier,
-    copyBonus,
+    copyBonus: actualCopyBonus,
     finalScore,
   }
 }

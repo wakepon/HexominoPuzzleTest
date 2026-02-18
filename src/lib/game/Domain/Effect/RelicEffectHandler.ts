@@ -134,8 +134,9 @@ export function calculateRelicEffects(
   const chainMasterMultiplier = activations.chainMasterActive
     ? RELIC_EFFECT_VALUES.CHAIN_MASTER_MULTIPLIER
     : 1.0
+  // 仮値1をフラグとして設定（実際の値はPatternEffectHandlerで消去ブロック数に上書き）
   const sizeBonusTotal = activations.sizeBonusActiveRelicId !== null
-    ? RELIC_EFFECT_VALUES.SIZE_BONUS_SCORE
+    ? 1
     : 0
   const fullClearMultiplier = activations.fullClearActive
     ? RELIC_EFFECT_VALUES.FULL_CLEAR_MULTIPLIER
@@ -466,7 +467,7 @@ export function applyRelicEffectsToScore(
   // 全消し倍率（他の乗算レリックと同じ扱い）
   score = Math.floor(score * relicEffects.fullClearMultiplier)
 
-  // サイズボーナス: +20
+  // サイズボーナス: 消去ブロック数（PatternEffectHandlerで計算済み）
   score += relicEffects.sizeBonusTotal
 
   // 台本ボーナス
