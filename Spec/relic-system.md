@@ -88,7 +88,6 @@
 | `NOBI_INCREMENT` | のびのび系1回あたりの倍率加算量 |
 | `SCRIPT_LINE_BONUS_SINGLE` | 台本: 指定ライン1本揃い時のライン数加算 |
 | `SCRIPT_LINE_BONUS_DOUBLE` | 台本: 指定ライン2本同時揃い時のライン数加算 |
-| `VOLCANO_MULTIPLIER` | 火山: 消去ブロック数に掛ける倍率 |
 | `BANDAID_TRIGGER_COUNT` | 絆創膏: 発動に必要なハンド消費回数 |
 | `TIMING_TRIGGER_COUNT` | タイミング: 発動に必要なハンド消費回数 |
 | `TIMING_MULTIPLIER` | タイミングの倍率 |
@@ -277,7 +276,13 @@ interface ScriptRelicLines {
 
 - ラウンド中に一切ブロックが消えなかった場合に発動
 - ハンドが0になった時（または残り手札がなくなった時）に全消去を実行
-- 消去したブロック数に `VOLCANO_MULTIPLIER` を掛けた値がスコアに加算される
+- スコア計算: 消去ブロック数 × `GRID_SIZE`（フィールド最大列数=6）を基本スコアとする
+- 他レリックのスコア倍率効果も適用される（全6行+全6列=12ライン消去扱い）
+  - 連鎖の達人: totalLines=12 ≥ 2 → 発動（×1.5）
+  - 全消しボーナス: 全消去で常に盤面が空 → 発動（×5）
+  - タイミング: カウンター次第で発動（×2）
+  - シングルライン/タケノコ/カニ: 条件に合致しないため発動しない
+  - 台本/サイズボーナス: 無効化（scriptRelicLines=null, placedBlockSize=0）
 
 ## 手札ストック（hand_stock）の仕組み
 

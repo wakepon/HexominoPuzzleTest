@@ -452,7 +452,8 @@ function tryVolcanoActivation(
   resolved: { finalSlots: PieceSlot[]; finalDeck: DeckState; phase: ReturnType<typeof determinePhase> },
   newBoard: Board,
   comboCount: number,
-  newRelicMultiplierState: RelicMultiplierState
+  newRelicMultiplierState: RelicMultiplierState,
+  timingBonusApplies: boolean
 ): PlacementResult | null {
   if (
     resolved.phase !== 'game_over' ||
@@ -465,13 +466,39 @@ function tryVolcanoActivation(
   const filledCells = getAllFilledCells(newBoard)
   if (filledCells.length === 0) return null
 
-  // スコア計算（linesCleared=VOLCANO_MULTIPLIER でブロック数×5）
+  // RelicEffectContext を構築（火山は全消去なので全行+全列=12ライン扱い）
+  const relicContextMultState = {
+    ...newRelicMultiplierState,
+    timingBonusActive: timingBonusApplies,
+  }
+  const copyState = newRelicMultiplierState.copyRelicState
+  const copyTimingBonusApplies = copyState?.targetRelicId === ('timing' as RelicId)
+    ? copyState.timingBonusActive : false
+  const relicContextCopyState = copyState && copyTimingBonusApplies
+    ? { ...copyState, timingBonusActive: true }
+    : copyState
+
+  const volcanoRelicContext: RelicEffectContext = {
+    ownedRelics: state.player.ownedRelics,
+    totalLines: GRID_SIZE * 2,
+    rowLines: GRID_SIZE,
+    colLines: GRID_SIZE,
+    placedBlockSize: 0,
+    isBoardEmptyAfterClear: true,
+    relicMultiplierState: relicContextMultState,
+    completedRows: Array.from({ length: GRID_SIZE }, (_, i) => i),
+    completedCols: Array.from({ length: GRID_SIZE }, (_, i) => i),
+    scriptRelicLines: null,
+    copyRelicState: relicContextCopyState,
+  }
+
+  // スコア計算（linesCleared=GRID_SIZE で他レリック倍率も適用）
   const volcanoBreakdown = calculateScoreBreakdown(
     newBoard,
     filledCells,
-    RELIC_EFFECT_VALUES.VOLCANO_MULTIPLIER,
+    GRID_SIZE,
     0,
-    null,
+    volcanoRelicContext,
     Math.random,
     state.player.relicDisplayOrder
   )
@@ -489,12 +516,16 @@ function tryVolcanoActivation(
     duration: CLEAR_ANIMATION.duration,
   }
 
-  // レリック発動アニメーション（火山）
+  // レリック発動アニメーション（火山 + 他の発動レリック）
+  const otherActivatedRelics = getActivatedRelicsFromScoreBreakdown(volcanoBreakdown)
   const volcanoRelicAnim = createRelicActivationAnimation(
-    [{
-      relicId: 'volcano' as RelicId,
-      bonusValue: `+${volcanoBreakdown.finalScore}`,
-    }],
+    [
+      {
+        relicId: 'volcano' as RelicId,
+        bonusValue: `+${volcanoBreakdown.finalScore}`,
+      },
+      ...otherActivatedRelics,
+    ],
     RELIC_EFFECT_STYLE.duration
   )
 
@@ -725,7 +756,7 @@ function processPiecePlacement(
 
   // 火山レリック発動判定
   const volcanoResult = tryVolcanoActivation(
-    state, resolved, newBoard, comboCount, newRelicMultiplierState
+    state, resolved, newBoard, comboCount, newRelicMultiplierState, timingBonusApplies
   )
   if (volcanoResult) {
     return volcanoResult

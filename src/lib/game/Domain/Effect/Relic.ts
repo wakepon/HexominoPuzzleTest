@@ -15,7 +15,6 @@ export const RELIC_EFFECT_VALUES = {
   NOBI_INCREMENT: 0.5,           // のびのび系: +0.5ずつ
   SCRIPT_LINE_BONUS_SINGLE: 1,   // 台本: 1本揃い（ライン数+1）
   SCRIPT_LINE_BONUS_DOUBLE: 2,   // 台本: 2本同時揃い（ライン数+2）
-  VOLCANO_MULTIPLIER: 5,         // 火山: ブロック数×5
   BANDAID_TRIGGER_COUNT: 3,      // 絆創膏: 発動に必要なハンド消費回数
   TIMING_TRIGGER_COUNT: 3,       // タイミング: 発動に必要なハンド消費回数
   TIMING_MULTIPLIER: 2,          // タイミング: スコア倍率
@@ -216,7 +215,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     id: 'volcano' as RelicId,
     type: 'volcano',
     name: '火山',
-    description: 'ラウンド中にブロックが消えなかった場合、ハンド0で全消去（ブロック数×5）',
+    description: 'ラウンド中にブロックが消えなかった場合、ハンド0で全消去（ブロック数×フィールド最大列数）',
     rarity: 'uncommon',
     price: 15,
     icon: '🌋',
