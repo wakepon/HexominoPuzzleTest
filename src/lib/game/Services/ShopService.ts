@@ -3,6 +3,7 @@
  */
 
 import type { ShopItem, ShopState, DeckState, MinoCategory, Piece, RelicShopItem, BlockShopItem } from '../Domain'
+import type { AmuletShopItem } from '../Domain/Shop/ShopTypes'
 import type { PatternId, SealId, RelicId } from '../Domain/Core/Id'
 import type { RandomGenerator } from '../Utils/Random'
 import { RELIC_DEFINITIONS, RelicType } from '../Domain/Effect/Relic'
@@ -29,6 +30,7 @@ import {
 } from './PieceService'
 import { SHOP_AVAILABLE_PATTERNS } from '../Domain/Effect/Pattern'
 import { SHOP_AVAILABLE_SEALS } from '../Domain/Effect/Seal'
+import { AMULET_DEFINITIONS, type AmuletType } from '../Domain/Effect/Amulet'
 
 /**
  * カテゴリごとのミノIDリスト
@@ -202,6 +204,36 @@ export function generateRelicShopItems(
 }
 
 /**
+ * 護符ショップアイテムを生成
+ * AMULET_DEFINITIONSからランダム選択、minPrice〜maxPrice範囲で価格決定
+ */
+export function generateAmuletShopItem(
+  rng: RandomGenerator
+): AmuletShopItem {
+  const allTypes = Object.keys(AMULET_DEFINITIONS) as AmuletType[]
+  const typeIndex = Math.floor(rng.next() * allTypes.length)
+  const amuletType = allTypes[typeIndex]
+  const def = AMULET_DEFINITIONS[amuletType]
+
+  // minPrice〜maxPrice範囲でランダム価格
+  const priceRange = def.maxPrice - def.minPrice
+  const price = def.minPrice + Math.floor(rng.next() * (priceRange + 1))
+
+  return {
+    type: 'amulet',
+    amuletId: def.id,
+    amuletType: def.type,
+    name: def.name,
+    description: def.description,
+    icon: def.icon,
+    price,
+    originalPrice: price,
+    purchased: false,
+    onSale: false,
+  }
+}
+
+/**
  * ランダムに1つの商品にセールを適用
  */
 function applySaleToRandomItem(
@@ -240,8 +272,16 @@ export function createShopState(
   const blockItems = generateShopItems(rng, override)
   const relicItems = generateRelicShopItems(rng, ownedRelics)
 
+  // 30%の確率でレリック枠の1つを護符に置換
+  let finalRelicItems: ShopItem[] = [...relicItems]
+  if (relicItems.length > 0 && rng.next() < 0.3) {
+    const amuletItem = generateAmuletShopItem(rng)
+    // 最後のレリック枠を護符に置換
+    finalRelicItems = [...relicItems.slice(0, -1), amuletItem]
+  }
+
   // 全商品からランダムに1つセール対象を選択
-  const allItems = [...blockItems, ...relicItems]
+  const allItems: ShopItem[] = [...blockItems, ...finalRelicItems]
   const itemsWithSale = applySaleToRandomItem(allItems, rng)
 
   return {

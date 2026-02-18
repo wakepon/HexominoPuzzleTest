@@ -8,6 +8,7 @@ import { getMinoById } from '../../lib/game/minoDefinitions'
 import type { DebugSettings } from '../../lib/game/Domain/Debug'
 import { RELIC_DEFINITIONS, type RelicType } from '../../lib/game/Domain/Effect/Relic'
 import type { RelicId } from '../../lib/game/Domain/Core/Id'
+import { AMULET_DEFINITIONS, type AmuletType } from '../../lib/game/Domain/Effect/Amulet'
 
 /**
  * ボタン領域の型定義
@@ -25,6 +26,13 @@ export interface ButtonArea {
 export interface RelicButtonArea extends ButtonArea {
   relicType: RelicType
   isOwned: boolean
+}
+
+/**
+ * 護符ボタン領域の型定義
+ */
+export interface AmuletButtonArea extends ButtonArea {
+  amuletType: AmuletType
 }
 
 /**
@@ -49,6 +57,8 @@ export interface DebugWindowRenderResult {
   scoreMinus10Button: ButtonArea
   scorePlus10Button: ButtonArea
   scorePlus50Button: ButtonArea
+  // 護符追加ボタン
+  amuletButtons: AmuletButtonArea[]
 }
 
 /**
@@ -396,6 +406,11 @@ export function renderDebugWindow(
   const vs = DEBUG_WINDOW_STYLE.valueSection
   const valueSectionHeight = vs.sectionMarginTop + vs.rowHeight * 2 + padding
 
+  // 護符セクションの高さ
+  const allAmuletTypes = Object.keys(AMULET_DEFINITIONS) as AmuletType[]
+  const amuletRows = Math.ceil(allAmuletTypes.length / rs.iconsPerRow)
+  const amuletSectionHeight = rs.sectionMarginTop + rs.labelFontSize + 4 + amuletRows * (rs.iconSize + rs.iconGap) + padding
+
   // 削除ボタン用の高さ
   const deleteSaveButtonSectionHeight = 30 + padding
 
@@ -403,7 +418,7 @@ export function renderDebugWindow(
   const valueRowWidth = vs.labelWidth + vs.valueWidth + (vs.buttonWidth + vs.buttonGap) * 4 + padding * 2
   const relicRowWidth = rs.iconsPerRow * (rs.iconSize + rs.iconGap) + padding * 2
   const windowWidth = Math.max(maxMinoWidth + padding * 2 + numberColumnWidth + 5, minWindowWidth, 130, valueRowWidth, relicRowWidth)
-  const windowHeight = headerHeight + totalMinoHeight + ellipsisHeight + probabilitySectionHeight + relicSectionHeight + valueSectionHeight + deleteSaveButtonSectionHeight + padding
+  const windowHeight = headerHeight + totalMinoHeight + ellipsisHeight + probabilitySectionHeight + relicSectionHeight + valueSectionHeight + amuletSectionHeight + deleteSaveButtonSectionHeight + padding
 
   ctx.save()
 
@@ -541,6 +556,68 @@ export function renderDebugWindow(
   ctx.stroke()
   y += padding / 2
 
+  // 護符セクション
+  y += rs.sectionMarginTop
+
+  // セパレータライン
+  ctx.strokeStyle = titleColor
+  ctx.lineWidth = 1
+  ctx.beginPath()
+  ctx.moveTo(offsetX + padding, y - rs.sectionMarginTop / 2)
+  ctx.lineTo(offsetX + windowWidth - padding, y - rs.sectionMarginTop / 2)
+  ctx.stroke()
+
+  // セクションラベル
+  ctx.fillStyle = '#DDA0DD'
+  ctx.font = `${rs.labelFontSize}px ${fontFamily}`
+  ctx.textAlign = 'left'
+  ctx.textBaseline = 'top'
+  ctx.fillText('Amulets (click to add)', offsetX + padding, y)
+
+  const amuletIconsY = y + rs.labelFontSize + 4
+  const amuletButtons: AmuletButtonArea[] = []
+
+  for (let i = 0; i < allAmuletTypes.length; i++) {
+    const amuletType = allAmuletTypes[i]
+    const amulet = AMULET_DEFINITIONS[amuletType]
+    const col = i % rs.iconsPerRow
+    const row = Math.floor(i / rs.iconsPerRow)
+
+    const iconX = offsetX + padding + col * (rs.iconSize + rs.iconGap)
+    const iconY = amuletIconsY + row * (rs.iconSize + rs.iconGap)
+
+    // アイコン描画
+    ctx.font = `${rs.iconSize - 4}px Arial`
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillStyle = '#FFFFFF'
+    ctx.fillText(amulet.icon, iconX + rs.iconSize / 2, iconY + rs.iconSize / 2)
+
+    // 枠線
+    ctx.strokeStyle = '#9370DB'
+    ctx.lineWidth = 1
+    ctx.strokeRect(iconX, iconY, rs.iconSize, rs.iconSize)
+
+    amuletButtons.push({
+      x: iconX,
+      y: iconY,
+      width: rs.iconSize,
+      height: rs.iconSize,
+      amuletType,
+    })
+  }
+
+  y = amuletIconsY + amuletRows * (rs.iconSize + rs.iconGap)
+
+  // セパレータライン
+  ctx.strokeStyle = titleColor
+  ctx.lineWidth = 1
+  ctx.beginPath()
+  ctx.moveTo(offsetX + padding, y)
+  ctx.lineTo(offsetX + windowWidth - padding, y)
+  ctx.stroke()
+  y += padding / 2
+
   // セーブデータ削除ボタン
   const deleteButtonWidth = windowWidth - padding * 2
   const deleteButtonHeight = 22
@@ -570,5 +647,6 @@ export function renderDebugWindow(
     scoreMinus10Button: scoreButtons.minus10,
     scorePlus10Button: scoreButtons.plus10,
     scorePlus50Button: scoreButtons.plus50,
+    amuletButtons,
   }
 }

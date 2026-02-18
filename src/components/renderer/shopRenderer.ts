@@ -3,7 +3,7 @@
  */
 
 import type { CanvasLayout, Piece } from '../../lib/game/types'
-import type { ShopState, BlockShopItem, RelicShopItem } from '../../lib/game/Domain/Shop/ShopTypes'
+import type { ShopState, BlockShopItem, RelicShopItem, AmuletShopItem } from '../../lib/game/Domain/Shop/ShopTypes'
 import type { BlockData, BlockDataMap } from '../../lib/game/Domain/Piece/BlockData'
 import {
   SHOP_STYLE,
@@ -18,7 +18,8 @@ import {
 import type { RelicId } from '../../lib/game/Domain/Core/Id'
 import { canAfford, getRerollCost } from '../../lib/game/Services/ShopService'
 import { calculateRelicSellPrice } from '../../lib/game/Services/ShopPriceCalculator'
-import { isBlockShopItem, isRelicShopItem } from '../../lib/game/Domain/Shop/ShopTypes'
+import { isBlockShopItem, isRelicShopItem, isAmuletShopItem } from '../../lib/game/Domain/Shop/ShopTypes'
+import { MAX_AMULET_STOCK } from '../../lib/game/Domain/Effect/Amulet'
 import { getPatternDefinition } from '../../lib/game/Domain/Effect/Pattern'
 import { getSealDefinition } from '../../lib/game/Domain/Effect/Seal'
 import { getRelicDefinition, RELIC_DEFINITIONS } from '../../lib/game/Domain/Effect/Relic'
@@ -478,6 +479,94 @@ function renderRelicShopItem(
 }
 
 /**
+ * 護符商品ボックスを描画
+ */
+function renderAmuletShopItem(
+  ctx: CanvasRenderingContext2D,
+  item: AmuletShopItem,
+  gold: number,
+  amuletStockCount: number,
+  boxX: number,
+  boxY: number,
+  boxWidth: number,
+  boxHeight: number
+): void {
+  const { price, originalPrice, purchased, onSale } = item
+  const affordable = canAfford(gold, price)
+  const stockFull = amuletStockCount >= MAX_AMULET_STOCK
+
+  // ボックス背景
+  ctx.fillStyle = purchased
+    ? SHOP_STYLE.itemPurchasedColor
+    : SHOP_STYLE.itemBackgroundColor
+  ctx.fillRect(boxX, boxY, boxWidth, boxHeight)
+
+  // ボックス枠線（紫系）
+  ctx.strokeStyle = purchased ? SHOP_STYLE.itemBorderColor : '#9370DB'
+  ctx.lineWidth = SHOP_STYLE.itemBorderWidth
+  ctx.strokeRect(boxX, boxY, boxWidth, boxHeight)
+
+  // セールバッジ
+  if (onSale && !purchased) {
+    renderSaleBadge(ctx, boxX, boxY)
+  }
+
+  // 紫バッジ「護符」
+  if (!purchased) {
+    ctx.save()
+    ctx.fillStyle = '#7B2FBE'
+    ctx.beginPath()
+    ctx.roundRect(boxX + boxWidth - 42, boxY + 3, 38, 16, 3)
+    ctx.fill()
+    ctx.font = 'bold 10px Arial, sans-serif'
+    ctx.fillStyle = '#FFFFFF'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText('護符', boxX + boxWidth - 23, boxY + 11)
+    ctx.restore()
+  }
+
+  // アイコン
+  ctx.save()
+  if (!purchased && (!affordable || stockFull)) {
+    ctx.globalAlpha = SHOP_STYLE.unavailableOpacity
+  }
+  ctx.font = `${SHOP_STYLE.relicIconSize}px Arial, sans-serif`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(item.icon, boxX + boxWidth / 2, boxY + 30)
+  ctx.restore()
+
+  // 名前
+  ctx.font = 'bold 12px Arial, sans-serif'
+  ctx.textAlign = 'center'
+  ctx.fillStyle = '#DDA0DD'
+  ctx.fillText(item.name, boxX + boxWidth / 2, boxY + 55)
+
+  // ストック満杯表示
+  if (stockFull && !purchased) {
+    ctx.font = 'bold 10px Arial, sans-serif'
+    ctx.fillStyle = '#FF6666'
+    ctx.fillText('ストック満杯', boxX + boxWidth / 2, boxY + 70)
+  }
+
+  // 価格
+  const priceY = boxY + boxHeight - 15
+  renderPriceDisplay(
+    ctx,
+    boxX + boxWidth / 2,
+    priceY,
+    price,
+    originalPrice,
+    purchased,
+    onSale,
+    affordable && !stockFull,
+    SHOP_STYLE.priceFontSize,
+    { original: -8, sale: 6 }
+  )
+}
+
+/**
  * ショップ画面を描画
  */
 /**
@@ -664,7 +753,8 @@ export function renderShop(
   gold: number,
   layout: CanvasLayout,
   rerollCount: number,
-  ownedRelics: readonly RelicId[] = []
+  ownedRelics: readonly RelicId[] = [],
+  amuletStockCount: number = 0
 ): ShopRenderResult {
   const {
     backgroundColor,
@@ -682,8 +772,6 @@ export function renderShop(
     itemsOffsetY,
     goldDisplayOffsetY,
     cellSizeRatio,
-    relicRowOffsetY,
-    relicBoxHeight,
   } = SHOP_STYLE
 
   ctx.save()
@@ -726,9 +814,11 @@ export function renderShop(
   ctx.textBaseline = 'middle'
   ctx.fillText('ブロックを購入しますか？', centerX, centerY + titleOffsetY)
 
-  // ブロック商品とレリック商品を分離
+  // ブロック商品とレリック/護符商品を分離
   const blockItems = shopState.items.filter(isBlockShopItem)
   const relicItems = shopState.items.filter(isRelicShopItem)
+  const amuletItems = shopState.items.filter(isAmuletShopItem)
+  const bottomRowItems = [...relicItems, ...amuletItems]
 
   // アイテムボックスのサイズ計算
   const cellSize = layout.cellSize * cellSizeRatio
@@ -767,33 +857,46 @@ export function renderShop(
     })
   })
 
-  // レリック行の配置（ブロック行の下）
-  if (relicItems.length > 0) {
-    const { relicBoxWidth, relicBoxHeight, relicRowOffsetY } = SHOP_STYLE
-    const relicTotalWidth = relicBoxWidth * relicItems.length + itemBoxGap * (relicItems.length - 1)
-    const relicStartX = centerX - relicTotalWidth / 2
-    const relicBoxY = blockBoxY + boxHeight + relicRowOffsetY
+  // レリック/護符行の配置（ブロック行の下）
+  if (bottomRowItems.length > 0) {
+    const { relicBoxWidth, relicBoxHeight: relicBoxH, relicRowOffsetY } = SHOP_STYLE
+    const bottomTotalWidth = relicBoxWidth * bottomRowItems.length + itemBoxGap * (bottomRowItems.length - 1)
+    const bottomStartX = centerX - bottomTotalWidth / 2
+    const bottomBoxY = blockBoxY + boxHeight + relicRowOffsetY
 
-    relicItems.forEach((item, relicIndex) => {
-      const boxX = relicStartX + relicIndex * (relicBoxWidth + itemBoxGap)
+    bottomRowItems.forEach((item, idx) => {
+      const boxX = bottomStartX + idx * (relicBoxWidth + itemBoxGap)
       const originalIndex = shopState.items.indexOf(item)
 
-      renderRelicShopItem(
-        ctx,
-        item,
-        gold,
-        boxX,
-        relicBoxY,
-        relicBoxWidth,
-        relicBoxHeight
-      )
+      if (isRelicShopItem(item)) {
+        renderRelicShopItem(
+          ctx,
+          item,
+          gold,
+          boxX,
+          bottomBoxY,
+          relicBoxWidth,
+          relicBoxH
+        )
+      } else if (isAmuletShopItem(item)) {
+        renderAmuletShopItem(
+          ctx,
+          item,
+          gold,
+          amuletStockCount,
+          boxX,
+          bottomBoxY,
+          relicBoxWidth,
+          relicBoxH
+        )
+      }
 
       itemAreas.push({
         itemIndex: originalIndex,
         x: boxX,
-        y: relicBoxY,
+        y: bottomBoxY,
         width: relicBoxWidth,
-        height: relicBoxHeight,
+        height: relicBoxH,
       })
     })
   }
@@ -809,10 +912,11 @@ export function renderShop(
     rerollButtonGap,
   } = SHOP_STYLE
 
-  // レリック行がある場合はレリック行の下端、ない場合はブロック行の下端を基準にする
-  const contentBottomY = relicItems.length > 0
-    ? blockBoxY + boxHeight + relicRowOffsetY + relicBoxHeight  // レリック行の下端
-    : blockBoxY + boxHeight                                      // ブロック行の下端
+  // レリック/護符行がある場合はその下端、ない場合はブロック行の下端を基準にする
+  const { relicBoxWidth: _rw, relicBoxHeight: bottomRowBoxHeight, relicRowOffsetY: bottomRowOffsetY } = SHOP_STYLE
+  const contentBottomY = bottomRowItems.length > 0
+    ? blockBoxY + boxHeight + bottomRowOffsetY + bottomRowBoxHeight  // レリック/護符行の下端
+    : blockBoxY + boxHeight                                           // ブロック行の下端
   const buttonY = contentBottomY + leaveButtonGap
 
   // 売却ボタンの表示判定（レリックを所持している場合のみ）

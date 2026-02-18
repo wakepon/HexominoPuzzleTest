@@ -11,13 +11,14 @@ import type { RoundInfo } from '../Domain/Round/RoundTypes'
 import type { Board } from '../Domain/Board/Board'
 import type { Piece } from '../Domain/Piece/Piece'
 import type { PieceSlot, DeckState } from '../Domain/Deck/DeckState'
-import type { ShopState, ShopItem, RelicShopItem } from '../Domain/Shop/ShopTypes'
+import type { ShopState, ShopItem, RelicShopItem, AmuletShopItem } from '../Domain/Shop/ShopTypes'
 import type { BlockData, BlockDataMap } from '../Domain/Piece/BlockData'
 import type { MinoId, RelicId, BlockSetId } from '../Domain/Core/Id'
 import type { PieceShape } from '../Domain/Piece/PieceShape'
 import type { Position } from '../Domain/Core/Position'
 import { INITIAL_RELIC_MULTIPLIER_STATE } from '../Domain/Effect/RelicState'
 import type { ScriptRelicLines } from '../Domain/Effect/ScriptRelicState'
+import type { Amulet } from '../Domain/Effect/Amulet'
 
 // ========================================
 // 定数
@@ -74,8 +75,9 @@ interface SerializedBlockShopItem {
 
 /**
  * シリアライズされたShopItem
+ * AmuletShopItemはMapを含まないのでそのままパススルー
  */
-type SerializedShopItem = SerializedBlockShopItem | RelicShopItem
+type SerializedShopItem = SerializedBlockShopItem | RelicShopItem | AmuletShopItem
 
 /**
  * シリアライズされたShopState
@@ -105,6 +107,7 @@ interface SavedGameState {
     readonly earnedGold?: number
     readonly ownedRelics: readonly RelicId[]
     readonly relicDisplayOrder?: readonly RelicId[]
+    readonly amuletStock?: readonly Amulet[]
   }
 
   // デッキ関連
@@ -195,6 +198,9 @@ function serializeShopItem(item: ShopItem): SerializedShopItem {
   if (item.type === 'relic') {
     return item
   }
+  if (item.type === 'amulet') {
+    return item
+  }
   return {
     type: 'block',
     piece: serializePiece(item.piece),
@@ -232,6 +238,7 @@ function serializeState(state: GameState): SavedGameState {
       gold: state.player.gold,
       ownedRelics: state.player.ownedRelics,
       relicDisplayOrder: state.player.relicDisplayOrder,
+      amuletStock: state.player.amuletStock,
     },
     deck: serializeDeckState(state.deck),
     board: state.board,
@@ -294,6 +301,9 @@ function deserializeDeckState(serialized: SerializedDeckState): DeckState {
  */
 function deserializeShopItem(serialized: SerializedShopItem): ShopItem {
   if (serialized.type === 'relic') {
+    return serialized
+  }
+  if (serialized.type === 'amulet') {
     return serialized
   }
   return {
@@ -472,6 +482,8 @@ export function restoreGameState(
         ? [...saved.player.relicDisplayOrder]
         : [...saved.player.ownedRelics]
       ).map(r => r === 'small_luck' ? 'size_bonus_3' : r) as RelicId[],
+      // マイグレーション対応: 古いセーブデータにはamuletStockがない
+      amuletStock: saved.player.amuletStock ?? [],
     },
     targetScore: saved.targetScore,
     shopState: deserializeShopState(saved.shopState),
@@ -491,5 +503,7 @@ export function restoreGameState(
     deckViewOpen: false,
     // マイグレーション対応: 古いセーブデータにはpendingPhaseがない
     pendingPhase: null,
+    // 護符モーダルはセーブに含めない
+    amuletModal: null,
   }
 }

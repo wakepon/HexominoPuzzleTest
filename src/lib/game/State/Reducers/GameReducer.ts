@@ -15,7 +15,7 @@ import { toGridPosition } from '../../Domain/Core/Position'
 import type { GameAction } from '../Actions/GameActions'
 import type { RelicEffectContext } from '../../Domain/Effect/RelicEffectTypes'
 import type { ScoreBonus } from '../../Events/GameEvent'
-import { isBlockShopItem, isRelicShopItem } from '../../Domain/Shop/ShopTypes'
+import { isBlockShopItem, isRelicShopItem, isAmuletShopItem } from '../../Domain/Shop/ShopTypes'
 import { addRelic, removeRelic, sellRelic, addGold, subtractGold } from './PlayerReducer'
 import {
   emitPiecePlaced,
@@ -88,9 +88,13 @@ import {
   getRerollCost,
 } from '../../Services/ShopService'
 import { calculateRelicSellPrice } from '../../Services/ShopPriceCalculator'
-import { getPiecePattern, createPieceWithPattern } from '../../Services/PieceService'
+import { getPiecePattern, createPieceWithPattern, createPiece } from '../../Services/PieceService'
 import { DefaultRandom } from '../../Utils/Random'
 import { CLEAR_ANIMATION, RELIC_EFFECT_STYLE, GRID_SIZE, MAX_RELIC_SLOTS } from '../../Data/Constants'
+import type { Amulet } from '../../Domain/Effect/Amulet'
+import { AMULET_DEFINITIONS, MAX_AMULET_STOCK } from '../../Domain/Effect/Amulet'
+import type { AmuletModalState } from '../../Domain/Effect/AmuletModalState'
+import { applyPatternAdd, applySealAdd, applyVanish, applySculpt, isShapeConnected } from '../../Services/AmuletEffectService'
 import { OBSTACLE_BLOCK_COUNT } from '../../Data/BossConditions'
 import { RELIC_DEFINITIONS, RELIC_EFFECT_VALUES } from '../../Domain/Effect/Relic'
 import { getMinoById } from '../../Data/MinoDefinitions'
@@ -851,6 +855,7 @@ function createNextRoundState(currentState: GameState): GameState {
     scriptRelicLines,
     deckViewOpen: false,
     volcanoEligible: true, // ラウンド開始時にリセット
+    amuletModal: null,
   }
 }
 
@@ -1266,6 +1271,25 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       let newDeck = state.deck
       if (isBlockShopItem(item)) {
         newDeck = addPieceToDeck(state.deck, item.piece)
+      }
+
+      // AmuletShopItemの場合は護符をストックに追加
+      if (isAmuletShopItem(item)) {
+        if (newPlayer.amuletStock.length >= MAX_AMULET_STOCK) {
+          return state // ストック満杯
+        }
+        const amulet: Amulet = {
+          id: item.amuletId,
+          type: item.amuletType,
+          name: item.name,
+          description: item.description,
+          icon: item.icon,
+          price: item.price,
+        }
+        newPlayer = {
+          ...newPlayer,
+          amuletStock: [...newPlayer.amuletStock, amulet],
+        }
       }
 
       // RelicShopItemの場合はレリックをプレイヤーに追加
@@ -1775,6 +1799,233 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     case 'DEBUG/ADD_SCORE': {
       const newScore = Math.max(0, state.score + action.amount)
       const newState = { ...state, score: newScore }
+      saveGameState(newState)
+      return newState
+    }
+
+    // === 護符アクション ===
+    case 'AMULET/USE': {
+      // playing/shoppingフェーズで有効
+      if (state.phase !== 'playing' && state.phase !== 'shopping') return state
+      // モーダルが既に開いている場合は無視
+      if (state.amuletModal) return state
+
+      const { amuletIndex } = action
+      const amulet = state.player.amuletStock[amuletIndex]
+      if (!amulet) return state
+
+      const amuletModal: AmuletModalState = {
+        amuletType: amulet.type,
+        amuletIndex,
+        step: 'select_piece',
+        selectedMinoId: null,
+        editingShape: null,
+      }
+
+      return { ...state, amuletModal }
+    }
+
+    case 'AMULET/SELECT_PIECE': {
+      if (!state.amuletModal || state.amuletModal.step !== 'select_piece') return state
+
+      const { minoId } = action
+      const modal = state.amuletModal
+
+      // sculptの場合は sculpt_edit ステップへ
+      if (modal.amuletType === 'sculpt') {
+        // 既存のピース形状を取得
+        const mino = getMinoById(minoId)
+        if (!mino) return state
+
+        // purchasedPiecesにある場合はそちらの形状を使う
+        const purchasedPiece = state.deck.purchasedPieces.get(minoId)
+        const currentShape = purchasedPiece ? purchasedPiece.shape : mino.shape
+
+        return {
+          ...state,
+          amuletModal: {
+            ...modal,
+            step: 'sculpt_edit',
+            selectedMinoId: minoId,
+            editingShape: currentShape.map(row => [...row]),
+          },
+        }
+      }
+
+      // vanishの場合は即効果適用
+      if (modal.amuletType === 'vanish') {
+        const newDeck = applyVanish(state.deck, minoId)
+        const newAmuletStock = state.player.amuletStock.filter((_, i) => i !== modal.amuletIndex)
+        const updatedState = {
+          ...state,
+          deck: newDeck,
+          player: { ...state.player, amuletStock: newAmuletStock },
+          amuletModal: null,
+        }
+        saveGameState(updatedState)
+        return updatedState
+      }
+
+      // pattern_addの場合は即効果適用
+      if (modal.amuletType === 'pattern_add') {
+        const rng = new DefaultRandom()
+        const newPiece = applyPatternAdd(minoId, rng)
+        if (!newPiece) return state
+
+        // purchasedPiecesを更新（パターン付きピースとして記録）
+        const newPurchasedPieces = new Map(state.deck.purchasedPieces)
+        newPurchasedPieces.set(minoId, newPiece)
+        const newAmuletStock = state.player.amuletStock.filter((_, i) => i !== modal.amuletIndex)
+
+        const updatedState = {
+          ...state,
+          deck: { ...state.deck, purchasedPieces: newPurchasedPieces },
+          player: { ...state.player, amuletStock: newAmuletStock },
+          amuletModal: null,
+        }
+        saveGameState(updatedState)
+        return updatedState
+      }
+
+      // seal_addの場合は即効果適用
+      if (modal.amuletType === 'seal_add') {
+        const rng = new DefaultRandom()
+        // 既存ピースを取得
+        const mino = getMinoById(minoId)
+        if (!mino) return state
+
+        const purchasedPiece = state.deck.purchasedPieces.get(minoId)
+        const basePiece = purchasedPiece ?? createPiece(mino)
+
+        const newPiece = applySealAdd(basePiece, rng)
+        const newPurchasedPieces = new Map(state.deck.purchasedPieces)
+        newPurchasedPieces.set(minoId, newPiece)
+        const newAmuletStock = state.player.amuletStock.filter((_, i) => i !== modal.amuletIndex)
+
+        const updatedState = {
+          ...state,
+          deck: { ...state.deck, purchasedPieces: newPurchasedPieces },
+          player: { ...state.player, amuletStock: newAmuletStock },
+          amuletModal: null,
+        }
+        saveGameState(updatedState)
+        return updatedState
+      }
+
+      return state
+    }
+
+    case 'AMULET/CONFIRM': {
+      if (!state.amuletModal || state.amuletModal.step !== 'sculpt_edit') return state
+
+      const modal = state.amuletModal
+      if (!modal.editingShape || !modal.selectedMinoId) return state
+
+      // 連結性チェック
+      if (!isShapeConnected(modal.editingShape)) return state
+
+      // ブロックが1つ以上あるかチェック
+      const blockCount = modal.editingShape.reduce(
+        (sum, row) => sum + row.filter(Boolean).length, 0
+      )
+      if (blockCount === 0) return state
+
+      // 既存ピースを取得して形状を適用
+      const mino = getMinoById(modal.selectedMinoId)
+      if (!mino) return state
+
+      const purchasedPiece = state.deck.purchasedPieces.get(modal.selectedMinoId)
+      const basePiece = purchasedPiece ?? createPiece(mino)
+
+      const newPiece = applySculpt(basePiece, modal.editingShape)
+      const newPurchasedPieces = new Map(state.deck.purchasedPieces)
+      newPurchasedPieces.set(modal.selectedMinoId, newPiece)
+      const newAmuletStock = state.player.amuletStock.filter((_, i) => i !== modal.amuletIndex)
+
+      const updatedState = {
+        ...state,
+        deck: { ...state.deck, purchasedPieces: newPurchasedPieces },
+        player: { ...state.player, amuletStock: newAmuletStock },
+        amuletModal: null,
+      }
+      saveGameState(updatedState)
+      return updatedState
+    }
+
+    case 'AMULET/CANCEL': {
+      return { ...state, amuletModal: null }
+    }
+
+    case 'AMULET/SELL': {
+      if (state.phase !== 'shopping') return state
+      const { amuletIndex } = action
+      const amulet = state.player.amuletStock[amuletIndex]
+      if (!amulet) return state
+
+      const sellPrice = Math.floor(amulet.price / 2)
+      const newAmuletStock = state.player.amuletStock.filter((_, i) => i !== amuletIndex)
+      const newPlayer = addGold(
+        { ...state.player, amuletStock: newAmuletStock },
+        sellPrice
+      )
+
+      const updatedState = { ...state, player: newPlayer }
+      saveGameState(updatedState)
+      return updatedState
+    }
+
+    case 'AMULET/SCULPT_TOGGLE_BLOCK': {
+      if (!state.amuletModal || state.amuletModal.step !== 'sculpt_edit') return state
+      if (!state.amuletModal.editingShape) return state
+
+      const { row, col } = action
+      const shape = state.amuletModal.editingShape
+
+      if (row < 0 || row >= shape.length || col < 0 || col >= shape[0].length) return state
+
+      // .map().map()で不変更新
+      const newShape = shape.map((r, ri) =>
+        r.map((cell, ci) => (ri === row && ci === col) ? !cell : cell)
+      )
+
+      return {
+        ...state,
+        amuletModal: {
+          ...state.amuletModal,
+          editingShape: newShape,
+        },
+      }
+    }
+
+    // === デバッグ: 護符 ===
+    case 'DEBUG/ADD_AMULET': {
+      if (state.player.amuletStock.length >= MAX_AMULET_STOCK) return state
+      const def = AMULET_DEFINITIONS[action.amuletType]
+      if (!def) return state
+
+      const amulet: Amulet = {
+        id: def.id,
+        type: def.type,
+        name: def.name,
+        description: def.description,
+        icon: def.icon,
+        price: def.minPrice,
+      }
+      const newPlayer = {
+        ...state.player,
+        amuletStock: [...state.player.amuletStock, amulet],
+      }
+      const newState = { ...state, player: newPlayer }
+      saveGameState(newState)
+      return newState
+    }
+
+    case 'DEBUG/REMOVE_AMULET': {
+      const { amuletIndex } = action
+      if (amuletIndex < 0 || amuletIndex >= state.player.amuletStock.length) return state
+      const newAmuletStock = state.player.amuletStock.filter((_, i) => i !== amuletIndex)
+      const newPlayer = { ...state.player, amuletStock: newAmuletStock }
+      const newState = { ...state, player: newPlayer }
       saveGameState(newState)
       return newState
     }

@@ -14,6 +14,8 @@ import { SCORE_ANIMATION } from '../../lib/game/Domain/Animation/ScoreAnimationS
 import type { ScoreAnimationState } from '../../lib/game/Domain/Animation/ScoreAnimationState'
 import type { GamePhase } from '../../lib/game/Domain/Round/GamePhase'
 import type { ButtonArea } from './overlayRenderer'
+import type { Amulet } from '../../lib/game/Domain/Effect/Amulet'
+import { MAX_AMULET_STOCK } from '../../lib/game/Domain/Effect/Amulet'
 
 interface StatusPanelData {
   targetScore: number
@@ -28,6 +30,14 @@ interface StatusPanelData {
   scoreAnimation: ScoreAnimationState | null
   copyTimingCountdown: number | null
   copyBandaidCountdown: number | null
+  amuletStock: readonly Amulet[]
+}
+
+/**
+ * 護符スロット領域情報
+ */
+export interface AmuletSlotArea extends ButtonArea {
+  amuletIndex: number
 }
 
 /**
@@ -36,6 +46,7 @@ interface StatusPanelData {
 export interface StatusPanelRenderResult {
   deckButtonArea: ButtonArea
   formulaY: number
+  amuletSlotAreas: AmuletSlotArea[]
 }
 
 /**
@@ -187,10 +198,55 @@ export function renderStatusPanel(
     ctx.fillText(`🪞⌛${data.copyTimingCountdown}`, copyCounterX, bottomY + 25)
   }
 
+  // === 護符ストックセクション ===
+  const amuletSlotAreas: AmuletSlotArea[] = []
+  const amuletY = bottomY + 60
+  const amuletSlotSize = 36
+  const amuletSlotGap = 8
+
+  ctx.font = `bold 12px ${style.fontFamily}`
+  ctx.fillStyle = '#DDA0DD'
+  ctx.textAlign = 'left'
+  ctx.textBaseline = 'top'
+  ctx.fillText(`護符 (${data.amuletStock.length}/${MAX_AMULET_STOCK})`, padding, amuletY)
+
+  const amuletIconY = amuletY + 18
+  for (let i = 0; i < MAX_AMULET_STOCK; i++) {
+    const slotX = padding + i * (amuletSlotSize + amuletSlotGap)
+    const amulet = data.amuletStock[i]
+
+    // スロット背景
+    ctx.fillStyle = amulet ? 'rgba(75, 0, 130, 0.5)' : 'rgba(60, 60, 80, 0.4)'
+    ctx.beginPath()
+    ctx.roundRect(slotX, amuletIconY, amuletSlotSize, amuletSlotSize, 4)
+    ctx.fill()
+
+    // スロット枠線
+    ctx.strokeStyle = amulet ? '#9370DB' : '#555555'
+    ctx.lineWidth = 1
+    ctx.stroke()
+
+    if (amulet) {
+      // アイコン
+      ctx.font = `${amuletSlotSize - 10}px Arial, sans-serif`
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.fillText(amulet.icon, slotX + amuletSlotSize / 2, amuletIconY + amuletSlotSize / 2)
+
+      amuletSlotAreas.push({
+        amuletIndex: i,
+        x: slotX,
+        y: amuletIconY,
+        width: amuletSlotSize,
+        height: amuletSlotSize,
+      })
+    }
+  }
+
   // === デッキボタン ===
   const btnStyle = DECK_BUTTON_STYLE
   const buttonX = padding
-  const buttonY = bottomY + 60
+  const buttonY = amuletIconY + amuletSlotSize + 12
 
   ctx.fillStyle = btnStyle.backgroundColor
   ctx.beginPath()
@@ -213,5 +269,6 @@ export function renderStatusPanel(
       height: btnStyle.height,
     },
     formulaY,
+    amuletSlotAreas,
   }
 }

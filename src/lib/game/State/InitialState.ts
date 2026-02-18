@@ -114,6 +114,7 @@ function createNewGameState(): GameState {
     scriptRelicLines: null,
     deckViewOpen: false,
     volcanoEligible: true,
+    amuletModal: null,
   }
 }
 

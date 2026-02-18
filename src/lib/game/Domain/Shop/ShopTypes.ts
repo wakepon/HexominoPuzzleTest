@@ -1,4 +1,5 @@
 import type { RelicId } from '../Core/Id'
+import type { AmuletId, AmuletType } from '../Effect/Amulet'
 import type { Piece } from '../Piece/Piece'
 
 /**
@@ -29,9 +30,25 @@ export interface RelicShopItem {
 }
 
 /**
+ * 護符商品
+ */
+export interface AmuletShopItem {
+  readonly type: 'amulet'
+  readonly amuletId: AmuletId
+  readonly amuletType: AmuletType
+  readonly name: string
+  readonly description: string
+  readonly icon: string
+  readonly price: number
+  readonly originalPrice: number
+  readonly purchased: boolean
+  readonly onSale: boolean
+}
+
+/**
  * ショップ商品（判別可能なUnion型）
  */
-export type ShopItem = BlockShopItem | RelicShopItem
+export type ShopItem = BlockShopItem | RelicShopItem | AmuletShopItem
 
 /**
  * ショップ状態
@@ -55,4 +72,11 @@ export function isBlockShopItem(item: ShopItem): item is BlockShopItem {
  */
 export function isRelicShopItem(item: ShopItem): item is RelicShopItem {
   return item.type === 'relic'
+}
+
+/**
+ * AmuletShopItemかどうかを判定
+ */
+export function isAmuletShopItem(item: ShopItem): item is AmuletShopItem {
+  return item.type === 'amulet'
 }

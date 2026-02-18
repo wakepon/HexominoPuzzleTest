@@ -82,5 +82,6 @@ export function resetPlayerState(initialGold: number): PlayerState {
     earnedGold: 0,
     ownedRelics: [],
     relicDisplayOrder: [],
+    amuletStock: [],
   }
 }
