@@ -86,12 +86,13 @@ interface ScoreBreakdown {
   readonly renshaMultiplier: number
   readonly nobiTakenokoMultiplier: number
   readonly nobiKaniMultiplier: number
-  readonly scriptBonus: number
+  readonly scriptLineBonus: number         // 台本ライン数ボーナス（0, 1, or 2）
   readonly timingMultiplier: number
   readonly copyTargetRelicId: RelicId | null
   readonly copyMultiplier: number
   readonly copyBonus: number
-  readonly finalScore: number          // 最終スコア
+  readonly copyLineBonus: number           // コピーによるライン数加算（台本コピー時、0, 1, or 2）
+  readonly finalScore: number              // 最終スコア
 }
 ```
 
@@ -99,7 +100,9 @@ interface ScoreBreakdown {
 - `baseBlocks`: 基本消去ブロック数
 - `totalBlocks`: 合計ブロック数（乗算対象）
 - `linesCleared`: 消去ライン数
-- `baseScore`: 基本スコア（totalBlocks × linesCleared）
+- `scriptLineBonus`: 台本レリック効果によるライン数加算
+- `copyLineBonus`: コピーレリックによるライン数加算
+- `baseScore`: 基本スコア（totalBlocks × (linesCleared + scriptLineBonus + copyLineBonus)）
 - `finalScore`: 最終スコア
 - `goldCount`: ゴールドシール数（スコアには影響せず、ゴールド獲得計算に使用）
 
@@ -190,11 +193,12 @@ interface RelicEffectResult {
   readonly renshaMultiplier: number
   readonly nobiTakenokoMultiplier: number
   readonly nobiKaniMultiplier: number
-  readonly scriptBonus: number
+  readonly scriptLineBonus: number         // 0, 1, or 2
   readonly timingMultiplier: number
   readonly copyTargetRelicId: RelicId | null
   readonly copyMultiplier: number
   readonly copyBonus: number
+  readonly copyLineBonus: number           // コピーによるライン数加算（台本コピー時、0, 1, or 2）
 }
 ```
 
@@ -290,4 +294,5 @@ interface ScoreAnimationState {
 
 ## 更新履歴
 
+- 2026-02-18: ScoreBreakdown型とRelicEffectResult型に `scriptLineBonus` と `copyLineBonus` を追加（台本レリック効果のライン数加算方式への変更に対応）
 - 2026-02-17: data-structures.md から分割して新規作成

@@ -250,11 +250,12 @@ const DEFAULT_RELIC_EFFECTS: RelicEffectResult = {
   renshaMultiplier: 1.0,
   nobiTakenokoMultiplier: 1.0,
   nobiKaniMultiplier: 1.0,
-  scriptBonus: 0,
+  scriptLineBonus: 0,
   timingMultiplier: 1,
   copyTargetRelicId: null,
   copyMultiplier: 1,
   copyBonus: 0,
+  copyLineBonus: 0,
 }
 
 /**
@@ -289,8 +290,20 @@ export function calculateScoreBreakdown(
   const totalBlocks =
     baseBlocks - chargeBlockCount + enhancedBonus + auraBonus + mossBonus + chargeBonus + multiBonus + arrowBonus
 
-  // 基本スコア
-  const baseScore = totalBlocks * linesCleared
+  // レリック効果を計算（baseScore計算前に必要: scriptLineBonusがlinesに影響）
+  const relicEffects = relicContext
+    ? calculateRelicEffects(relicContext)
+    : DEFAULT_RELIC_EFFECTS
+
+  // 台本ライン数ボーナス: linesCleared > 0 の場合のみ加算
+  const scriptLineBonus = relicEffects.scriptLineBonus
+  const copyLineBonus = relicEffects.copyLineBonus
+  const effectiveLinesCleared = linesCleared > 0
+    ? linesCleared + scriptLineBonus + copyLineBonus
+    : linesCleared
+
+  // 基本スコア（台本ライン数ボーナス込み）
+  const baseScore = totalBlocks * effectiveLinesCleared
 
   // comboボーナス
   const comboBonus = calculateComboBonus(comboCount)
@@ -302,10 +315,6 @@ export function calculateScoreBreakdown(
   const scoreBeforeRelics =
     (baseScore + comboBonus) * luckyMultiplier + sealScoreBonus
 
-  // レリック効果を計算
-  const relicEffects = relicContext
-    ? calculateRelicEffects(relicContext)
-    : DEFAULT_RELIC_EFFECTS
   const {
     chainMasterMultiplier,
     fullClearMultiplier,
@@ -315,7 +324,6 @@ export function calculateScoreBreakdown(
     renshaMultiplier,
     nobiTakenokoMultiplier,
     nobiKaniMultiplier,
-    scriptBonus,
     timingMultiplier,
   } = relicEffects
 
@@ -365,8 +373,8 @@ export function calculateScoreBreakdown(
     }
   }
 
-  // 加算レリック（サイズボーナス + 台本 + コピー加算）
-  const finalScore = scoreAfterRelicMultipliers + actualSizeBonusTotal + scriptBonus + actualCopyBonus
+  // 加算レリック（サイズボーナス + コピー加算）※台本はbaseScoreに反映済み
+  const finalScore = scoreAfterRelicMultipliers + actualSizeBonusTotal + actualCopyBonus
 
   return {
     baseBlocks,
@@ -387,18 +395,19 @@ export function calculateScoreBreakdown(
     sizeBonusTotal: actualSizeBonusTotal,
     sizeBonusRelicId: relicEffects.activations.sizeBonusActiveRelicId,
     fullClearMultiplier,
-    relicBonusTotal: actualSizeBonusTotal + scriptBonus + actualCopyBonus,
+    relicBonusTotal: actualSizeBonusTotal + actualCopyBonus,
     singleLineMultiplier,
     takenokoMultiplier,
     kaniMultiplier,
     renshaMultiplier,
     nobiTakenokoMultiplier,
     nobiKaniMultiplier,
-    scriptBonus,
+    scriptLineBonus,
     timingMultiplier,
     copyTargetRelicId,
     copyMultiplier,
     copyBonus: actualCopyBonus,
+    copyLineBonus,
     finalScore,
   }
 }

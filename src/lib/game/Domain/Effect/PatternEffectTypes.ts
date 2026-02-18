@@ -51,13 +51,14 @@ export interface ScoreBreakdown {
   // 2-F: のびのびカニ
   readonly nobiKaniMultiplier: number // のびのびカニ倍率（累積、1.0から+0.5ずつ増加）
   // 台本
-  readonly scriptBonus: number // 台本ボーナス（0, 20, or 60）
+  readonly scriptLineBonus: number // 台本ライン数ボーナス（0, 1, or 2）
   // タイミング
   readonly timingMultiplier: number // タイミング倍率（1 or 2）
   // コピーレリック
   readonly copyTargetRelicId: RelicId | null // コピー対象のレリックID
   readonly copyMultiplier: number // コピーによる乗算倍率（1=無効）
   readonly copyBonus: number // コピーによる加算ボーナス（0=無効）
+  readonly copyLineBonus: number // コピーによるライン数加算（台本コピー時、0, 1, or 2）
   readonly finalScore: number // 最終スコア
 }
 

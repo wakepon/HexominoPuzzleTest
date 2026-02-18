@@ -52,8 +52,6 @@ function getRelicAdditiveBonus(
     case 'size_bonus_1': case 'size_bonus_2': case 'size_bonus_3':
     case 'size_bonus_4': case 'size_bonus_5': case 'size_bonus_6':
       return breakdown.sizeBonusTotal
-    case 'script':
-      return breakdown.scriptBonus
     default:
       return 0
   }
@@ -207,6 +205,34 @@ export function buildFormulaSteps(
     (breakdown.baseScore + breakdown.comboBonus) * breakdown.luckyMultiplier +
     breakdown.sealScoreBonus
 
+  // 台本ライン数ボーナスの表示ステップ（乗算レリックの前に表示）
+  for (const relicId of relicDisplayOrder) {
+    // 台本: ライン数加算として表示
+    if (relicId === ('script' as string) && (breakdown.scriptLineBonus ?? 0) > 0) {
+      outerMultiplier += breakdown.scriptLineBonus
+      const def = getRelicDefinition(relicId)
+      const label = def?.name ?? relicId
+      steps.push({
+        type: 'relic',
+        label: `${label} +${breakdown.scriptLineBonus}列`,
+        formula: buildFormula(innerSum, outerMultiplier, additiveParts, luckyApplied),
+        relicId,
+      })
+    }
+    // コピーレリックが台本をコピー中の場合
+    if (relicId === ('script' as string) && breakdown.copyTargetRelicId === ('script' as string) && (breakdown.copyLineBonus ?? 0) > 0) {
+      outerMultiplier += breakdown.copyLineBonus
+      const targetDef = getRelicDefinition(relicId)
+      const targetName = targetDef?.name ?? relicId
+      steps.push({
+        type: 'relic',
+        label: `コピー (${targetName}) +${breakdown.copyLineBonus}列`,
+        formula: buildFormula(innerSum, outerMultiplier, additiveParts, luckyApplied),
+        relicId: 'copy' as RelicId,
+      })
+    }
+  }
+
   for (const relicId of relicDisplayOrder) {
     if (isMultiplicativeRelic(relicId)) {
       const multiplier = getRelicMultiplier(relicId, breakdown)
@@ -236,9 +262,9 @@ export function buildFormulaSteps(
     }
   }
 
-  // 加算レリック（サイズボーナス、台本）
+  // 加算レリック（サイズボーナス）※台本は上で表示済み
   for (const relicId of relicDisplayOrder) {
-    if (!isMultiplicativeRelic(relicId) && relicId !== ('copy' as string)) {
+    if (!isMultiplicativeRelic(relicId) && relicId !== ('copy' as string) && relicId !== ('script' as string)) {
       const bonus = getRelicAdditiveBonus(relicId, breakdown)
       if (bonus > 0) {
         currentScore += bonus

@@ -149,11 +149,12 @@ export function calculateScoreWithEffects(
       renshaMultiplier: 1,
       nobiTakenokoMultiplier: 1,
       nobiKaniMultiplier: 1,
-      scriptBonus: 0,
+      scriptLineBonus: 0,
       timingMultiplier: 1,
       copyTargetRelicId: null,
       copyMultiplier: 1,
       copyBonus: 0,
+      copyLineBonus: 0,
       finalScore: 0,
     }
   }

@@ -94,8 +94,8 @@ export interface RelicEffectResult {
   // 2-F: のびのびカニ倍率
   readonly nobiKaniMultiplier: number // 累積倍率（発動しなければ1.0）
 
-  // 台本ボーナス
-  readonly scriptBonus: number // 0, 20, or 60
+  // 台本ライン数ボーナス
+  readonly scriptLineBonus: number // 0, 1, or 2
 
   // タイミング倍率
   readonly timingMultiplier: number // 1 or 2
@@ -104,6 +104,7 @@ export interface RelicEffectResult {
   readonly copyTargetRelicId: RelicId | null // コピー対象のレリックID
   readonly copyMultiplier: number // コピーによる乗算倍率（1=無効）
   readonly copyBonus: number // コピーによる加算ボーナス（0=無効）
+  readonly copyLineBonus: number // コピーによるライン数加算（台本コピー時、0, 1, or 2）
 }
 
 /**

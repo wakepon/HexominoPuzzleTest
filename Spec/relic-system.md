@@ -68,7 +68,7 @@
 | `nobi_takenoko` | のびのびタケノコ | uncommon | 中価格 | 🌱 | 縦列のみ揃えるたびに倍率累積加算（横列消去でリセット） |
 | `nobi_kani` | のびのびカニ | uncommon | 中価格 | 🦞 | 横列のみ揃えるたびに倍率累積加算（縦列消去でリセット） |
 | `hand_stock` | 手札ストック | epic | 高価格 | 📦 | ストック枠が出現し、ブロックを1つ保管可能 |
-| `script` | 台本 | uncommon | 中価格 | 📜 | ラウンド開始時に指定ラインが2本出現。揃えるとスコア加算（2本同時でボーナス増加） |
+| `script` | 台本 | uncommon | 中価格 | 📜 | ラウンド開始時に指定ラインが2本出現。揃えるとライン数加算（2本同時でボーナス増加） |
 | `volcano` | 火山 | uncommon | 中価格 | 🌋 | ラウンド中にブロックが消えなかった場合、ハンド0で全消去（ブロック数に応じたスコア加算） |
 | `bandaid` | 絆創膏 | rare | 中価格 | 🩹 | 一定ハンド消費ごとにノーハンド付きモノミノが手札に追加 |
 | `timing` | タイミング | uncommon | 中価格 | ⌛ | 一定ハンドに1回、スコア倍率増加 |
@@ -86,8 +86,8 @@
 | `SINGLE_LINE_MULTIPLIER` | シングルラインの倍率 |
 | `RENSHA_INCREMENT` | 連射1回あたりの倍率加算量 |
 | `NOBI_INCREMENT` | のびのび系1回あたりの倍率加算量 |
-| `SCRIPT_BONUS_SINGLE` | 台本: 指定ライン1本揃い時の加算スコア |
-| `SCRIPT_BONUS_DOUBLE` | 台本: 指定ライン2本同時揃い時の加算スコア |
+| `SCRIPT_LINE_BONUS_SINGLE` | 台本: 指定ライン1本揃い時のライン数加算 |
+| `SCRIPT_LINE_BONUS_DOUBLE` | 台本: 指定ライン2本同時揃い時のライン数加算 |
 | `VOLCANO_MULTIPLIER` | 火山: 消去ブロック数に掛ける倍率 |
 | `BANDAID_TRIGGER_COUNT` | 絆創膏: 発動に必要なハンド消費回数 |
 | `TIMING_TRIGGER_COUNT` | タイミング: 発動に必要なハンド消費回数 |
@@ -106,7 +106,7 @@
 | `rensha` | ライン消去あり | 乗算（累積倍率） |
 | `nobi_takenoko` | 縦列のみ消去 | 乗算（累積倍率） |
 | `nobi_kani` | 横列のみ消去 | 乗算（累積倍率） |
-| `script` | 台本で指定された行/列が揃った | 加算 |
+| `script` | 台本で指定された行/列が揃った | ライン数加算 |
 | `timing` | ボーナス待機状態かつライン消去あり | 乗算 |
 | `copy` | コピー対象レリックの発動条件に準ずる | 乗算または加算 |
 
@@ -120,19 +120,20 @@
 最終スコアは以下の順序で計算される。
 
 ```
-1. 基本スコア = 総消去ブロック数 × 消去ライン数
-2. コンボボーナス（加算）
-3. lucky効果（乗算）
-4. シールスコアボーナス（加算）
+1. 台本レリック効果（ライン数加算）
+   - effectiveLinesCleared = linesCleared + scriptLineBonus + copyLineBonus
+2. 基本スコア = 総消去ブロック数 × effectiveLinesCleared
+3. コンボボーナス（加算）
+4. lucky効果（乗算）
+5. シールスコアボーナス（加算）
    ↓ ここまでが scoreBeforeRelics
-5. 乗算レリック（relicDisplayOrder の並び順に適用、各ステップで切り捨て）
+6. 乗算レリック（relicDisplayOrder の並び順に適用、各ステップで切り捨て）
    - chain_master / single_line / takenoko / kani / nobi_takenoko / nobi_kani / rensha / timing
    - copy（コピー対象レリックの直後に適用）
    ↓ ここまでが scoreAfterRelicMultipliers
-6. 加算レリック（乗算後に一括加算）
+7. 加算レリック（乗算後に一括加算）
    - sizeBonusTotal（サイズボーナス）
    - fullClearBonus（全消しボーナス）
-   - scriptBonus（台本ボーナス）
    - copyBonus（コピー加算ボーナス）
    ↓ 最終スコア (finalScore)
 ```
@@ -170,7 +171,10 @@ chain_master → single_line → takenoko → kani → nobi_takenoko → nobi_ka
 - `rensha`, `nobi_takenoko`, `nobi_kani`, `timing`
 
 **加算系レリック**（ボーナス値をそのままコピー）:
-- `size_bonus_1〜6`, `full_clear_bonus`, `script`
+- `size_bonus_1〜6`, `full_clear_bonus`
+
+**ライン数加算系レリック**（ライン数ボーナスをそのままコピー）:
+- `script`
 
 ### コピーレリックの独自カウンター（2スロット目のストック）
 
@@ -259,14 +263,15 @@ interface ScriptRelicLines {
 }
 ```
 
-### 発動時のスコア加算
+### 発動時のライン数加算
 
-- 指定ライン1本揃い: `SCRIPT_BONUS_SINGLE` を加算
-- 指定ライン2本同時揃い: `SCRIPT_BONUS_DOUBLE` を加算
+- 指定ライン1本揃い: `SCRIPT_LINE_BONUS_SINGLE` をライン数に加算
+- 指定ライン2本同時揃い: `SCRIPT_LINE_BONUS_DOUBLE` をライン数に加算
+- 加算されたライン数（effectiveLinesCleared）は基本スコア計算（総消去ブロック数 × ライン数）に使用される
 
-### コピー時の台本ボーナス
+### コピー時の台本効果
 
-コピーレリックが台本をコピーした場合、指定ラインの本数は増加せず、スコアボーナスのみが重複して加算される。
+コピーレリックが台本をコピーした場合、指定ラインの本数は増加せず、ライン数加算のみが重複して適用される。
 
 ## 火山レリック（volcano）の仕組み
 

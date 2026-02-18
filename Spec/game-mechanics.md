@@ -512,13 +512,15 @@ goldReward = BASE_REWARD[roundType] + remainingHands + interest
 1. 消去対象セルを収集（石シール・ネガティブパターン除外）
 2. パターン効果を計算（乗算対象のブロック数を決定）
 3. シール効果（multiシール・arrowシール）を計算（乗算対象に加算）
-4. 基本スコア = totalBlocks × linesCleared
-5. コンボボーナスを加算
-6. luckyパターン抽選で乗算
-7. scoreシールボーナスを加算（乗算対象外）
-8. 乗算レリックを適用（relicDisplayOrder順）
-9. 加算レリックを適用（サイズボーナス、全消しボーナス、台本、コピー加算）
-10. finalScore確定
+4. 台本レリック効果（ライン数加算）
+   - effectiveLinesCleared = linesCleared + scriptLineBonus + copyLineBonus
+5. 基本スコア = totalBlocks × effectiveLinesCleared
+6. コンボボーナスを加算
+7. luckyパターン抽選で乗算
+8. scoreシールボーナスを加算（乗算対象外）
+9. 乗算レリックを適用（relicDisplayOrder順）
+10. 加算レリックを適用（サイズボーナス、全消しボーナス、コピー加算）
+11. finalScore確定
 ```
 
 ### 乗算対象ブロック数（totalBlocks）の計算
@@ -609,8 +611,16 @@ scoreBeforeRelics = (baseScore + comboBonus) × luckyMultiplier + sealScoreBonus
 |-----------|---------|------|
 | `size_bonus_1` ～ `size_bonus_6` | 対応サイズのピースでライン消去 | スコアに一定値を加算 |
 | `full_clear_bonus` | 盤面を完全に空にした場合 | スコアに一定値を加算（+100） |
-| `script` | ラウンド開始時指定の2本のラインを揃えた場合 | 1本揃いで一定ボーナス加算、2本同時揃いでさらに大きいボーナス加算 |
 | `copy` | コピー対象が加算レリックの場合 | 対象レリックと同じ加算量をコピーして加算 |
+
+### レリック効果（ライン数加算系）
+
+台本レリックはライン数を加算する（基本スコア計算に影響）:
+
+| レリックID | 発動条件 | 効果 |
+|-----------|---------|------|
+| `script` | ラウンド開始時指定の2本のラインを揃えた場合 | 1本揃いでライン数を+1、2本同時揃いでライン数を+2 |
+| `copy` | コピー対象が台本レリックの場合 | 対象レリックと同じライン数加算をコピーして加算 |
 
 ### finalScore の計算
 
@@ -619,9 +629,10 @@ finalScore =
   scoreAfterRelicMultipliers  // 乗算レリック適用済みスコア
   + sizeBonusTotal             // サイズボーナスレリック加算
   + fullClearBonus             // 全消しボーナスレリック加算（+100）
-  + scriptBonus                // 台本レリック加算
   + copyBonus                  // コピーレリック加算分
 ```
+
+**注記:** 台本レリックは加算ではなく、ライン数加算方式に変更されています（基本スコア計算に影響）。
 
 ### スコア計算フロー（詳細）
 
@@ -645,21 +656,26 @@ finalScore =
                 + enhancedBonus + auraBonus + mossBonus + chargeBonus
                 + multiBonus + arrowBonus
 
-5. baseScore = totalBlocks × linesCleared
+5. 台本レリック効果（ライン数加算）:
+   scriptLineBonus = 台本指定ライン1本揃い時+1、2本同時揃い時+2
+   copyLineBonus   = コピーレリックが台本をコピーした場合の加算
+   effectiveLinesCleared = linesCleared + scriptLineBonus + copyLineBonus
 
-6. comboBonus = (comboCount - 1) × 2  // 1回目は0
+6. baseScore = totalBlocks × effectiveLinesCleared
 
-7. luckyMultiplier = lucky抽選結果（1 または 2）
+7. comboBonus = (comboCount - 1) × 2  // 1回目は0
 
-8. scoreBeforeRelics = (baseScore + comboBonus) × luckyMultiplier + sealScoreBonus
+8. luckyMultiplier = lucky抽選結果（1 または 2）
 
-9. 乗算レリック適用（relicDisplayOrder順）:
-   各レリックの倍率を Math.floor でスコアに乗算
-   copyレリックはコピー対象レリックの直後に乗算
+9. scoreBeforeRelics = (baseScore + comboBonus) × luckyMultiplier + sealScoreBonus
 
-10. 加算レリック適用:
+10. 乗算レリック適用（relicDisplayOrder順）:
+    各レリックの倍率を Math.floor でスコアに乗算
+    copyレリックはコピー対象レリックの直後に乗算
+
+11. 加算レリック適用:
     finalScore = scoreAfterRelicMultipliers
-               + sizeBonusTotal + fullClearBonus + scriptBonus + copyBonus
+               + sizeBonusTotal + fullClearBonus + copyBonus
 ```
 
 ### スコア演出
@@ -747,9 +763,10 @@ finalScore =
 
 ## 更新履歴
 
-- 2026-02-01: 初版作成
-- 2026-02-01: ミノシステム、生成ロジック、ライン消去、アニメーションを追加
-- 2026-02-02: デッキシステム、ラウンド制、ゴールド、ショップ、フェーズ判定を追加
-- 2026-02-06: ローグライト要素追加（ラウンドセット、ボス条件、パターン・シール効果、レリック効果、ショップ拡張、配置不可検出）
+- 2026-02-18: 台本レリック効果を「スコア加算」から「ライン数加算」に変更（scriptBonus → scriptLineBonus、copyLineBonus追加、effectiveLinesCleared計算追加）
 - 2026-02-17: コードに基づき全面更新（ボス条件おじゃまブロック数修正、全消しボーナス+100に修正、スコア計算式を全レリック・パターン・シール反映で更新、コンボカウンター追加、ゴールド報酬計算式更新、連射増分+2・全消しボーナス+100を反映、legiDisplayOrder適用順序を明記）
 - 2026-02-17: レリック中心設計を反映（デッキ6枚化、利息、ショップ2+3構成、レリック売却、護符商品・購入フロー追加）
+- 2026-02-06: ローグライト要素追加（ラウンドセット、ボス条件、パターン・シール効果、レリック効果、ショップ拡張、配置不可検出）
+- 2026-02-02: デッキシステム、ラウンド制、ゴールド、ショップ、フェーズ判定を追加
+- 2026-02-01: ミノシステム、生成ロジック、ライン消去、アニメーションを追加
+- 2026-02-01: 初版作成

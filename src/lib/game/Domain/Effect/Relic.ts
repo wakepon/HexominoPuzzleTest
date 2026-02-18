@@ -13,8 +13,8 @@ export const RELIC_EFFECT_VALUES = {
   SINGLE_LINE_MULTIPLIER: 3,     // シングルライン: ×3
   RENSHA_INCREMENT: 2,           // 連射: +2ずつ
   NOBI_INCREMENT: 0.5,           // のびのび系: +0.5ずつ
-  SCRIPT_BONUS_SINGLE: 20,       // 台本: 1本揃い
-  SCRIPT_BONUS_DOUBLE: 60,       // 台本: 2本同時揃い
+  SCRIPT_LINE_BONUS_SINGLE: 1,   // 台本: 1本揃い（ライン数+1）
+  SCRIPT_LINE_BONUS_DOUBLE: 2,   // 台本: 2本同時揃い（ライン数+2）
   VOLCANO_MULTIPLIER: 5,         // 火山: ブロック数×5
   BANDAID_TRIGGER_COUNT: 3,      // 絆創膏: 発動に必要なハンド消費回数
   TIMING_TRIGGER_COUNT: 3,       // タイミング: 発動に必要なハンド消費回数
@@ -207,7 +207,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     id: 'script' as RelicId,
     type: 'script',
     name: '台本',
-    description: 'ラウンド開始時に指定ラインが2本出現。揃えると+20、2本同時で+60',
+    description: 'ラウンド開始時に指定ラインが2本出現。揃えた際の列数+1、2本同時で+2',
     rarity: 'uncommon',
     price: 15,
     icon: '📜',
