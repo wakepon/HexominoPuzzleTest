@@ -34,6 +34,8 @@ function getRelicMultiplier(
       return breakdown.renshaMultiplier
     case 'timing':
       return breakdown.timingMultiplier
+    case 'full_clear_bonus':
+      return breakdown.fullClearMultiplier
     default:
       return 1
   }
@@ -50,8 +52,6 @@ function getRelicAdditiveBonus(
     case 'size_bonus_1': case 'size_bonus_2': case 'size_bonus_3':
     case 'size_bonus_4': case 'size_bonus_5': case 'size_bonus_6':
       return breakdown.sizeBonusTotal
-    case 'full_clear_bonus':
-      return breakdown.fullClearBonus
     case 'script':
       return breakdown.scriptBonus
     default:
@@ -66,6 +66,7 @@ function isMultiplicativeRelic(relicId: RelicId): boolean {
   const multiplicativeRelics: string[] = [
     'chain_master', 'single_line', 'takenoko', 'kani',
     'nobi_takenoko', 'nobi_kani', 'rensha', 'timing',
+    'full_clear_bonus',
   ]
   return multiplicativeRelics.includes(relicId)
 }
@@ -235,7 +236,7 @@ export function buildFormulaSteps(
     }
   }
 
-  // 加算レリック（サイズボーナス、全消しボーナス、台本）
+  // 加算レリック（サイズボーナス、台本）
   for (const relicId of relicDisplayOrder) {
     if (!isMultiplicativeRelic(relicId) && relicId !== ('copy' as string)) {
       const bonus = getRelicAdditiveBonus(relicId, breakdown)

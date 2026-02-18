@@ -293,10 +293,11 @@ function buildScoreBonuses(breakdown: ScoreBreakdown): ScoreBonus[] {
       amount: breakdown.sizeBonusTotal,
     })
   }
-  if (breakdown.fullClearBonus > 0) {
+  if (breakdown.fullClearMultiplier > 1) {
     bonuses.push({
       source: 'relic:full_clear_bonus',
-      amount: breakdown.fullClearBonus,
+      amount: 0,
+      multiplier: breakdown.fullClearMultiplier,
     })
   }
   if (breakdown.timingMultiplier > 1) {

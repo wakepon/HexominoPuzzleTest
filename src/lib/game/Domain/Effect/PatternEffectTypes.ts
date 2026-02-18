@@ -36,7 +36,7 @@ export interface ScoreBreakdown {
   readonly chainMasterMultiplier: number // 連鎖の達人倍率（1.0 or 1.5）
   readonly sizeBonusTotal: number // サイズボーナス（0 or 20）
   readonly sizeBonusRelicId: RelicId | null // 発動したサイズボーナスレリックID
-  readonly fullClearBonus: number // 全消しボーナス（0 or 20）
+  readonly fullClearMultiplier: number // 全消し倍率（1 or 5）
   readonly relicBonusTotal: number // レリック加算ボーナス合計
   // 2-A: シングルライン
   readonly singleLineMultiplier: number // シングルライン倍率（1 or 3）

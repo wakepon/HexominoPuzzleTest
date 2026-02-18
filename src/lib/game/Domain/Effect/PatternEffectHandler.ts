@@ -241,7 +241,7 @@ const DEFAULT_RELIC_EFFECTS: RelicEffectResult = {
   // 既存レリック
   chainMasterMultiplier: 1.0,
   sizeBonusTotal: 0,
-  fullClearBonus: 0,
+  fullClearMultiplier: 1,
   totalRelicBonus: 0,
   // 新レリック
   singleLineMultiplier: 1,
@@ -309,7 +309,7 @@ export function calculateScoreBreakdown(
   const {
     chainMasterMultiplier,
     sizeBonusTotal,
-    fullClearBonus,
+    fullClearMultiplier,
     singleLineMultiplier,
     takenokoMultiplier,
     kaniMultiplier,
@@ -334,13 +334,14 @@ export function calculateScoreBreakdown(
     nobi_kani: nobiKaniMultiplier,
     rensha: renshaMultiplier,
     timing: timingMultiplier,
+    full_clear_bonus: fullClearMultiplier,
   }
 
   // relicDisplayOrder に基づいて乗算レリックを適用
   // relicDisplayOrder が空の場合はデフォルト順序を使用
   const effectiveOrder: readonly string[] = relicDisplayOrder.length > 0
     ? relicDisplayOrder
-    : ['chain_master', 'single_line', 'takenoko', 'kani', 'nobi_takenoko', 'nobi_kani', 'rensha', 'timing']
+    : ['chain_master', 'single_line', 'takenoko', 'kani', 'nobi_takenoko', 'nobi_kani', 'rensha', 'timing', 'full_clear_bonus']
 
   let scoreAfterRelicMultipliers = scoreBeforeRelics
   for (const relicId of effectiveOrder) {
@@ -355,8 +356,8 @@ export function calculateScoreBreakdown(
     }
   }
 
-  // 加算レリック（サイズボーナス + 全消しボーナス + 台本 + コピー加算）は最後
-  const finalScore = scoreAfterRelicMultipliers + sizeBonusTotal + fullClearBonus + scriptBonus + copyBonus
+  // 加算レリック（サイズボーナス + 台本 + コピー加算）
+  const finalScore = scoreAfterRelicMultipliers + sizeBonusTotal + scriptBonus + copyBonus
 
   return {
     baseBlocks,
@@ -376,8 +377,8 @@ export function calculateScoreBreakdown(
     chainMasterMultiplier,
     sizeBonusTotal,
     sizeBonusRelicId: relicEffects.activations.sizeBonusActiveRelicId,
-    fullClearBonus,
-    relicBonusTotal: sizeBonusTotal + fullClearBonus + scriptBonus + copyBonus,
+    fullClearMultiplier,
+    relicBonusTotal: sizeBonusTotal + scriptBonus + copyBonus,
     singleLineMultiplier,
     takenokoMultiplier,
     kaniMultiplier,

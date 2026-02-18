@@ -141,7 +141,7 @@ export function calculateScoreWithEffects(
       chainMasterMultiplier: 1,
       sizeBonusTotal: 0,
       sizeBonusRelicId: null,
-      fullClearBonus: 0,
+      fullClearMultiplier: 1,
       relicBonusTotal: 0,
       singleLineMultiplier: 1,
       takenokoMultiplier: 1,

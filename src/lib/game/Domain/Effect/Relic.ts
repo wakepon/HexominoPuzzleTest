@@ -10,7 +10,7 @@ import type { RelicId } from '../Core/Id'
 export const RELIC_EFFECT_VALUES = {
   CHAIN_MASTER_MULTIPLIER: 1.5,
   SIZE_BONUS_SCORE: 20,
-  FULL_CLEAR_BONUS: 100,
+  FULL_CLEAR_MULTIPLIER: 5,
   SINGLE_LINE_MULTIPLIER: 3,     // シングルライン: ×3
   RENSHA_INCREMENT: 2,           // 連射: +2ずつ
   NOBI_INCREMENT: 0.5,           // のびのび系: +0.5ずつ
@@ -73,7 +73,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     id: 'full_clear_bonus' as RelicId,
     type: 'full_clear_bonus',
     name: '全消しボーナス',
-    description: '盤面を全て空にするとスコア+20',
+    description: '盤面を全て空にした際にスコア倍率+5',
     rarity: 'common',
     price: 10,
     icon: '🏆',

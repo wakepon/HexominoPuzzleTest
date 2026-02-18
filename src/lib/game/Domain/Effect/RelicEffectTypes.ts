@@ -73,8 +73,8 @@ export interface RelicEffectResult {
   // 既存レリック
   readonly chainMasterMultiplier: number // 1.0 or 1.5
   readonly sizeBonusTotal: number // 0 or 20
-  readonly fullClearBonus: number // 0 or 20
-  readonly totalRelicBonus: number // 加算ボーナス合計（サイズボーナス + 全消し）
+  readonly fullClearMultiplier: number // 1 or 5
+  readonly totalRelicBonus: number // 加算ボーナス合計（サイズボーナス等）
 
   // 2-A: シングルライン倍率
   readonly singleLineMultiplier: number // 1 or 3

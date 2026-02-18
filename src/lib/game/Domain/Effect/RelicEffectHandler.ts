@@ -137,9 +137,9 @@ export function calculateRelicEffects(
   const sizeBonusTotal = activations.sizeBonusActiveRelicId !== null
     ? RELIC_EFFECT_VALUES.SIZE_BONUS_SCORE
     : 0
-  const fullClearBonus = activations.fullClearActive
-    ? RELIC_EFFECT_VALUES.FULL_CLEAR_BONUS
-    : 0
+  const fullClearMultiplier = activations.fullClearActive
+    ? RELIC_EFFECT_VALUES.FULL_CLEAR_MULTIPLIER
+    : 1
 
   // 2-A: シングルライン倍率
   const singleLineMultiplier = activations.singleLineActive
@@ -187,7 +187,7 @@ export function calculateRelicEffects(
   const copyResult = calculateCopyRelicEffects(context, {
     chainMasterMultiplier,
     sizeBonusTotal,
-    fullClearBonus,
+    fullClearMultiplier,
     singleLineMultiplier,
     takenokoMultiplier,
     kaniMultiplier,
@@ -203,8 +203,8 @@ export function calculateRelicEffects(
     activations,
     chainMasterMultiplier,
     sizeBonusTotal,
-    fullClearBonus,
-    totalRelicBonus: sizeBonusTotal + fullClearBonus + scriptBonus + copyResult.copyBonus,
+    fullClearMultiplier,
+    totalRelicBonus: sizeBonusTotal + scriptBonus + copyResult.copyBonus,
     singleLineMultiplier,
     takenokoMultiplier,
     kaniMultiplier,
@@ -269,6 +269,9 @@ function getCopyMultiplierForTarget(
         return RELIC_EFFECT_VALUES.TIMING_MULTIPLIER
       return 1
     }
+    case 'full_clear_bonus':
+      return originalEffects.activations.fullClearActive
+        ? RELIC_EFFECT_VALUES.FULL_CLEAR_MULTIPLIER : 1
     default:
       return 1
   }
@@ -281,7 +284,6 @@ function getCopyBonusForTarget(
   targetRelicType: string,
   originalEffects: {
     sizeBonusTotal: number
-    fullClearBonus: number
     scriptBonus: number
     activations: RelicActivationState
   }
@@ -290,8 +292,6 @@ function getCopyBonusForTarget(
     case 'size_bonus_1': case 'size_bonus_2': case 'size_bonus_3':
     case 'size_bonus_4': case 'size_bonus_5': case 'size_bonus_6':
       return originalEffects.sizeBonusTotal
-    case 'full_clear_bonus':
-      return originalEffects.fullClearBonus
     case 'script':
       // 台本コピー: 指定ラインは増やさず、ボーナスのみ2重
       return originalEffects.scriptBonus
@@ -308,7 +308,7 @@ function calculateCopyRelicEffects(
   originalEffects: {
     chainMasterMultiplier: number
     sizeBonusTotal: number
-    fullClearBonus: number
+    fullClearMultiplier: number
     singleLineMultiplier: number
     takenokoMultiplier: number
     kaniMultiplier: number
@@ -366,7 +366,7 @@ export function getActivatedRelics(
   if (result.activations.fullClearActive) {
     activated.push({
       relicId: 'full_clear_bonus' as RelicId,
-      bonusValue: result.fullClearBonus,
+      bonusValue: `×${result.fullClearMultiplier}`,
     })
   }
 
@@ -454,7 +454,7 @@ export function getActivatedRelics(
 
 /**
  * レリック効果をスコアに適用
- * 適用順序: 基本スコア → 連鎖の達人(×1.5) → サイズボーナス(+20) → 全消しボーナス(+20)
+ * 適用順序: 基本スコア → 乗算レリック（連鎖の達人、全消し等） → 加算レリック（サイズボーナス、台本）
  */
 export function applyRelicEffectsToScore(
   baseScore: number,
@@ -463,11 +463,11 @@ export function applyRelicEffectsToScore(
   // 連鎖の達人: ×1.5（切り捨て）
   let score = Math.floor(baseScore * relicEffects.chainMasterMultiplier)
 
+  // 全消し倍率（他の乗算レリックと同じ扱い）
+  score = Math.floor(score * relicEffects.fullClearMultiplier)
+
   // サイズボーナス: +20
   score += relicEffects.sizeBonusTotal
-
-  // 全消しボーナス: +20
-  score += relicEffects.fullClearBonus
 
   // 台本ボーナス
   score += relicEffects.scriptBonus
@@ -483,7 +483,7 @@ export function getActivatedRelicsFromScoreBreakdown(scoreBreakdown: {
   readonly chainMasterMultiplier: number
   readonly sizeBonusTotal: number
   readonly sizeBonusRelicId: RelicId | null
-  readonly fullClearBonus: number
+  readonly fullClearMultiplier: number
   readonly singleLineMultiplier?: number
   readonly takenokoMultiplier?: number
   readonly kaniMultiplier?: number
@@ -513,10 +513,10 @@ export function getActivatedRelicsFromScoreBreakdown(scoreBreakdown: {
     })
   }
 
-  if (scoreBreakdown.fullClearBonus > 0) {
+  if (scoreBreakdown.fullClearMultiplier > 1) {
     activated.push({
       relicId: 'full_clear_bonus' as RelicId,
-      bonusValue: scoreBreakdown.fullClearBonus,
+      bonusValue: `×${scoreBreakdown.fullClearMultiplier}`,
     })
   }
 
