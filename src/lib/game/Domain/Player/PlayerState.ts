@@ -3,6 +3,7 @@
  */
 
 import type { RelicId } from '../Core/Id'
+import type { Amulet } from '../Effect/Amulet'
 
 /**
  * プレイヤー状態
@@ -12,6 +13,7 @@ export interface PlayerState {
   readonly earnedGold: number
   readonly ownedRelics: readonly RelicId[]
   readonly relicDisplayOrder: readonly RelicId[]
+  readonly amuletStock: readonly Amulet[]
 }
 
 /**
@@ -23,6 +25,7 @@ export function createInitialPlayerState(initialGold: number): PlayerState {
     earnedGold: 0,
     ownedRelics: [],
     relicDisplayOrder: [],
+    amuletStock: [],
   }
 }
 

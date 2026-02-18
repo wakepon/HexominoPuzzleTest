@@ -15,6 +15,8 @@
 import type { Position } from '../../Domain'
 import type { ProbabilityOverride } from '../../Services/ShopService'
 import type { RelicType } from '../../Domain/Effect/Relic'
+import type { AmuletType } from '../../Domain/Effect/Amulet'
+import type { MinoId } from '../../Domain/Core/Id'
 
 // ボードアクション
 export type BoardAction =
@@ -74,12 +76,23 @@ export type StockAction =
 export type RelicAction =
   | { type: 'RELIC/REORDER'; fromIndex: number; toIndex: number }
 
+// 護符アクション
+export type AmuletAction =
+  | { type: 'AMULET/USE'; amuletIndex: number }
+  | { type: 'AMULET/SELECT_PIECE'; minoId: MinoId }
+  | { type: 'AMULET/CONFIRM' }
+  | { type: 'AMULET/CANCEL' }
+  | { type: 'AMULET/SELL'; amuletIndex: number }
+  | { type: 'AMULET/SCULPT_TOGGLE_BLOCK'; row: number; col: number }
+
 // デバッグアクション
 export type DebugAction =
   | { type: 'DEBUG/ADD_RELIC'; relicType: RelicType }
   | { type: 'DEBUG/REMOVE_RELIC'; relicType: RelicType }
   | { type: 'DEBUG/ADD_GOLD'; amount: number }
   | { type: 'DEBUG/ADD_SCORE'; amount: number }
+  | { type: 'DEBUG/ADD_AMULET'; amuletType: AmuletType }
+  | { type: 'DEBUG/REMOVE_AMULET'; amuletIndex: number }
 
 /**
  * 全アクション型（判別可能なUnion型）
@@ -94,4 +107,5 @@ export type GameAction =
   | ShopAction
   | StockAction
   | RelicAction
+  | AmuletAction
   | DebugAction

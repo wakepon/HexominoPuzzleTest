@@ -69,9 +69,17 @@ export function GameContainer() {
         onSwapWithStock2={actions.swapWithStock2}
         onReorderRelic={actions.reorderRelic}
         onApplyPendingPhase={actions.applyPendingPhase}
+        onUseAmulet={actions.useAmulet}
+        onAmuletSelectPiece={actions.amuletSelectPiece}
+        onAmuletConfirm={actions.amuletConfirm}
+        onAmuletCancel={actions.amuletCancel}
+        onAmuletSell={actions.amuletSell}
+        onAmuletSculptToggleBlock={actions.amuletSculptToggleBlock}
         onDebugToggleRelic={handleDebugToggleRelic}
         onDebugAddGold={actions.debugAddGold}
         onDebugAddScore={actions.debugAddScore}
+        onDebugAddAmulet={actions.debugAddAmulet}
+        onDebugRemoveAmulet={actions.debugRemoveAmulet}
       />
     </div>
   )

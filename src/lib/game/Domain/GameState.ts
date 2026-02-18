@@ -12,6 +12,7 @@ import type { ScoreAnimationState } from './Animation/ScoreAnimationState'
 import type { PlayerState } from './Player/PlayerState'
 import type { RelicMultiplierState } from './Effect/RelicState'
 import type { ScriptRelicLines } from './Effect/ScriptRelicState'
+import type { AmuletModalState } from './Effect/AmuletModalState'
 
 /**
  * ゲーム全体の状態（不変）
@@ -56,4 +57,7 @@ export interface GameState {
 
   // UI状態
   readonly deckViewOpen: boolean
+
+  // 護符モーダル状態
+  readonly amuletModal: AmuletModalState | null
 }

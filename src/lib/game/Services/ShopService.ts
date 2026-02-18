@@ -3,6 +3,7 @@
  */
 
 import type { ShopItem, ShopState, DeckState, MinoCategory, Piece, RelicShopItem, BlockShopItem } from '../Domain'
+import type { AmuletShopItem } from '../Domain/Shop/ShopTypes'
 import type { PatternId, SealId, RelicId } from '../Domain/Core/Id'
 import type { RandomGenerator } from '../Utils/Random'
 import { RELIC_DEFINITIONS, RelicType } from '../Domain/Effect/Relic'
@@ -29,35 +30,33 @@ import {
 } from './PieceService'
 import { SHOP_AVAILABLE_PATTERNS } from '../Domain/Effect/Pattern'
 import { SHOP_AVAILABLE_SEALS } from '../Domain/Effect/Seal'
+import { AMULET_DEFINITIONS, type AmuletType } from '../Domain/Effect/Amulet'
 
 /**
  * カテゴリごとのミノIDリスト
  */
-const SMALL_CATEGORIES: MinoCategory[] = ['monomino', 'domino', 'tromino']
-const MEDIUM_CATEGORIES: MinoCategory[] = ['tetromino', 'pentomino']
-const LARGE_CATEGORIES: MinoCategory[] = ['pentomino', 'hexomino']
+const SMALL_MEDIUM_CATEGORIES: MinoCategory[] = ['monomino', 'domino', 'tromino', 'tetromino']
+const MEDIUM_LARGE_CATEGORIES: MinoCategory[] = ['tetromino', 'pentomino', 'hexomino']
 
 /**
  * ショップ商品サイズ
  */
-type ShopItemSize = 'small' | 'medium' | 'large'
+type ShopItemSize = 'small_medium' | 'medium_large'
 
 /**
  * サイズ別のパターン付与確率
  */
 const PATTERN_PROBABILITY: Record<ShopItemSize, number> = {
-  small: 0, // 0%
-  medium: 0.3, // 30%
-  large: 0.5, // 50%
+  small_medium: 0.3, // 30%
+  medium_large: 0.5, // 50%
 }
 
 /**
  * サイズ別のシール付与確率（パターンとは独立）
  */
 const SEAL_PROBABILITY: Record<ShopItemSize, number> = {
-  small: 0, // 0%
-  medium: 0.2, // 20%
-  large: 0.3, // 30%
+  small_medium: 0.2, // 20%
+  medium_large: 0.3, // 30%
 }
 
 /**
@@ -132,46 +131,35 @@ function createShopPiece(
 }
 
 /**
- * ショップアイテムを生成（3種類）
- * - 小: モノミノ/ドミノ/トリミノ（パターンなし）
- * - 中: テトロミノ/ペントミノ（30%でパターン付き）
- * - 大: ペントミノ/ヘキソミノ（50%でパターン付き）
+ * ショップアイテムを生成（2種類）
+ * - 小中: モノミノ/ドミノ/トリミノ/テトロミノ（30%でパターン付き）
+ * - 中大: テトロミノ/ペントミノ/ヘキソミノ（50%でパターン付き）
  * @param override デバッグ用の確率オーバーライド
  */
 export function generateShopItems(
   rng: RandomGenerator,
   override?: ProbabilityOverride
 ): BlockShopItem[] {
-  const smallPiece = createShopPiece(SMALL_CATEGORIES, 'small', rng, override)
-  const mediumPiece = createShopPiece(MEDIUM_CATEGORIES, 'medium', rng, override)
-  const largePiece = createShopPiece(LARGE_CATEGORIES, 'large', rng, override)
+  const smallMediumPiece = createShopPiece(SMALL_MEDIUM_CATEGORIES, 'small_medium', rng, override)
+  const mediumLargePiece = createShopPiece(MEDIUM_LARGE_CATEGORIES, 'medium_large', rng, override)
 
-  const smallPrice = calculatePiecePrice(smallPiece)
-  const mediumPrice = calculatePiecePrice(mediumPiece)
-  const largePrice = calculatePiecePrice(largePiece)
+  const smallMediumPrice = calculatePiecePrice(smallMediumPiece)
+  const mediumLargePrice = calculatePiecePrice(mediumLargePiece)
 
   return [
     {
       type: 'block',
-      piece: smallPiece,
-      price: smallPrice,
-      originalPrice: smallPrice,
+      piece: smallMediumPiece,
+      price: smallMediumPrice,
+      originalPrice: smallMediumPrice,
       purchased: false,
       onSale: false,
     },
     {
       type: 'block',
-      piece: mediumPiece,
-      price: mediumPrice,
-      originalPrice: mediumPrice,
-      purchased: false,
-      onSale: false,
-    },
-    {
-      type: 'block',
-      piece: largePiece,
-      price: largePrice,
-      originalPrice: largePrice,
+      piece: mediumLargePiece,
+      price: mediumLargePrice,
+      originalPrice: mediumLargePrice,
       purchased: false,
       onSale: false,
     },
@@ -216,6 +204,36 @@ export function generateRelicShopItems(
 }
 
 /**
+ * 護符ショップアイテムを生成
+ * AMULET_DEFINITIONSからランダム選択、minPrice〜maxPrice範囲で価格決定
+ */
+export function generateAmuletShopItem(
+  rng: RandomGenerator
+): AmuletShopItem {
+  const allTypes = Object.keys(AMULET_DEFINITIONS) as AmuletType[]
+  const typeIndex = Math.floor(rng.next() * allTypes.length)
+  const amuletType = allTypes[typeIndex]
+  const def = AMULET_DEFINITIONS[amuletType]
+
+  // minPrice〜maxPrice範囲でランダム価格
+  const priceRange = def.maxPrice - def.minPrice
+  const price = def.minPrice + Math.floor(rng.next() * (priceRange + 1))
+
+  return {
+    type: 'amulet',
+    amuletId: def.id,
+    amuletType: def.type,
+    name: def.name,
+    description: def.description,
+    icon: def.icon,
+    price,
+    originalPrice: price,
+    purchased: false,
+    onSale: false,
+  }
+}
+
+/**
  * ランダムに1つの商品にセールを適用
  */
 function applySaleToRandomItem(
@@ -254,8 +272,16 @@ export function createShopState(
   const blockItems = generateShopItems(rng, override)
   const relicItems = generateRelicShopItems(rng, ownedRelics)
 
+  // 30%の確率でレリック枠の1つを護符に置換
+  let finalRelicItems: ShopItem[] = [...relicItems]
+  if (relicItems.length > 0 && rng.next() < 0.3) {
+    const amuletItem = generateAmuletShopItem(rng)
+    // 最後のレリック枠を護符に置換
+    finalRelicItems = [...relicItems.slice(0, -1), amuletItem]
+  }
+
   // 全商品からランダムに1つセール対象を選択
-  const allItems = [...blockItems, ...relicItems]
+  const allItems: ShopItem[] = [...blockItems, ...finalRelicItems]
   const itemsWithSale = applySaleToRandomItem(allItems, rng)
 
   return {

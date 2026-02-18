@@ -3,6 +3,8 @@ import type { Position } from '../lib/game/Domain'
 import { gameReducer, createInitialState } from '../lib/game/State'
 import { type DebugSettings, DEFAULT_DEBUG_SETTINGS } from '../lib/game/Domain/Debug'
 import type { RelicType } from '../lib/game/Domain/Effect/Relic'
+import type { AmuletType } from '../lib/game/Domain/Effect/Amulet'
+import type { MinoId } from '../lib/game/Domain/Core/Id'
 
 /**
  * ゲーム状態管理フック
@@ -163,6 +165,41 @@ export function useGame() {
     dispatch({ type: 'DEBUG/ADD_SCORE', amount })
   }, [])
 
+  // 護符アクション
+  const useAmulet = useCallback((amuletIndex: number) => {
+    dispatch({ type: 'AMULET/USE', amuletIndex })
+  }, [])
+
+  const amuletSelectPiece = useCallback((minoId: MinoId) => {
+    dispatch({ type: 'AMULET/SELECT_PIECE', minoId })
+  }, [])
+
+  const amuletConfirm = useCallback(() => {
+    dispatch({ type: 'AMULET/CONFIRM' })
+  }, [])
+
+  const amuletCancel = useCallback(() => {
+    dispatch({ type: 'AMULET/CANCEL' })
+  }, [])
+
+  const amuletSell = useCallback((amuletIndex: number) => {
+    dispatch({ type: 'AMULET/SELL', amuletIndex })
+  }, [])
+
+  const amuletSculptToggleBlock = useCallback((row: number, col: number) => {
+    dispatch({ type: 'AMULET/SCULPT_TOGGLE_BLOCK', row, col })
+  }, [])
+
+  // デバッグ用: 護符追加
+  const debugAddAmulet = useCallback((amuletType: AmuletType) => {
+    dispatch({ type: 'DEBUG/ADD_AMULET', amuletType })
+  }, [])
+
+  // デバッグ用: 護符削除
+  const debugRemoveAmulet = useCallback((amuletIndex: number) => {
+    dispatch({ type: 'DEBUG/REMOVE_AMULET', amuletIndex })
+  }, [])
+
   return {
     state,
     debugSettings,
@@ -202,6 +239,14 @@ export function useGame() {
       debugAddGold,
       debugAddScore,
       applyPendingPhase,
+      useAmulet,
+      amuletSelectPiece,
+      amuletConfirm,
+      amuletCancel,
+      amuletSell,
+      amuletSculptToggleBlock,
+      debugAddAmulet,
+      debugRemoveAmulet,
     },
   }
 }

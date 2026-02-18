@@ -32,6 +32,11 @@ import { calculateTooltipState } from '../lib/game/Services/TooltipService'
 import { screenToBoardPosition } from '../lib/game/Services/CollisionService'
 import { getPieceSize } from '../lib/game/Services/PieceService'
 import { canAfford, getRerollCost } from '../lib/game/Services/ShopService'
+import { renderAmuletModal, type AmuletModalRenderResult } from './renderer/AmuletModalRenderer'
+import { isAmuletShopItem } from '../lib/game/Domain/Shop/ShopTypes'
+import { MAX_AMULET_STOCK } from '../lib/game/Domain/Effect/Amulet'
+import type { AmuletType } from '../lib/game/Domain/Effect/Amulet'
+import type { MinoId } from '../lib/game/Domain/Core/Id'
 
 interface GameCanvasProps {
   state: GameState
@@ -68,10 +73,19 @@ interface GameCanvasProps {
   onSwapWithStock2: (slotIndex: number) => void
   onReorderRelic: (fromIndex: number, toIndex: number) => void
   onApplyPendingPhase: () => void
+  // 護符操作
+  onUseAmulet: (amuletIndex: number) => void
+  onAmuletSelectPiece: (minoId: MinoId) => void
+  onAmuletConfirm: () => void
+  onAmuletCancel: () => void
+  onAmuletSell: (amuletIndex: number) => void
+  onAmuletSculptToggleBlock: (row: number, col: number) => void
   // デバッグ用
   onDebugToggleRelic: (relicType: RelicType) => void
   onDebugAddGold: (amount: number) => void
   onDebugAddScore: (amount: number) => void
+  onDebugAddAmulet: (amuletType: AmuletType) => void
+  onDebugRemoveAmulet: (amuletIndex: number) => void
 }
 
 export function GameCanvas({
@@ -109,9 +123,17 @@ export function GameCanvas({
   onSwapWithStock2,
   onReorderRelic,
   onApplyPendingPhase,
+  onUseAmulet,
+  onAmuletSelectPiece,
+  onAmuletConfirm,
+  onAmuletCancel,
+  onAmuletSell: _onAmuletSell,
+  onAmuletSculptToggleBlock,
   onDebugToggleRelic,
   onDebugAddGold,
   onDebugAddScore,
+  onDebugAddAmulet,
+  onDebugRemoveAmulet: _onDebugRemoveAmulet,
 }: GameCanvasProps) {
   const [canvas, setCanvas] = useState<HTMLCanvasElement | null>(null)
   const [showDebugWindow, setShowDebugWindow] = useState(false)
@@ -130,6 +152,7 @@ export function GameCanvas({
   const stockSlot2ResultRef = useRef<StockSlot2RenderResult | null>(null)
   const scoreAnimationResultRef = useRef<ScoreAnimationRenderResult | null>(null)
   const relicPanelResultRef = useRef<RelicPanelRenderResult | null>(null)
+  const amuletModalResultRef = useRef<AmuletModalRenderResult | null>(null)
   // ストックからのドラッグかどうかを追跡
   const isDraggingFromStockRef = useRef(false)
   // ストック2からのドラッグかどうかを追跡
@@ -188,6 +211,7 @@ export function GameCanvas({
       scoreAnimation: state.scoreAnimation,
       copyTimingCountdown,
       copyBandaidCountdown,
+      amuletStock: state.player.amuletStock,
     }, layout)
 
     // レリックパネル描画（ボードの左側）
@@ -324,7 +348,7 @@ export function GameCanvas({
       shopRenderResultRef.current = null
       roundProgressResultRef.current = null
     } else if (state.phase === 'shopping' && state.shopState) {
-      shopRenderResultRef.current = renderShop(ctx, state.shopState, state.player.gold, layout, state.shopState.rerollCount, state.player.relicDisplayOrder)
+      shopRenderResultRef.current = renderShop(ctx, state.shopState, state.player.gold, layout, state.shopState.rerollCount, state.player.relicDisplayOrder, state.player.amuletStock.length)
       buttonAreaRef.current = null
       roundProgressResultRef.current = null
     } else if (state.phase === 'game_over') {
@@ -346,6 +370,13 @@ export function GameCanvas({
       deckViewResultRef.current = renderDeckView(ctx, state.deck, state.pieceSlots, layout)
     } else {
       deckViewResultRef.current = null
+    }
+
+    // 護符モーダル描画（デッキ一覧より上に描画）
+    if (state.amuletModal) {
+      amuletModalResultRef.current = renderAmuletModal(ctx, state.amuletModal, state.deck, layout)
+    } else {
+      amuletModalResultRef.current = null
     }
 
     // デバッグウィンドウ描画
@@ -671,6 +702,57 @@ export function GameCanvas({
       )
     }
 
+    // 護符モーダルのクリック処理
+    const handleAmuletModalClick = (pos: Position): boolean => {
+      const modalResult = amuletModalResultRef.current
+      if (!modalResult || !state.amuletModal) return false
+
+      // キャンセルボタン
+      if (isPointInArea(pos, modalResult.cancelButton)) {
+        onAmuletCancel()
+        return true
+      }
+
+      // 確定ボタン（sculpt_edit時）
+      if (modalResult.confirmButton && isPointInArea(pos, modalResult.confirmButton)) {
+        onAmuletConfirm()
+        return true
+      }
+
+      // ピース選択（select_piece時）
+      for (const pieceArea of modalResult.pieceAreas) {
+        if (isPointInArea(pos, pieceArea)) {
+          onAmuletSelectPiece(pieceArea.minoId)
+          return true
+        }
+      }
+
+      // セルトグル（sculpt_edit時）
+      for (const cellArea of modalResult.sculptCellAreas) {
+        if (isPointInArea(pos, cellArea)) {
+          onAmuletSculptToggleBlock(cellArea.row, cellArea.col)
+          return true
+        }
+      }
+
+      // モーダル内クリックはイベント消費
+      return true
+    }
+
+    // 護符スロットのクリック処理
+    const handleAmuletSlotClick = (pos: Position): boolean => {
+      const statusResult = statusPanelResultRef.current
+      if (!statusResult) return false
+
+      for (const slotArea of statusResult.amuletSlotAreas) {
+        if (isPointInArea(pos, slotArea)) {
+          onUseAmulet(slotArea.amuletIndex)
+          return true
+        }
+      }
+      return false
+    }
+
     const handleShopClick = (pos: Position): boolean => {
       const shopResult = shopRenderResultRef.current
       if (!shopResult || !state.shopState) return false
@@ -721,6 +803,10 @@ export function GameCanvas({
           const item = state.shopState.items[itemArea.itemIndex]
           // 購入済みでなく、ゴールドが足りている場合のみ購入
           if (!item.purchased && canAfford(state.player.gold, item.price)) {
+            // 護符の場合はストック満杯チェック
+            if (isAmuletShopItem(item) && state.player.amuletStock.length >= MAX_AMULET_STOCK) {
+              return true
+            }
             onBuyItem(itemArea.itemIndex)
           }
           return true
@@ -810,6 +896,14 @@ export function GameCanvas({
       if (isPointInArea(pos, debugResult.scorePlus50Button)) {
         onDebugAddScore(50)
         return true
+      }
+
+      // 護符ボタンのクリック判定
+      for (const amuletButton of debugResult.amuletButtons) {
+        if (isPointInArea(pos, amuletButton)) {
+          onDebugAddAmulet(amuletButton.amuletType)
+          return true
+        }
       }
 
       // セーブデータ削除ボタン
@@ -918,6 +1012,12 @@ export function GameCanvas({
         return
       }
 
+      // 護符モーダルが開いている場合（デバッグの次に優先）
+      if (state.amuletModal) {
+        handleAmuletModalClick(pos)
+        return
+      }
+
       // スコアアニメーション中はクリックで進行/早送り
       if (state.scoreAnimation?.isAnimating) {
         handleScoreAnimationClick(pos)
@@ -951,6 +1051,7 @@ export function GameCanvas({
 
       // ショッピングフェーズ
       if (state.phase === 'shopping') {
+        if (handleAmuletSlotClick(pos)) return
         handleShopClick(pos)
         return
       }
@@ -965,6 +1066,13 @@ export function GameCanvas({
 
       // アニメーション中またはラウンドクリア中は操作をブロック
       if (state.clearingAnimation?.isAnimating || state.phase === 'round_clear') return
+
+      // 護符スロットのクリック判定（playing 時）
+      if (state.phase === 'playing') {
+        if (handleAmuletSlotClick(pos)) {
+          return
+        }
+      }
 
       // デッキボタンのクリック判定（playing 時のみ）
       if (state.phase === 'playing') {
@@ -1172,6 +1280,12 @@ export function GameCanvas({
         return
       }
 
+      // 護符モーダルが開いている場合（デバッグの次に優先）
+      if (state.amuletModal) {
+        handleAmuletModalClick(pos)
+        return
+      }
+
       // スコアアニメーション中はタップで進行/早送り
       if (state.scoreAnimation?.isAnimating) {
         handleScoreAnimationClick(pos)
@@ -1220,6 +1334,7 @@ export function GameCanvas({
 
       // ショッピングフェーズ
       if (state.phase === 'shopping') {
+        if (handleAmuletSlotClick(pos)) return
         // ショッピング中もレリックパネルのタップを処理
         if (handleRelicTouch(pos)) {
           return
@@ -1238,6 +1353,13 @@ export function GameCanvas({
 
       // アニメーション中またはラウンドクリア中は操作をブロック
       if (state.clearingAnimation?.isAnimating || state.phase === 'round_clear') return
+
+      // 護符スロットのクリック判定（playing 時）
+      if (state.phase === 'playing') {
+        if (handleAmuletSlotClick(pos)) {
+          return
+        }
+      }
 
       // デッキボタンのクリック判定（playing 時のみ）
       if (state.phase === 'playing') {
@@ -1446,7 +1568,7 @@ export function GameCanvas({
       window.removeEventListener('touchend', handleTouchEnd)
       window.removeEventListener('touchcancel', handleTouchEnd)
     }
-  }, [canvas, layout, state.pieceSlots, state.clearingAnimation, state.scoreAnimation, state.phase, state.shopState, state.player, state.board, state.dragState, state.deckViewOpen, onDragStart, onDragMove, onDragEnd, onReset, onBuyItem, onLeaveShop, onRerollShop, onStartSellMode, onCancelSellMode, onSellRelic, onStartRound, onOpenDeckView, onCloseDeckView, onAdvanceScoreStep, onSetFastForward, onReorderRelic, showDebugWindow, debugSettings, onUpdateDebugSettings])
+  }, [canvas, layout, state.pieceSlots, state.clearingAnimation, state.scoreAnimation, state.phase, state.shopState, state.player, state.board, state.dragState, state.deckViewOpen, state.amuletModal, onDragStart, onDragMove, onDragEnd, onReset, onBuyItem, onLeaveShop, onRerollShop, onStartSellMode, onCancelSellMode, onSellRelic, onStartRound, onOpenDeckView, onCloseDeckView, onAdvanceScoreStep, onSetFastForward, onReorderRelic, onUseAmulet, onAmuletSelectPiece, onAmuletConfirm, onAmuletCancel, onAmuletSculptToggleBlock, onDebugAddAmulet, showDebugWindow, debugSettings, onUpdateDebugSettings])
 
   return (
     <canvas
