@@ -11,7 +11,7 @@ export const RELIC_EFFECT_VALUES = {
   CHAIN_MASTER_MULTIPLIER: 1.5,
   FULL_CLEAR_MULTIPLIER: 5,
   SINGLE_LINE_MULTIPLIER: 3,     // シングルライン: ×3
-  RENSHA_INCREMENT: 2,           // 連射: +2ずつ
+  RENSHA_INCREMENT: 1,           // 連射: +1ずつ
   NOBI_INCREMENT: 0.5,           // のびのび系: +0.5ずつ
   SCRIPT_LINE_BONUS_SINGLE: 1,   // 台本: 1本揃い（ライン数+1）
   SCRIPT_LINE_BONUS_DOUBLE: 2,   // 台本: 2本同時揃い（ライン数+2）
@@ -169,7 +169,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     id: 'rensha' as RelicId,
     type: 'rensha',
     name: '連射',
-    description: 'ライン揃うたびにスコア倍率+2（揃わないとリセット）',
+    description: 'ライン揃うたびに倍率+1（揃わないとリセット）',
     rarity: 'rare',
     price: 20,
     icon: '🔫',

@@ -48,7 +48,7 @@ export const INITIAL_RELIC_MULTIPLIER_STATE: RelicMultiplierState = {
 
 /**
  * 2-D: 連射倍率の更新
- * ライン消去時に+2、消去なしでリセット
+ * ライン消去時に+1、消去なしでリセット
  */
 export function updateRenshaMultiplier(
   state: RelicMultiplierState,
@@ -61,7 +61,7 @@ export function updateRenshaMultiplier(
       renshaMultiplier: 1.0,
     }
   }
-  // ライン消去あり: +2
+  // ライン消去あり: +1
   return {
     ...state,
     renshaMultiplier: state.renshaMultiplier + RELIC_EFFECT_VALUES.RENSHA_INCREMENT,
