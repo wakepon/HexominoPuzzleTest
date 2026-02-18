@@ -116,8 +116,8 @@ export function checkRelicActivations(
     scriptActive: scriptMatchCount > 0,
     scriptMatchCount,
 
-    // タイミング: ボーナスタイミング中かつライン消去あり
-    timingActive: hasRelic(ownedRelics, 'timing') && relicMultiplierState.timingBonusActive && totalLines > 0,
+    // タイミング: 残りハンド数が3で割り切れるときかつライン消去あり
+    timingActive: hasRelic(ownedRelics, 'timing') && context.remainingHands % 3 === 0 && totalLines > 0,
     timingMultiplier: RELIC_EFFECT_VALUES.TIMING_MULTIPLIER,
   }
 }
@@ -266,8 +266,8 @@ function getCopyMultiplierForTarget(
       return 1
     }
     case 'timing': {
-      // コピー独自カウンター
-      if (copyState.timingBonusActive && context.totalLines > 0)
+      // 残りハンド数が3で割り切れるときかつライン消去あり
+      if (context.remainingHands % 3 === 0 && context.totalLines > 0)
         return RELIC_EFFECT_VALUES.TIMING_MULTIPLIER
       return 1
     }

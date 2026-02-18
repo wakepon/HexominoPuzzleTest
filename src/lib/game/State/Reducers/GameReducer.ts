@@ -58,7 +58,6 @@ import {
   updateNobiTakenokoMultiplier,
   updateNobiKaniMultiplier,
   updateBandaidCounter,
-  updateTimingCounter,
   createInitialCopyRelicState,
 } from '../../Domain/Effect/RelicState'
 import type { CopyRelicState } from '../../Domain/Effect/RelicState'
@@ -149,19 +148,6 @@ function updateCopyRelicCounters(
 
   const targetType = copyState.targetRelicId as string
   let updated = copyState
-
-  // タイミングカウンター
-  if (targetType === 'timing') {
-    if (handConsumed) {
-      if (updated.timingBonusActive) {
-        updated = { ...updated, timingCounter: 0, timingBonusActive: false }
-      } else {
-        const newCounter = updated.timingCounter + 1
-        const bonusPending = newCounter >= 2 // TIMING_TRIGGER_COUNT - 1
-        updated = { ...updated, timingCounter: newCounter, timingBonusActive: bonusPending }
-      }
-    }
-  }
 
   // 絆創膏カウンター
   if (targetType === 'bandaid' && handConsumed) {
@@ -452,8 +438,7 @@ function tryVolcanoActivation(
   resolved: { finalSlots: PieceSlot[]; finalDeck: DeckState; phase: ReturnType<typeof determinePhase> },
   newBoard: Board,
   comboCount: number,
-  newRelicMultiplierState: RelicMultiplierState,
-  timingBonusApplies: boolean
+  newRelicMultiplierState: RelicMultiplierState
 ): PlacementResult | null {
   if (
     resolved.phase !== 'game_over' ||
@@ -467,17 +452,6 @@ function tryVolcanoActivation(
   if (filledCells.length === 0) return null
 
   // RelicEffectContext を構築（火山は全消去なので全行+全列=12ライン扱い）
-  const relicContextMultState = {
-    ...newRelicMultiplierState,
-    timingBonusActive: timingBonusApplies,
-  }
-  const copyState = newRelicMultiplierState.copyRelicState
-  const copyTimingBonusApplies = copyState?.targetRelicId === ('timing' as RelicId)
-    ? copyState.timingBonusActive : false
-  const relicContextCopyState = copyState && copyTimingBonusApplies
-    ? { ...copyState, timingBonusActive: true }
-    : copyState
-
   const volcanoRelicContext: RelicEffectContext = {
     ownedRelics: state.player.ownedRelics,
     totalLines: GRID_SIZE * 2,
@@ -485,11 +459,12 @@ function tryVolcanoActivation(
     colLines: GRID_SIZE,
     placedBlockSize: 0,
     isBoardEmptyAfterClear: true,
-    relicMultiplierState: relicContextMultState,
+    relicMultiplierState: newRelicMultiplierState,
     completedRows: Array.from({ length: GRID_SIZE }, (_, i) => i),
     completedCols: Array.from({ length: GRID_SIZE }, (_, i) => i),
     scriptRelicLines: null,
-    copyRelicState: relicContextCopyState,
+    copyRelicState: newRelicMultiplierState.copyRelicState,
+    remainingHands: resolved.finalDeck.remainingHands,
   }
 
   // スコア計算（linesCleared=GRID_SIZE で他レリック倍率も適用）
@@ -588,12 +563,6 @@ function processPiecePlacement(
       ? updateBandaidCounter(state.relicMultiplierState, handConsumed)
       : { newState: state.relicMultiplierState, shouldTrigger: false }
 
-  // タイミングカウンター更新（ハンド消費時のみ）
-  const { newState: timingUpdatedState, bonusApplies: timingBonusApplies } =
-    hasRelic(state.player.ownedRelics, 'timing')
-      ? updateTimingCounter(updatedMultState, handConsumed)
-      : { newState: updatedMultState, bonusApplies: false }
-
   // 配置後の状態を計算
   const { finalSlots, finalDeck } = handlePlacement(newSlots, newDeck, isNohand, bandaidTrigger, state.roundInfo)
 
@@ -618,19 +587,6 @@ function processPiecePlacement(
     const boardAfterClear = clearLines(newBoard, cells)
 
     // レリック効果コンテキストを作成
-    // relicContextには「今回ボーナスが適用されるか」のフラグを渡す
-    const relicContextMultState = {
-      ...timingUpdatedState,
-      timingBonusActive: timingBonusApplies,
-    }
-    // コピーレリックのタイミングボーナス判定（独自カウンター）
-    const copyState = timingUpdatedState.copyRelicState
-    const copyTimingBonusApplies = copyState?.targetRelicId === ('timing' as RelicId)
-      ? copyState.timingBonusActive : false
-    const relicContextCopyState = copyState && copyTimingBonusApplies
-      ? { ...copyState, timingBonusActive: true }
-      : copyState
-
     const relicContext: RelicEffectContext = {
       ownedRelics: state.player.ownedRelics,
       totalLines,
@@ -638,11 +594,12 @@ function processPiecePlacement(
       colLines: completedLines.columns.length,
       placedBlockSize: getPieceBlockCount(piece),
       isBoardEmptyAfterClear: isBoardEmpty(boardAfterClear),
-      relicMultiplierState: relicContextMultState,
+      relicMultiplierState: updatedMultState,
       completedRows: completedLines.rows,
       completedCols: completedLines.columns,
       scriptRelicLines: state.scriptRelicLines,
-      copyRelicState: relicContextCopyState,
+      copyRelicState: updatedMultState.copyRelicState,
+      remainingHands: finalDeck.remainingHands,
     }
 
     const scoreBreakdown = calculateScoreWithEffects(
@@ -679,7 +636,7 @@ function processPiecePlacement(
       : null
 
     const newRelicMultiplierState = updateRelicMultipliers(
-      timingUpdatedState,
+      updatedMultState,
       state.player.ownedRelics,
       totalLines,
       completedLines.rows.length,
@@ -733,7 +690,7 @@ function processPiecePlacement(
 
   // ライン消去なし
   const newRelicMultiplierState = updateRelicMultipliers(
-    timingUpdatedState,
+    updatedMultState,
     state.player.ownedRelics,
     0,
     0,
@@ -756,7 +713,7 @@ function processPiecePlacement(
 
   // 火山レリック発動判定
   const volcanoResult = tryVolcanoActivation(
-    state, resolved, newBoard, comboCount, newRelicMultiplierState, timingBonusApplies
+    state, resolved, newBoard, comboCount, newRelicMultiplierState
   )
   if (volcanoResult) {
     return volcanoResult

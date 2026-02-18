@@ -21,6 +21,7 @@ export interface RelicEffectContext {
   readonly completedCols: readonly number[]  // 揃った列のインデックス
   readonly scriptRelicLines: ScriptRelicLines | null  // 台本レリックの指定ライン
   readonly copyRelicState?: CopyRelicState | null  // コピーレリック状態（オプショナル）
+  readonly remainingHands: number  // 残りハンド数（タイミングレリック判定用）
 }
 
 /**
@@ -61,7 +62,7 @@ export interface RelicActivationState {
 
   // タイミング
   readonly timingActive: boolean // タイミングボーナス中
-  readonly timingMultiplier: number // 1 or 2
+  readonly timingMultiplier: number // 1 or 3
 }
 
 /**
@@ -98,7 +99,7 @@ export interface RelicEffectResult {
   readonly scriptLineBonus: number // 0, 1, or 2
 
   // タイミング倍率
-  readonly timingMultiplier: number // 1 or 2
+  readonly timingMultiplier: number // 1 or 3
 
   // コピーレリック
   readonly copyTargetRelicId: RelicId | null // コピー対象のレリックID

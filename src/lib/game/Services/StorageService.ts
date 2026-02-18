@@ -130,12 +130,13 @@ interface SavedGameState {
     readonly bandaidCounter?: number
     readonly copyRelicState?: {
       readonly targetRelicId: string | null
-      readonly timingCounter: number
-      readonly timingBonusActive: boolean
       readonly bandaidCounter: number
       readonly renshaMultiplier: number
       readonly nobiTakenokoMultiplier: number
       readonly nobiKaniMultiplier: number
+      // マイグレーション: 古いセーブデータにはtimingCounter/timingBonusActiveがある
+      readonly timingCounter?: number
+      readonly timingBonusActive?: boolean
     } | null
   }
 
@@ -490,10 +491,20 @@ export function restoreGameState(
     comboCount: saved.comboCount,
     // マイグレーション対応: 古いセーブデータにはrelicMultiplierStateがない
     relicMultiplierState: {
-      ...INITIAL_RELIC_MULTIPLIER_STATE,
-      ...(saved.relicMultiplierState ?? {}),
-      // copyRelicStateのマイグレーション
-      copyRelicState: saved.relicMultiplierState?.copyRelicState ?? null,
+      nobiTakenokoMultiplier: saved.relicMultiplierState?.nobiTakenokoMultiplier ?? INITIAL_RELIC_MULTIPLIER_STATE.nobiTakenokoMultiplier,
+      nobiKaniMultiplier: saved.relicMultiplierState?.nobiKaniMultiplier ?? INITIAL_RELIC_MULTIPLIER_STATE.nobiKaniMultiplier,
+      renshaMultiplier: saved.relicMultiplierState?.renshaMultiplier ?? INITIAL_RELIC_MULTIPLIER_STATE.renshaMultiplier,
+      bandaidCounter: saved.relicMultiplierState?.bandaidCounter ?? INITIAL_RELIC_MULTIPLIER_STATE.bandaidCounter,
+      // copyRelicStateのマイグレーション（timingCounter/timingBonusActiveを除外）
+      copyRelicState: saved.relicMultiplierState?.copyRelicState
+        ? {
+            targetRelicId: (saved.relicMultiplierState.copyRelicState.targetRelicId ?? null) as RelicId | null,
+            bandaidCounter: saved.relicMultiplierState.copyRelicState.bandaidCounter,
+            renshaMultiplier: saved.relicMultiplierState.copyRelicState.renshaMultiplier,
+            nobiTakenokoMultiplier: saved.relicMultiplierState.copyRelicState.nobiTakenokoMultiplier,
+            nobiKaniMultiplier: saved.relicMultiplierState.copyRelicState.nobiKaniMultiplier,
+          }
+        : null,
     },
     // マイグレーション対応: 古いセーブデータにはscriptRelicLinesがない
     scriptRelicLines: saved.scriptRelicLines ?? null,

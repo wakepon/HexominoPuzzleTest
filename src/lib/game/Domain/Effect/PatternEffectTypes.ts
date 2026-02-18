@@ -53,7 +53,7 @@ export interface ScoreBreakdown {
   // 台本
   readonly scriptLineBonus: number // 台本ライン数ボーナス（0, 1, or 2）
   // タイミング
-  readonly timingMultiplier: number // タイミング倍率（1 or 2）
+  readonly timingMultiplier: number // タイミング倍率（1 or 3）
   // コピーレリック
   readonly copyTargetRelicId: RelicId | null // コピー対象のレリックID
   readonly copyMultiplier: number // コピーによる乗算倍率（1=無効）

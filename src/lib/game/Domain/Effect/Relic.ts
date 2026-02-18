@@ -16,8 +16,7 @@ export const RELIC_EFFECT_VALUES = {
   SCRIPT_LINE_BONUS_SINGLE: 1,   // 台本: 1本揃い（ライン数+1）
   SCRIPT_LINE_BONUS_DOUBLE: 2,   // 台本: 2本同時揃い（ライン数+2）
   BANDAID_TRIGGER_COUNT: 3,      // 絆創膏: 発動に必要なハンド消費回数
-  TIMING_TRIGGER_COUNT: 3,       // タイミング: 発動に必要なハンド消費回数
-  TIMING_MULTIPLIER: 2,          // タイミング: スコア倍率
+  TIMING_MULTIPLIER: 3,          // タイミング: スコア倍率
 } as const
 
 /**
@@ -233,7 +232,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     id: 'timing' as RelicId,
     type: 'timing',
     name: 'タイミング',
-    description: '3ハンドに1回、スコア×2',
+    description: '残りハンド数が3で割り切れるとき、スコア×3',
     rarity: 'uncommon',
     price: 15,
     icon: '⌛',

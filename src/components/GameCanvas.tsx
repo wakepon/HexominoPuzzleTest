@@ -22,7 +22,7 @@ import { BlockDataMapUtils } from '../lib/game/Domain/Piece/BlockData'
 import type { DebugSettings } from '../lib/game/Domain/Debug'
 import type { RelicType } from '../lib/game/Domain/Effect/Relic'
 import { hasRelic } from '../lib/game/Domain/Effect/RelicEffectHandler'
-import { getBandaidCountdown, getTimingCountdown } from '../lib/game/Domain/Effect/RelicState'
+import { getBandaidCountdown } from '../lib/game/Domain/Effect/RelicState'
 import { calculateGoldReward, calculateInterest } from '../lib/game/Services/RoundService'
 import { resolveCopyTarget, isCopyRelicInactive } from '../lib/game/Domain/Effect/CopyRelicResolver'
 import type { RelicId } from '../lib/game/Domain/Core/Id'
@@ -187,12 +187,11 @@ export function GameCanvas({
     // 左側ステータスパネル描画
     // コピーレリック用カウントダウン計算
     const copyState = state.relicMultiplierState.copyRelicState
-    const copyTimingCountdown = copyState?.targetRelicId === ('timing' as RelicId)
-      ? (copyState.timingBonusActive ? 0 : 2 - copyState.timingCounter)
-      : null
     const copyBandaidCountdown = copyState?.targetRelicId === ('bandaid' as RelicId)
       ? 3 - copyState.bandaidCounter
       : null
+
+    const isTimingActive = hasRelic(state.player.ownedRelics, 'timing') && state.deck.remainingHands % 3 === 0
 
     statusPanelResultRef.current = renderStatusPanel(ctx, {
       targetScore: state.targetScore,
@@ -203,13 +202,9 @@ export function GameCanvas({
       bandaidCountdown: hasRelic(state.player.ownedRelics, 'bandaid')
         ? getBandaidCountdown(state.relicMultiplierState)
         : null,
-      timingCountdown: hasRelic(state.player.ownedRelics, 'timing')
-        ? getTimingCountdown(state.relicMultiplierState)
-        : null,
-      timingBonusActive: state.relicMultiplierState.timingBonusActive,
+      timingBonusActive: isTimingActive,
       pendingPhase: state.pendingPhase,
       scoreAnimation: state.scoreAnimation,
-      copyTimingCountdown,
       copyBandaidCountdown,
       amuletStock: state.player.amuletStock,
     }, layout)
@@ -225,9 +220,7 @@ export function GameCanvas({
       grayedOutRelics.add('copy' as RelicId)
     }
 
-    const timingBonusRelicId = (
-      hasRelic(state.player.ownedRelics, 'timing') && state.relicMultiplierState.timingBonusActive
-    ) ? 'timing' as RelicId : null
+    const timingBonusRelicId = isTimingActive ? 'timing' as RelicId : null
 
     // コピーリンク表示用のレリックセット
     const copyLinkRelics = new Set<RelicId>()
