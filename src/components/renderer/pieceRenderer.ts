@@ -1,4 +1,4 @@
-import type { PieceSlot, DragState, CanvasLayout, PieceShape, Piece } from '../../lib/game/types'
+import type { PieceSlot, DragState, CanvasLayout, Piece } from '../../lib/game/types'
 import { ANIMATION, HD_LAYOUT } from '../../lib/game/Data/Constants'
 import { drawWoodenCellWithBorder } from './cellRenderer'
 import { BlockDataMapUtils } from '../../lib/game/Domain/Piece/BlockData'
@@ -100,34 +100,3 @@ export function renderPiece(
   }
 }
 
-/**
- * ブロック形状を描画（後方互換用、パターンなし）
- * @deprecated renderPiece を使用してください
- */
-export function renderPieceShape(
-  ctx: CanvasRenderingContext2D,
-  shape: PieceShape,
-  startX: number,
-  startY: number,
-  cellSize: number,
-  opacity: number
-): void {
-  const originalAlpha = ctx.globalAlpha
-
-  try {
-    ctx.globalAlpha = opacity
-
-    for (let y = 0; y < shape.length; y++) {
-      for (let x = 0; x < shape[y].length; x++) {
-        if (!shape[y][x]) continue
-
-        const cellX = startX + x * cellSize
-        const cellY = startY + y * cellSize
-
-        drawWoodenCellWithBorder(ctx, cellX, cellY, cellSize, null)
-      }
-    }
-  } finally {
-    ctx.globalAlpha = originalAlpha
-  }
-}

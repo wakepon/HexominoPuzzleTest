@@ -1,7 +1,7 @@
 # Dead Code Analysis Report
 
-**Generated:** 2026-02-08
-**Tools Used:** knip, depcheck
+**Generated:** 2026-02-19
+**Tools Used:** knip v5.84.1, ts-prune v0.10.3, depcheck
 
 ---
 
@@ -9,100 +9,74 @@
 
 | Category | Count |
 |----------|-------|
-| 削除したファイル（合計） | 10 |
-| 修正したファイル | 15 |
-| 未使用 devDependencies | 7 (保持推奨) |
+| 削除したファイル | 6 |
+| 削除した関数/定数 | 9 |
+| 修正したファイル | 5 |
+| 未使用 devDependencies | 5 (eslint config不在のため) |
 
 ---
 
-## 1. 削除完了したファイル ✅
-
-### 第1回クリーンアップで削除
+## 1. 削除したファイル
 
 | ファイル | 理由 |
 |---------|------|
-| `src/lib/game/boardLogic.ts` | 後方互換エイリアス |
-| `src/lib/game/deckLogic.ts` | 後方互換エイリアス |
-| `src/lib/game/roundLogic.ts` | 後方互換エイリアス |
-| `src/lib/game/Data/index.ts` | 未使用インデックス |
-| `src/lib/game/Services/index.ts` | 未使用インデックス |
-| `src/lib/game/Utils/index.ts` | 未使用インデックス |
+| `src/components/renderer/roundRenderer.ts` | 未参照レンダラー |
+| `src/components/renderer/scoreRenderer.ts` | 未参照レンダラー |
+| `src/components/renderer/uiRenderer.ts` | 未参照レンダラー |
+| `src/hooks/useGameEvents.ts` | 未参照hook |
+| `src/lib/game/Events/index.ts` | 未参照バレルファイル |
+| `src/lib/game/index.ts` | 未参照レガシーバレルファイル |
 
-### 第2回クリーンアップで削除（インポート移行後）
+## 2. 削除した関数・定数
 
-| ファイル | 理由 |
-|---------|------|
-| `src/lib/game/constants.ts` | Data/Constants への移行完了 |
-| `src/lib/game/collisionDetection.ts` | Services/CollisionService への移行完了 |
-| `src/lib/game/pieceDefinitions.ts` | Services/PieceService への移行完了 |
-| `src/lib/game/shopLogic.ts` | Services/ShopService への移行完了 |
+| 項目 | ファイル | 理由 |
+|------|---------|------|
+| `BASE_CELL_SIZE` | Data/Constants.ts | 未参照定数 |
+| `SLOT_COUNT` | Data/Constants.ts | 未参照定数 |
+| `SCORE_STYLE` | Data/Constants.ts | roundRenderer等でのみ使用 |
+| `HANDS_STYLE` | Data/Constants.ts | uiRendererでのみ使用 |
+| `GOLD_STYLE` | Data/Constants.ts | uiRendererでのみ使用 |
+| `ROUND_STYLE` | Data/Constants.ts | roundRendererでのみ使用 |
+| `placePieceShapeOnBoard` | Services/BoardService.ts | @deprecated、未参照 |
+| `getCell` (function版) | Services/BoardService.ts | Domain/Board/Board.ts版が使用されている |
+| `isValidPhaseTransition` | Domain/Round/GamePhase.ts | 未参照 |
+| `hasSavedGame` | Services/StorageService.ts | 未参照 |
+| `drawWoodenCellSmall` | renderer/cellRenderer.ts | 未参照 |
+| `renderPieceShape` | renderer/pieceRenderer.ts | @deprecated、未参照 |
 
----
+## 3. エクスポート修正
 
-## 2. 修正したファイル
+| 項目 | ファイル | 変更 |
+|------|---------|------|
+| `drawSealSymbol` | renderer/cellRenderer.ts | export → private（内部使用のみ） |
 
-### インポートパスの変更
+## 4. 未使用 devDependencies（要検討）
 
-| ファイル | 変更内容 |
-|---------|---------|
-| `src/components/GameCanvas.tsx` | constants → Data/Constants, collisionDetection → Services/CollisionService, pieceDefinitions → Services/PieceService, shopLogic → Services/ShopService |
-| `src/components/renderer/boardRenderer.ts` | constants → Data/Constants |
-| `src/components/renderer/cellRenderer.ts` | constants → Data/Constants |
-| `src/components/renderer/clearAnimationRenderer.ts` | constants → Data/Constants |
-| `src/components/renderer/debugRenderer.ts` | constants → Data/Constants |
-| `src/components/renderer/overlayRenderer.ts` | constants → Data/Constants |
-| `src/components/renderer/pieceRenderer.ts` | constants → Data/Constants |
-| `src/components/renderer/previewRenderer.ts` | constants → Data/Constants, collisionDetection → Services/CollisionService |
-| `src/components/renderer/relicEffectRenderer.ts` | constants → Data/Constants |
-| `src/components/renderer/relicPanelRenderer.ts` | constants → Data/Constants |
-| `src/components/renderer/roundRenderer.ts` | constants → Data/Constants |
-| `src/components/renderer/scoreRenderer.ts` | constants → Data/Constants |
-| `src/components/renderer/shopRenderer.ts` | constants → Data/Constants |
-| `src/components/renderer/tooltipRenderer.ts` | constants → Data/Constants |
-| `src/components/renderer/uiRenderer.ts` | constants → Data/Constants |
-| `src/lib/game/lineLogic.test.ts` | boardLogic → Services/BoardService |
+eslint config ファイル（.eslintrc等）が存在しないため、以下は完全に未使用:
 
----
+| パッケージ | 備考 |
+|-----------|------|
+| `eslint` | config不在 |
+| `@typescript-eslint/eslint-plugin` | config不在 |
+| `@typescript-eslint/parser` | config不在 |
+| `eslint-plugin-react-hooks` | config不在 |
+| `eslint-plugin-react-refresh` | config不在 |
 
-## 3. 将来使用予定（保持）
+**注**: lint script (`npm run lint`) は存在するが実行不可。eslint configの作成 or 削除が必要。
 
-| ファイル | 理由 |
-|---------|------|
-| `src/hooks/useGameEvents.ts` | デバッグ/ログ用hook。将来使用予定 |
-| `src/lib/game/index.ts` | メインエントリポイント。公開API用 |
-| `src/lib/game/Events/index.ts` | useGameEvents.tsから参照される |
-
----
-
-## 4. 未使用 devDependencies（保持推奨）
-
-これらは `npm run lint` や CSS ビルドで使用されるため削除しません。
-
-| パッケージ | 使用目的 |
+### 使用中（depcheckの誤検知）
+| パッケージ | 使用箇所 |
 |-----------|---------|
-| `@typescript-eslint/eslint-plugin` | ESLint TypeScript プラグイン |
-| `@typescript-eslint/parser` | ESLint TypeScript パーサー |
-| `autoprefixer` | PostCSS ベンダープレフィックス |
-| `eslint-plugin-react-hooks` | React Hooks Lint ルール |
-| `eslint-plugin-react-refresh` | React Refresh 用 Lint |
-| `postcss` | Tailwind CSS 依存 |
-| `tailwindcss` | スタイリング |
+| `tailwindcss` | tailwind.config.js, src/index.css |
+| `autoprefixer` | postcss.config.js |
+| `postcss` | postcss.config.js |
 
 ---
 
 ## 5. 検証結果
 
 ```
-✅ 全テストパス (43 tests)
-✅ ビルド成功 (90 modules transformed)
-✅ 10ファイル削除完了
-✅ 15ファイルのインポートパス統一
+✅ TypeScript型チェック: パス
+✅ 全テストパス: 43 tests (3 files)
+✅ ビルド成功: 102 modules transformed
 ```
-
----
-
-## 6. 効果
-
-- **コードベースの簡素化**: 後方互換エイリアスファイル10個を削除
-- **インポートパスの統一**: 全ての参照が正式な層構造に従うようになった
-- **保守性向上**: 将来の変更箇所が明確になった

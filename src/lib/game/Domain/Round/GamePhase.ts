@@ -9,18 +9,3 @@ export type GamePhase =
   | 'game_over'       // ゲームオーバー
   | 'game_clear'      // ゲームクリア
 
-/**
- * フェーズ遷移の妥当性をチェック
- */
-export const isValidPhaseTransition = (from: GamePhase, to: GamePhase): boolean => {
-  const validTransitions: Record<GamePhase, GamePhase[]> = {
-    round_progress: ['playing'],
-    playing: ['round_clear', 'game_over'],
-    round_clear: ['shopping', 'game_clear'],
-    shopping: ['round_progress', 'playing'],
-    game_over: ['round_progress', 'playing'],
-    game_clear: ['round_progress', 'playing'],
-  }
-
-  return validTransitions[from].includes(to)
-}

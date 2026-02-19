@@ -60,11 +60,10 @@ src/
 ├── hooks/                  # React Hook（ロジックとUIの橋渡し）
 │   ├── useGame.ts          # メイン状態管理（dispatch wrapper）
 │   ├── useCanvasLayout.ts  # HD 1280x720 レイアウト計算
-│   └── useGameEvents.ts    # イベント購読
 ├── components/             # UIコンポーネント
 │   ├── GameContainer.tsx   # 最上位コンテナ（hooks接続）
 │   ├── GameCanvas.tsx      # Canvas描画オーケストレーター＋イベント処理
-│   └── renderer/           # 描画関数群（21ファイル、React非依存）
+│   └── renderer/           # 描画関数群（18ファイル、React非依存）
 │       ├── boardRenderer.ts          # ボード描画
 │       ├── cellRenderer.ts           # セル描画（パターン/シール表示）
 │       ├── pieceRenderer.ts          # ピース描画（スロット・ドラッグ）
@@ -82,9 +81,6 @@ src/
 │       ├── AmuletModalRenderer.ts    # 護符モーダル
 │       ├── tooltipRenderer.ts        # ツールチップ
 │       ├── debugRenderer.ts          # デバッグウィンドウ
-│       ├── scoreRenderer.ts          # スコア表示
-│       ├── roundRenderer.ts          # ラウンド情報表示
-│       ├── uiRenderer.ts             # 残りハンド等
 │       └── TextHighlightUtils.ts     # テキスト装飾ユーティリティ
 ```
 

@@ -433,17 +433,6 @@ export function clearGameState(): void {
 }
 
 /**
- * 保存データが存在するかチェック
- */
-export function hasSavedGame(): boolean {
-  try {
-    return localStorage.getItem(STORAGE_KEY) !== null
-  } catch {
-    return false
-  }
-}
-
-/**
  * 保存データからGameStateを復元
  */
 export function restoreGameState(
