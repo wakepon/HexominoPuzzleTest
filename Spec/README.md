@@ -10,24 +10,25 @@
 3. [ミノシステム](./mino-system.md) - ミノ定義と生成システム（全307種類）
 
 ### ローグライト要素
-4. [パターン・シールシステム](./pattern-seal-system.md) - ブロックに付与する特殊効果（全9パターン・全6シール）
-5. [レリックシステム](./relic-system.md) - 恒久的なパッシブ効果アイテム（全20種、倍率・加算・特殊効果）
+4. [パターンシステム](./pattern-system.md) - ブロックセット全体に付与する特殊効果（全9パターン）
+5. [シールシステム](./seal-system.md) - 個別セルに付与する特殊効果（全6シール）
+6. [レリックシステム](./relic-system.md) - 恒久的なパッシブ効果アイテム（全20種、倍率・加算・特殊効果）
 
 ### 技術仕様
-6. [データ構造](./data-structures.md) - 型定義とデータモデル（DeckState、GamePhase、ShopState、PlayerState、RelicMultiplierState等）
+7. [データ構造](./data-structures.md) - 型定義とデータモデル（DeckState、GamePhase、ShopState、PlayerState、RelicMultiplierState等）
    - [効果計算型](./data-structures-effect-types.md) - スコア計算・レリック効果・アニメーション関連の型（ScoreBreakdown、RelicEffectResult、ScoreAnimationState等）
-7. [状態管理](./state-management.md) - ゲーム状態とアクション（全フィールド・全アクション定義、アニメーション状態管理）
-8. [UI・描画システム](./ui-rendering.md) - Canvas描画とユーザーインタラクション（全19レンダラー、スコアアニメーション）
-9. [レイアウトシステム](./layout-system.md) - HD固定レイアウト計算（1280x720）
-10. [アーキテクチャ](./Architecture.md) - コード構造とDomain/Service/State層の設計
+8. [状態管理](./state-management.md) - ゲーム状態とアクション（全フィールド・全アクション定義、アニメーション状態管理）
+9. [UI・描画システム](./ui-rendering.md) - Canvas描画とユーザーインタラクション（全19レンダラー、スコアアニメーション）
+10. [レイアウトシステム](./layout-system.md) - HD固定レイアウト計算（1280x720）
+11. [アーキテクチャ](./Architecture.md) - コード構造とDomain/Service/State層の設計
 
 ### 設計計画
-11. [レリック中心設計への修正計画](./RelicCentricRedesign.md) - Balatro型レリック中心設計への移行計画（レリック5枠・売却、利息、護符、ショップ変更、デッキ6枚化、レリック200〜300種拡充）
-12. [ピース購入モチベーション問題の分析](./PiecePurchaseMotivation.md) - レリック中心設計に至るまでの問題分析と検討過程
+12. [レリック中心設計への修正計画](./RelicCentricRedesign.md) - Balatro型レリック中心設計への移行計画（レリック5枠・売却、利息、護符、ショップ変更、デッキ6枚化、レリック200〜300種拡充）
+13. [ピース購入モチベーション問題の分析](./PiecePurchaseMotivation.md) - レリック中心設計に至るまでの問題分析と検討過程
 
 ### その他
-13. [未実装機能](./UnimplementedFeatures.md) - 未実装機能の一覧（レリック中心設計の未実装項目含む）
-14. [実装計画](./ImplementationPlan.md) - 初期実装計画（歴史的文書）
+14. [未実装機能](./UnimplementedFeatures.md) - 未実装機能の一覧（レリック中心設計の未実装項目含む）
+15. [実装計画](./ImplementationPlan.md) - 初期実装計画（歴史的文書）
 
 ## 仕様書の管理方針
 
@@ -59,7 +60,7 @@ doc-updater エージェントを使用してコードから仕様書を生成�
 - 2026-02-17: レリック中心設計を全仕様書に反映（デッキ6枚化、レリック5枠・売却、利息、ショップ2+3構成、護符システム）
 - 2026-02-17: 全仕様書をコードベースに合わせて一括同期
   - relic-system.md: 全20レリック対応に全面書き直し
-  - pattern-seal-system.md: パターン9種・シール6種に更新
+  - pattern-system.md / seal-system.md: パターン9種・シール6種に更新（pattern-seal-system.mdから分離）
   - game-mechanics.md: スコア計算式全面更新、全消しボーナス+100、連射+2
   - game-overview.md: round_progressフェーズ、ストック2スロット、フェーズ遷移図追加
   - state-management.md: GameState全フィールド・全アクション同期

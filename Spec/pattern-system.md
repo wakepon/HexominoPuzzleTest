@@ -1,20 +1,16 @@
-# パターン・シールシステム
+# パターンシステム
 
 ## 概要
-
-ブロックに特殊効果を付与するシステム。パターンはブロックセット全体に効果を付与し、シールは個別のセルに効果を付与する。パターンとシールはショップで購入でき、同一ブロックセットに両方が付与される場合もある。
-
-## パターンシステム
-
-### 概要
 
 - **対象**: ブロックセット全体（全ブロックに同一パターンが適用される）
 - **付与方法**: ショップで購入（サイズに応じた確率でランダム付与）
 - **効果タイミング**: 消去時に発動するものと、配置時に発動するものがある
 
-### パターン一覧（全9種）
+パターンとシールはブロックに特殊効果を付与するシステム。パターンはブロックセット全体に効果を付与し、シールは個別のセルに効果を付与する。同一ブロックセットに両方が付与される場合もある。シールについては [seal-system.md](./seal-system.md) を参照。
 
-#### 強化ブロック (enhanced)
+## パターン一覧（全9種）
+
+### 強化ブロック (enhanced)
 
 | 項目 | 値 |
 |------|-----|
@@ -29,7 +25,7 @@
 
 ---
 
-#### ラッキーブロック (lucky)
+### ラッキーブロック (lucky)
 
 | 項目 | 値 |
 |------|-----|
@@ -44,7 +40,7 @@
 
 ---
 
-#### コンボブロック (combo)
+### コンボブロック (combo)
 
 | 項目 | 値 |
 |------|-----|
@@ -59,7 +55,7 @@
 
 ---
 
-#### オーラブロック (aura)
+### オーラブロック (aura)
 
 | 項目 | 値 |
 |------|-----|
@@ -74,7 +70,7 @@
 
 ---
 
-#### 苔ブロック (moss)
+### 苔ブロック (moss)
 
 | 項目 | 値 |
 |------|-----|
@@ -89,7 +85,7 @@
 
 ---
 
-#### 羽ブロック (feather)
+### 羽ブロック (feather)
 
 | 項目 | 値 |
 |------|-----|
@@ -104,7 +100,7 @@
 
 ---
 
-#### ノーハンドブロック (nohand)
+### ノーハンドブロック (nohand)
 
 | 項目 | 値 |
 |------|-----|
@@ -119,7 +115,7 @@
 
 ---
 
-#### チャージブロック (charge)
+### チャージブロック (charge)
 
 | 項目 | 値 |
 |------|-----|
@@ -134,7 +130,7 @@
 
 ---
 
-#### おじゃまブロック (obstacle)
+### おじゃまブロック (obstacle)
 
 | 項目 | 値 |
 |------|-----|
@@ -149,7 +145,7 @@
 
 ---
 
-### charge パターンの蓄積メカニクス
+## charge パターンの蓄積メカニクス
 
 チャージブロックはボードに配置された後、他のブロックが置かれるたびに内部の蓄積値（`chargeValue`）が増加する。
 
@@ -166,7 +162,7 @@
 
 ---
 
-### ショップでのパターン出現
+## ショップでのパターン出現
 
 パターン付与はブロックセットのサイズ（small / medium / large）によって確率が異なる。
 
@@ -177,119 +173,43 @@
 | large | ペントミノ/ヘキソミノ | 高確率 | 中確率 |
 
 - パターンとシールの付与判定は独立して行われる（両方付与されることもある）
-- 付与されるパターン・シールの種類はショップ出現可能なものからランダムに均等選択
+- 付与されるパターンの種類はショップ出現可能なものからランダムに均等選択
 
 **ショップ出現可能パターン**: `enhanced`, `lucky`, `aura`, `moss`, `feather`, `nohand`, `charge`（`obstacle` は除外）
 
 ---
 
-## シールシステム
+## パターン効果の計算詳細
 
-### 概要
+```
+calculatePatternEffects(board, cellsToRemove):
+    enhancedBonus = cellsToRemove に pattern==='enhanced' のセル数 × 2（multi付きなら×2）
+    auraBonus     = cellsToRemove の各セルについて、
+                    隣接する別 blockSetId の aura セルが存在すれば +1（1セルあたり上限+1、multi付きなら×2）
+    mossBonus     = cellsToRemove に pattern==='moss' のセルの盤面端接触辺数合計（multi付きなら×2）
+    chargeBonus   = cellsToRemove に pattern==='charge' のセルの chargeValue 合計（multi付きなら×2）
+```
 
-- **対象**: ブロックセット内の個別セル（1セルのみ）
-- **付与方法**: ショップで購入（サイズに応じた確率でランダム付与）
-- **効果タイミング**: 主に消去時に発動
+### charge 値の蓄積（ピース配置後）
 
-### シール一覧（全6種）
-
-#### ゴールドシール (gold)
-
-| 項目 | 値 |
-|------|-----|
-| type | `gold` |
-| 名前 | ゴールドシール |
-| symbol | G |
-| preventsClearing | false |
-| 説明 | このブロックが消えると+1G |
-
-**効果**: 消去時にゴールドを加算する。スコア計算には影響しない。
+```
+incrementChargeValues(board, excludeBlockSetId):
+    board 上の全セルを走査
+    cell.filled && cell.pattern==='charge' && cell.blockSetId !== excludeBlockSetId
+    の場合: cell.chargeValue += 1
+```
 
 ---
 
-#### スコアシール (score)
-
-| 項目 | 値 |
-|------|-----|
-| type | `score` |
-| 名前 | スコアシール |
-| symbol | +5 |
-| preventsClearing | false |
-| 説明 | ブロック点+5 |
-
-**効果**: 消去時にブロック点(A)へ一定値（+5）を直接加算する。
-
----
-
-#### マルチシール (multi)
-
-| 項目 | 値 |
-|------|-----|
-| type | `multi` |
-| 名前 | マルチシール |
-| symbol | ×2 |
-| preventsClearing | false |
-| 説明 | このブロックは2回発動する |
-
-**効果**: 消去時に乗算対象ブロック数を+1する（2回カウントになる）。さらにパターン効果を2倍化する（enhanced, aura, moss, charge, comboの効果量が2倍、luckyは2回抽選）。
-
----
-
-#### 石シール (stone)
-
-| 項目 | 値 |
-|------|-----|
-| type | `stone` |
-| 名前 | 石 |
-| symbol | 石 |
-| preventsClearing | true |
-| 説明 | このブロックは消えない |
-
-**効果**: `preventsClearing: true` のため、ライン消去対象のフィルタリング時に除外される。ライン完成の判定自体は行われるが、そのセルは実際には消去されない。ショップには出現しない（`price: 0`、`SHOP_AVAILABLE_SEALS` に含まれない）。
-
----
-
-#### アローシール・縦 (arrow_v)
-
-| 項目 | 値 |
-|------|-----|
-| type | `arrow_v` |
-| 名前 | アローシール(縦) |
-| symbol | ↕ |
-| preventsClearing | false |
-| 説明 | 縦ライン消去時にブロック点+10 |
-
-**効果**: 消去時にそのセルが完成した縦列に含まれている場合、スコアの乗算対象ブロック数に一定値（+10）を加算する。
-
----
-
-#### アローシール・横 (arrow_h)
-
-| 項目 | 値 |
-|------|-----|
-| type | `arrow_h` |
-| 名前 | アローシール(横) |
-| symbol | ↔ |
-| preventsClearing | false |
-| 説明 | 横ライン消去時にブロック点+10 |
-
-**効果**: 消去時にそのセルが完成した横行に含まれている場合、スコアの乗算対象ブロック数に一定値（+10）を加算する。
-
----
-
-**ショップ出現可能シール**: `gold`, `score`, `multi`, `arrow_v`, `arrow_h`（`stone` は除外）
-
----
-
-## 効果適用ロジック
-
-### 消去可能セルのフィルタリング
+## 消去可能セルのフィルタリング
 
 ライン消去が発生した場合、消去対象セルから以下を除外する:
 - `isNegative: true` のパターンを持つセル（`obstacle` など）
 - `preventsClearing: true` のシールを持つセル（`stone`）
 
-### スコア計算フロー（A×B方式）
+---
+
+## スコア計算フロー（A×B方式）
 
 最終スコアは `ブロック点(A) × 列点(B)` で計算される。詳細は [game-mechanics.md](./game-mechanics.md) を参照。
 
@@ -314,38 +234,6 @@
 7. 最終スコア = Math.floor(A × B)
 ```
 
-### パターン効果の詳細計算
-
-```
-calculatePatternEffects(board, cellsToRemove):
-    enhancedBonus = cellsToRemove に pattern==='enhanced' のセル数 × 2（multi付きなら×2）
-    auraBonus     = cellsToRemove の各セルについて、
-                    隣接する別 blockSetId の aura セルが存在すれば +1（1セルあたり上限+1、multi付きなら×2）
-    mossBonus     = cellsToRemove に pattern==='moss' のセルの盤面端接触辺数合計（multi付きなら×2）
-    chargeBonus   = cellsToRemove に pattern==='charge' のセルの chargeValue 合計（multi付きなら×2）
-```
-
-### シール効果の詳細計算
-
-```
-calculateSealEffects(board, cellsToRemove, completedLines):
-    goldCount  = seal==='gold'  のセル数
-    scoreBonus = seal==='score' のセル数 × 固定値
-    multiBonus = seal==='multi' のセル数（+1/個）
-    arrowBonus = seal==='arrow_v' かつ completedLines.columns に col が含まれるセル数
-               + seal==='arrow_h' かつ completedLines.rows   に row が含まれるセル数
-               （各+10相当の加算値）
-```
-
-### charge 値の蓄積（ピース配置後）
-
-```
-incrementChargeValues(board, excludeBlockSetId):
-    board 上の全セルを走査
-    cell.filled && cell.pattern==='charge' && cell.blockSetId !== excludeBlockSetId
-    の場合: cell.chargeValue += 1
-```
-
 ---
 
 ## 関連ファイル
@@ -353,16 +241,14 @@ incrementChargeValues(board, excludeBlockSetId):
 - `src/lib/game/Domain/Effect/Pattern.ts` — パターン定義・マスターデータ (`PATTERN_DEFINITIONS`, `SHOP_AVAILABLE_PATTERNS`)
 - `src/lib/game/Domain/Effect/PatternEffectHandler.ts` — パターン効果計算（純粋関数）
 - `src/lib/game/Domain/Effect/PatternEffectTypes.ts` — パターン効果型 (`PatternEffectResult`, `ScoreBreakdown`)
-- `src/lib/game/Domain/Effect/Seal.ts` — シール定義・マスターデータ (`SEAL_DEFINITIONS`, `SHOP_AVAILABLE_SEALS`)
-- `src/lib/game/Domain/Effect/SealEffectHandler.ts` — シール効果計算（純粋関数）
-- `src/lib/game/Domain/Effect/SealEffectTypes.ts` — シール効果型 (`SealEffectResult`, `CompletedLinesInfo`)
 - `src/lib/game/Services/BoardService.ts` — `incrementChargeValues` (charge 蓄積)
 - `src/lib/game/Services/CollisionService.ts` — `canPlacePiece` (feather の重ね置き判定)
-- `src/lib/game/Services/ShopService.ts` — ショップ商品生成・パターン/シール付与確率
+- `src/lib/game/Services/ShopService.ts` — ショップ商品生成・パターン付与確率
 
 ## 更新履歴
 
-- 2026-02-19: マルチシールがパターン効果を2倍化する仕様を明記。各パターン・シールのdescriptionをコードに合わせて更新
+- 2026-02-19: pattern-seal-system.md から分離
+- 2026-02-19: マルチシールがパターン効果を2倍化する仕様を明記。各パターンのdescriptionをコードに合わせて更新
 - 2026-02-19: A×B方式（ブロック点×列点）に基づくスコア計算フロー更新。mossBonus→列点(B)、charge蓄積値+1、enhanced/auraのmultiシール効果追記
-- 2026-02-17: feather・nohand・charge・arrow_v・arrow_h を追加。ショップ出現確率・charge蓄積メカニクス・スコア計算フローを実装に基づき大幅更新
+- 2026-02-17: feather・nohand・charge を追加。ショップ出現確率・charge蓄積メカニクス・スコア計算フローを実装に基づき大幅更新
 - 2026-02-06: 初版作成（JSVersionSpecから移植）

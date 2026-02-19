@@ -266,11 +266,11 @@ goldReward = BASE_REWARD[roundType] + remainingHands + interest
 
 #### パターン付きブロックセット
 
-ブロック全体に特殊効果が付与される。詳細は[パターン・シールシステム](./pattern-seal-system.md)を参照。
+ブロック全体に特殊効果が付与される。詳細は[パターンシステム](./pattern-system.md)を参照。
 
 #### シール付きブロックセット
 
-特定のセルに特殊効果が付与される。詳細は[パターン・シールシステム](./pattern-seal-system.md)を参照。
+特定のセルに特殊効果が付与される。詳細は[シールシステム](./seal-system.md)を参照。
 
 ### レリック商品
 
