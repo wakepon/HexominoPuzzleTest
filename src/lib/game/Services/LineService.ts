@@ -155,6 +155,8 @@ export function calculateScoreWithEffects(
       copyMultiplier: 1,
       copyBonus: 0,
       copyLineBonus: 0,
+      blockPoints: 0,
+      linePoints: 0,
       finalScore: 0,
     }
   }

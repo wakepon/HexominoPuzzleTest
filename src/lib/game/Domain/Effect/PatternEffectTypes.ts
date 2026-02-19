@@ -59,7 +59,9 @@ export interface ScoreBreakdown {
   readonly copyMultiplier: number // コピーによる乗算倍率（1=無効）
   readonly copyBonus: number // コピーによる加算ボーナス（0=無効）
   readonly copyLineBonus: number // コピーによるライン数加算（台本コピー時、0, 1, or 2）
-  readonly finalScore: number // 最終スコア
+  readonly blockPoints: number // ブロック点(A): パターン+シール+加算レリック+コンボ
+  readonly linePoints: number // 列点(B): ライン数×lucky×乗算レリック
+  readonly finalScore: number // 最終スコア = Math.floor(A × B)
 }
 
 /**

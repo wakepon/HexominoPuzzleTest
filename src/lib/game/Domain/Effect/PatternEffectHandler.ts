@@ -259,6 +259,18 @@ const DEFAULT_RELIC_EFFECTS: RelicEffectResult = {
 }
 
 /**
+ * 乗算系レリックか判定
+ */
+function isMultiplicativeRelicId(relicId: string): boolean {
+  const multiplicativeRelics = [
+    'chain_master', 'single_line', 'takenoko', 'kani',
+    'nobi_takenoko', 'nobi_kani', 'rensha', 'timing',
+    'full_clear_bonus',
+  ]
+  return multiplicativeRelics.includes(relicId)
+}
+
+/**
  * スコア計算の詳細を返す（パターン効果、シール効果、レリック効果を含む）
  */
 export function calculateScoreBreakdown(
@@ -286,34 +298,29 @@ export function calculateScoreBreakdown(
   const sealEffects = calculateSealEffects(board, cellsToRemove, completedLines)
   const { multiBonus, scoreBonus: sealScoreBonus, goldCount, arrowBonus } = sealEffects
 
-  // 合計ブロック数（乗算対象）= パターン効果 + multiシール効果 + アローシール効果（chargeブロックの基礎分を除外）
+  // 合計ブロック数（パターン効果 + multiシール効果 + アローシール効果、chargeブロック基礎分除外）
   const totalBlocks =
     baseBlocks - chargeBlockCount + enhancedBonus + auraBonus + mossBonus + chargeBonus + multiBonus + arrowBonus
 
-  // レリック効果を計算（baseScore計算前に必要: scriptLineBonusがlinesに影響）
+  // レリック効果を計算
   const relicEffects = relicContext
     ? calculateRelicEffects(relicContext)
     : DEFAULT_RELIC_EFFECTS
 
-  // 台本ライン数ボーナス: linesCleared > 0 の場合のみ加算
   const scriptLineBonus = relicEffects.scriptLineBonus
   const copyLineBonus = relicEffects.copyLineBonus
+
+  // 基本スコア（後方互換: totalBlocks × effectiveLinesCleared）
   const effectiveLinesCleared = linesCleared > 0
     ? linesCleared + scriptLineBonus + copyLineBonus
     : linesCleared
-
-  // 基本スコア（台本ライン数ボーナス込み）
   const baseScore = totalBlocks * effectiveLinesCleared
 
   // comboボーナス
   const comboBonus = calculateComboBonus(comboCount)
 
-  // lucky効果
+  // lucky効果（列倍率として扱う）
   const luckyMultiplier = rollLuckyMultiplier(board, cellsToRemove, luckyRandom)
-
-  // パターン+シール効果込みのスコア
-  const scoreBeforeRelics =
-    (baseScore + comboBonus) * luckyMultiplier + sealScoreBonus
 
   const {
     chainMasterMultiplier,
@@ -340,7 +347,8 @@ export function calculateScoreBreakdown(
     (copyTargetRelicId as string).startsWith('size_bonus_')
   const actualCopyBonus = isCopyTargetSizeBonus ? actualSizeBonusTotal : originalCopyBonus
 
-  // 最終スコア計算（relicDisplayOrder に基づく動的順序）
+  // === A×B方式スコア計算 ===
+
   // 乗算レリックの倍率マップ
   const relicMultiplierMap: Record<string, number> = {
     chain_master: chainMasterMultiplier,
@@ -354,27 +362,53 @@ export function calculateScoreBreakdown(
     full_clear_bonus: fullClearMultiplier,
   }
 
-  // relicDisplayOrder に基づいて乗算レリックを適用
-  // relicDisplayOrder が空の場合はデフォルト順序を使用
   const effectiveOrder: readonly string[] = relicDisplayOrder.length > 0
     ? relicDisplayOrder
     : ['chain_master', 'single_line', 'takenoko', 'kani', 'nobi_takenoko', 'nobi_kani', 'rensha', 'timing', 'full_clear_bonus']
 
-  let scoreAfterRelicMultipliers = scoreBeforeRelics
+  // A (ブロック点): totalBlocks + sealScoreBonus + レリック加算 + comboBonus
+  let blockPoints = totalBlocks + sealScoreBonus
+
+  // relicDisplayOrder順に加算レリックをAに適用
   for (const relicId of effectiveOrder) {
-    // 通常の乗算レリック
-    const multiplier = relicMultiplierMap[relicId]
-    if (multiplier !== undefined && multiplier !== 1) {
-      scoreAfterRelicMultipliers = Math.floor(scoreAfterRelicMultipliers * multiplier)
+    // サイズボーナス（加算系レリック）
+    if ((relicId as string).startsWith('size_bonus_') && relicId === relicEffects.activations.sizeBonusActiveRelicId) {
+      blockPoints += actualSizeBonusTotal
     }
-    // コピーレリック: 対象レリックの直後に乗算を適用
-    if (relicId === copyTargetRelicId && copyMultiplier > 1) {
-      scoreAfterRelicMultipliers = Math.floor(scoreAfterRelicMultipliers * copyMultiplier)
+    // コピーレリック: 加算系対象の直後にコピー分を適用
+    if (relicId === copyTargetRelicId && actualCopyBonus > 0 && !isMultiplicativeRelicId(relicId) && relicId !== ('script' as string)) {
+      blockPoints += actualCopyBonus
     }
   }
 
-  // 加算レリック（サイズボーナス + コピー加算）※台本はbaseScoreに反映済み
-  const finalScore = scoreAfterRelicMultipliers + actualSizeBonusTotal + actualCopyBonus
+  blockPoints += comboBonus
+
+  // B (列点): linesCleared × luckyMultiplier → レリック(台本加算・乗算)
+  let linePoints = linesCleared * luckyMultiplier
+
+  // relicDisplayOrder順に台本加算・乗算レリックをBに適用
+  for (const relicId of effectiveOrder) {
+    // 台本: ライン数加算
+    if (relicId === ('script' as string) && linesCleared > 0 && scriptLineBonus > 0) {
+      linePoints += scriptLineBonus
+    }
+    // コピーレリックが台本をコピー中
+    if (relicId === ('script' as string) && copyTargetRelicId === ('script' as string) && linesCleared > 0 && copyLineBonus > 0) {
+      linePoints += copyLineBonus
+    }
+    // 乗算レリック（切り捨てなし）
+    const multiplier = relicMultiplierMap[relicId]
+    if (multiplier !== undefined && multiplier !== 1) {
+      linePoints *= multiplier
+    }
+    // コピーレリック: 乗算系対象の直後にコピー乗算を適用（切り捨てなし）
+    if (relicId === copyTargetRelicId && copyMultiplier > 1) {
+      linePoints *= copyMultiplier
+    }
+  }
+
+  // 最終スコア = Math.floor(A × B)
+  const finalScore = Math.floor(blockPoints * linePoints)
 
   return {
     baseBlocks,
@@ -408,6 +442,8 @@ export function calculateScoreBreakdown(
     copyMultiplier,
     copyBonus: actualCopyBonus,
     copyLineBonus,
+    blockPoints,
+    linePoints,
     finalScore,
   }
 }

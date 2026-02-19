@@ -1,8 +1,8 @@
 /**
- * スコアアニメーション用の式ステップ生成ロジック
+ * スコアアニメーション用の式ステップ生成ロジック（A×B方式）
  *
  * ScoreBreakdown と relicDisplayOrder を受け取り、
- * 各効果がどう寄与しているかを段階的に見せる FormulaStep[] を生成する。
+ * ブロック点(A) × 列点(B) の形式で各効果の寄与を段階的に見せる FormulaStep[] を生成する。
  */
 
 import type { RelicId } from '../Core/Id'
@@ -42,22 +42,6 @@ function getRelicMultiplier(
 }
 
 /**
- * レリックIDから加算ボーナスを取得
- */
-function getRelicAdditiveBonus(
-  relicId: RelicId,
-  breakdown: ScoreBreakdown
-): number {
-  switch (relicId) {
-    case 'size_bonus_1': case 'size_bonus_2': case 'size_bonus_3':
-    case 'size_bonus_4': case 'size_bonus_5': case 'size_bonus_6':
-      return breakdown.sizeBonusTotal
-    default:
-      return 0
-  }
-}
-
-/**
  * 乗算系レリックか判定
  */
 function isMultiplicativeRelic(relicId: RelicId): boolean {
@@ -77,7 +61,14 @@ function formatNum(n: number): string {
 }
 
 /**
- * ScoreBreakdown と relicDisplayOrder から式ステップを生成
+ * A×B式文字列を構築
+ */
+function buildABFormula(blockPoints: number, linePoints: number): string {
+  return `(${formatNum(blockPoints)}) × ${formatNum(linePoints)}`
+}
+
+/**
+ * ScoreBreakdown と relicDisplayOrder から式ステップを生成（A×B方式）
  */
 export function buildFormulaSteps(
   breakdown: ScoreBreakdown,
@@ -85,162 +76,179 @@ export function buildFormulaSteps(
 ): FormulaStep[] {
   const steps: FormulaStep[] = []
 
-  // === 1. 基本式: (ブロック数 × ライン数) ===
-  let innerSum = breakdown.baseBlocks
-  let outerMultiplier = breakdown.linesCleared
-  let additiveParts: number[] = []
+  // A (ブロック点), B (列点) を段階的に構築
+  let a = breakdown.baseBlocks
+  let b = breakdown.linesCleared
 
+  // === 1. 基本式: (ブロック数) × ライン数 ===
   steps.push({
     type: 'base',
     label: '基本スコア',
-    formula: `(${innerSum}) × ${outerMultiplier}`,
+    formula: buildABFormula(a, b),
     relicId: null,
   })
 
-  // === 2. シール効果 ===
-  // multiシール: カッコ内に加算
-  if (breakdown.multiBonus > 0) {
-    innerSum += breakdown.multiBonus
-    steps.push({
-      type: 'seal',
-      label: 'マルチシール',
-      formula: buildFormula(innerSum, outerMultiplier, additiveParts, 1),
-      relicId: null,
-    })
-  }
-
-  // arrowシール: カッコ内に加算
-  if (breakdown.arrowBonus > 0) {
-    innerSum += breakdown.arrowBonus
-    steps.push({
-      type: 'seal',
-      label: 'アローシール',
-      formula: buildFormula(innerSum, outerMultiplier, additiveParts, 1),
-      relicId: null,
-    })
-  }
-
-  // scoreシール: 加算部分に追加
-  if (breakdown.sealScoreBonus > 0) {
-    additiveParts.push(breakdown.sealScoreBonus)
-    steps.push({
-      type: 'seal',
-      label: 'スコアシール',
-      formula: buildFormula(innerSum, outerMultiplier, additiveParts, 1),
-      relicId: null,
-    })
-  }
-
-  // === 3. パターン効果 ===
-  // enhanced: カッコ内に加算
+  // === 2. パターン効果 → Aが増加 ===
   if (breakdown.enhancedBonus > 0) {
-    innerSum += breakdown.enhancedBonus
+    a += breakdown.enhancedBonus
     steps.push({
       type: 'pattern',
       label: 'エンハンスド',
-      formula: buildFormula(innerSum, outerMultiplier, additiveParts, 1),
+      formula: buildABFormula(a, b),
       relicId: null,
     })
   }
 
-  // aura: カッコ内に加算
   if (breakdown.auraBonus > 0) {
-    innerSum += breakdown.auraBonus
+    a += breakdown.auraBonus
     steps.push({
       type: 'pattern',
       label: 'オーラ',
-      formula: buildFormula(innerSum, outerMultiplier, additiveParts, 1),
+      formula: buildABFormula(a, b),
       relicId: null,
     })
   }
 
-  // moss: カッコ内に加算
   if (breakdown.mossBonus > 0) {
-    innerSum += breakdown.mossBonus
+    a += breakdown.mossBonus
     steps.push({
       type: 'pattern',
       label: 'モス',
-      formula: buildFormula(innerSum, outerMultiplier, additiveParts, 1),
+      formula: buildABFormula(a, b),
       relicId: null,
     })
   }
 
-  // charge: カッコ内に加算
   if (breakdown.chargeBonus > 0) {
-    innerSum += breakdown.chargeBonus
+    a += breakdown.chargeBonus
     steps.push({
       type: 'pattern',
       label: 'チャージ',
-      formula: buildFormula(innerSum, outerMultiplier, additiveParts, 1),
+      formula: buildABFormula(a, b),
       relicId: null,
     })
   }
 
-  // combo: 加算部分に追加
-  if (breakdown.comboBonus > 0) {
-    additiveParts.push(breakdown.comboBonus)
+  // === 3. シール効果 ===
+  // multiシール: Aに加算
+  if (breakdown.multiBonus > 0) {
+    a += breakdown.multiBonus
     steps.push({
-      type: 'pattern',
-      label: 'コンボ',
-      formula: buildFormula(innerSum, outerMultiplier, additiveParts, 1),
+      type: 'seal',
+      label: 'マルチシール',
+      formula: buildABFormula(a, b),
       relicId: null,
     })
   }
 
-  // lucky: 乗算部分（全体 × 2）
-  let luckyApplied = 1
-  if (breakdown.luckyMultiplier > 1) {
-    luckyApplied = breakdown.luckyMultiplier
+  // arrowシール: Aに加算
+  if (breakdown.arrowBonus > 0) {
+    a += breakdown.arrowBonus
     steps.push({
-      type: 'pattern',
-      label: 'ラッキー ×2!',
-      formula: buildFormula(innerSum, outerMultiplier, additiveParts, luckyApplied),
+      type: 'seal',
+      label: 'アローシール',
+      formula: buildABFormula(a, b),
       relicId: null,
     })
   }
 
-  // === 4. レリック効果を relicDisplayOrder の順に追加 ===
-  // scoreBeforeRelics: パターン＋シール効果込みのスコア（PatternEffectHandlerと同じ計算）
-  let currentScore =
-    (breakdown.baseScore + breakdown.comboBonus) * breakdown.luckyMultiplier +
-    breakdown.sealScoreBonus
+  // scoreシール: Aに加算
+  if (breakdown.sealScoreBonus > 0) {
+    a += breakdown.sealScoreBonus
+    steps.push({
+      type: 'seal',
+      label: 'スコアシール',
+      formula: buildABFormula(a, b),
+      relicId: null,
+    })
+  }
 
-  // 台本ライン数ボーナスの表示ステップ（乗算レリックの前に表示）
+  // === 4. レリック効果（relicDisplayOrder順） ===
+  // 加算系レリック → Aに加算
   for (const relicId of relicDisplayOrder) {
-    // 台本: ライン数加算として表示
-    if (relicId === ('script' as string) && (breakdown.scriptLineBonus ?? 0) > 0) {
-      outerMultiplier += breakdown.scriptLineBonus
+    // サイズボーナス（加算系レリック）: 発動したレリックのみ
+    if (relicId === breakdown.sizeBonusRelicId && breakdown.sizeBonusTotal > 0) {
+      a += breakdown.sizeBonusTotal
       const def = getRelicDefinition(relicId)
       const label = def?.name ?? relicId
       steps.push({
         type: 'relic',
-        label: `${label} +${breakdown.scriptLineBonus}列`,
-        formula: buildFormula(innerSum, outerMultiplier, additiveParts, luckyApplied),
+        label: `${label} +${breakdown.sizeBonusTotal}`,
+        formula: buildABFormula(a, b),
         relicId,
       })
     }
-    // コピーレリックが台本をコピー中の場合
-    if (relicId === ('script' as string) && breakdown.copyTargetRelicId === ('script' as string) && (breakdown.copyLineBonus ?? 0) > 0) {
-      outerMultiplier += breakdown.copyLineBonus
+    // コピーレリック: 加算系対象の直後にコピー分
+    if (relicId === breakdown.copyTargetRelicId && breakdown.copyBonus > 0 && !isMultiplicativeRelic(relicId) && relicId !== ('script' as string)) {
+      a += breakdown.copyBonus
       const targetDef = getRelicDefinition(relicId)
       const targetName = targetDef?.name ?? relicId
       steps.push({
         type: 'relic',
-        label: `コピー (${targetName}) +${breakdown.copyLineBonus}列`,
-        formula: buildFormula(innerSum, outerMultiplier, additiveParts, luckyApplied),
+        label: `コピー (${targetName}) +${breakdown.copyBonus}`,
+        formula: buildABFormula(a, b),
         relicId: 'copy' as RelicId,
       })
     }
   }
 
-  let effectiveLines = outerMultiplier
+  // === 5. コンボ → Aに加算 ===
+  if (breakdown.comboBonus > 0) {
+    a += breakdown.comboBonus
+    steps.push({
+      type: 'pattern',
+      label: 'コンボ',
+      formula: buildABFormula(a, b),
+      relicId: null,
+    })
+  }
+
+  // === 6. lucky → Bに乗算 ===
+  if (breakdown.luckyMultiplier > 1) {
+    b *= breakdown.luckyMultiplier
+    steps.push({
+      type: 'pattern',
+      label: 'ラッキー ×2!',
+      formula: buildABFormula(a, b),
+      relicId: null,
+    })
+  }
+
+  // === 7. レリック効果（relicDisplayOrder順） → Bに影響 ===
+  // 台本ライン数ボーナス・乗算レリック
+  let effectiveLines = b
   for (const relicId of relicDisplayOrder) {
+    // 台本: Bにライン数加算
+    if (relicId === ('script' as string) && (breakdown.scriptLineBonus ?? 0) > 0) {
+      effectiveLines += breakdown.scriptLineBonus
+      const def = getRelicDefinition(relicId)
+      const label = def?.name ?? relicId
+      steps.push({
+        type: 'relic',
+        label: `${label} +${breakdown.scriptLineBonus}列`,
+        formula: buildABFormula(a, effectiveLines),
+        relicId,
+      })
+    }
+    // コピーレリックが台本をコピー中
+    if (relicId === ('script' as string) && breakdown.copyTargetRelicId === ('script' as string) && (breakdown.copyLineBonus ?? 0) > 0) {
+      effectiveLines += breakdown.copyLineBonus
+      const targetDef = getRelicDefinition(relicId)
+      const targetName = targetDef?.name ?? relicId
+      steps.push({
+        type: 'relic',
+        label: `コピー (${targetName}) +${breakdown.copyLineBonus}列`,
+        formula: buildABFormula(a, effectiveLines),
+        relicId: 'copy' as RelicId,
+      })
+    }
+
+    // 乗算レリック: B列倍率（X列 → Y列 形式）
     if (isMultiplicativeRelic(relicId)) {
       const multiplier = getRelicMultiplier(relicId, breakdown)
       if (multiplier !== 1) {
         const beforeLines = effectiveLines
         effectiveLines *= multiplier
-        currentScore = Math.floor(currentScore * multiplier)
         const def = getRelicDefinition(relicId)
         const label = def?.name ?? relicId
         steps.push({
@@ -251,11 +259,10 @@ export function buildFormulaSteps(
         })
       }
     }
-    // コピーレリック: 対象レリックの直後にコピー分の乗算を追加
+    // コピーレリック: 乗算系対象の直後にコピー分の乗算
     if (relicId === breakdown.copyTargetRelicId && breakdown.copyMultiplier > 1) {
       const beforeLines = effectiveLines
       effectiveLines *= breakdown.copyMultiplier
-      currentScore = Math.floor(currentScore * breakdown.copyMultiplier)
       const targetDef = getRelicDefinition(relicId)
       const targetName = targetDef?.name ?? relicId
       steps.push({
@@ -267,37 +274,7 @@ export function buildFormulaSteps(
     }
   }
 
-  // 加算レリック（サイズボーナス）※台本は上で表示済み
-  for (const relicId of relicDisplayOrder) {
-    if (!isMultiplicativeRelic(relicId) && relicId !== ('copy' as string) && relicId !== ('script' as string)) {
-      const bonus = getRelicAdditiveBonus(relicId, breakdown)
-      if (bonus > 0) {
-        currentScore += bonus
-        const def = getRelicDefinition(relicId)
-        const label = def?.name ?? relicId
-        steps.push({
-          type: 'relic',
-          label: `${label} +${bonus}`,
-          formula: `${currentScore}`,
-          relicId,
-        })
-      }
-      // コピーレリックで加算レリックをコピー中の場合
-      if (relicId === breakdown.copyTargetRelicId && breakdown.copyBonus > 0) {
-        currentScore += breakdown.copyBonus
-        const targetDef = getRelicDefinition(relicId)
-        const targetName = targetDef?.name ?? relicId
-        steps.push({
-          type: 'relic',
-          label: `コピー (${targetName}) +${breakdown.copyBonus}`,
-          formula: `${currentScore}`,
-          relicId: 'copy' as RelicId,
-        })
-      }
-    }
-  }
-
-  // === 5. 最終結果 ===
+  // === 8. 最終結果 ===
   steps.push({
     type: 'result',
     label: '最終スコア',
@@ -306,34 +283,4 @@ export function buildFormulaSteps(
   })
 
   return steps
-}
-
-/**
- * 式文字列を構築
- */
-function buildFormula(
-  innerSum: number,
-  multiplier: number,
-  additiveParts: number[],
-  luckyMultiplier: number
-): string {
-  let formula = `(${innerSum}) × ${multiplier}`
-
-  if (luckyMultiplier > 1) {
-    formula += ` × ${luckyMultiplier}`
-  }
-
-  const additiveTotal = sumArray(additiveParts)
-  if (additiveTotal > 0) {
-    formula += ` + ${additiveTotal}`
-  }
-
-  return formula
-}
-
-/**
- * 配列の合計
- */
-function sumArray(arr: number[]): number {
-  return arr.reduce((sum, v) => sum + v, 0)
 }
