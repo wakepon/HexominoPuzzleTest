@@ -41,6 +41,8 @@ export function extractRelicState(
       return { hasClearedInRound: legacy.anchorHasClearedInRound }
     case 'first_strike':
       return { hasClearedInRound: legacy.firstStrikeHasClearedInRound }
+    case 'patience':
+      return { consecutiveNonClearHands: legacy.patienceConsecutiveNonClearHands, isCharged: legacy.patienceIsCharged }
     default:
       return null
   }
@@ -68,6 +70,12 @@ function applyRelicState(
       return { ...legacy, anchorHasClearedInRound: (newState as { hasClearedInRound: boolean }).hasClearedInRound }
     case 'first_strike':
       return { ...legacy, firstStrikeHasClearedInRound: (newState as { hasClearedInRound: boolean }).hasClearedInRound }
+    case 'patience':
+      return {
+        ...legacy,
+        patienceConsecutiveNonClearHands: (newState as { consecutiveNonClearHands: number }).consecutiveNonClearHands,
+        patienceIsCharged: (newState as { isCharged: boolean }).isCharged,
+      }
     default:
       return legacy
   }
@@ -93,6 +101,8 @@ export function extractCopyRelicState(
       return { hasClearedInRound: copyState.anchorHasClearedInRound }
     case 'first_strike':
       return { hasClearedInRound: copyState.firstStrikeHasClearedInRound }
+    case 'patience':
+      return { consecutiveNonClearHands: copyState.patienceConsecutiveNonClearHands, isCharged: copyState.patienceIsCharged }
     default:
       return null
   }
@@ -120,6 +130,12 @@ function applyCopyRelicState(
       return { ...copyState, anchorHasClearedInRound: (newState as { hasClearedInRound: boolean }).hasClearedInRound }
     case 'first_strike':
       return { ...copyState, firstStrikeHasClearedInRound: (newState as { hasClearedInRound: boolean }).hasClearedInRound }
+    case 'patience':
+      return {
+        ...copyState,
+        patienceConsecutiveNonClearHands: (newState as { consecutiveNonClearHands: number }).consecutiveNonClearHands,
+        patienceIsCharged: (newState as { isCharged: boolean }).isCharged,
+      }
     default:
       return copyState
   }

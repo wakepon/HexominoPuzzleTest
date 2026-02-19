@@ -46,6 +46,7 @@ export type RelicType =
   | 'crescent'          // 三日月
   | 'last_stand'        // ラストスタンド
   | 'first_strike'      // 先制攻撃
+  | 'patience'          // 忍耐
 
 /**
  * レリック定義
@@ -342,6 +343,15 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     rarity: 'uncommon',
     price: 15,
     icon: '⚡',
+  },
+  patience: {
+    id: 'patience' as RelicId,
+    type: 'patience',
+    name: '忍耐',
+    description: '連続3回以上消去なしの後の次の消去で列点×3',
+    rarity: 'rare',
+    price: 20,
+    icon: '🧘',
   },
 }
 

@@ -130,6 +130,8 @@ interface SavedGameState {
     readonly bandaidCounter?: number
     readonly anchorHasClearedInRound?: boolean
     readonly firstStrikeHasClearedInRound?: boolean
+    readonly patienceConsecutiveNonClearHands?: number
+    readonly patienceIsCharged?: boolean
     readonly copyRelicState?: {
       readonly targetRelicId: string | null
       readonly bandaidCounter: number
@@ -138,6 +140,8 @@ interface SavedGameState {
       readonly nobiKaniMultiplier: number
       readonly anchorHasClearedInRound?: boolean
       readonly firstStrikeHasClearedInRound?: boolean
+      readonly patienceConsecutiveNonClearHands?: number
+      readonly patienceIsCharged?: boolean
       // マイグレーション: 古いセーブデータにはtimingCounter/timingBonusActiveがある
       readonly timingCounter?: number
       readonly timingBonusActive?: boolean
@@ -487,6 +491,8 @@ export function restoreGameState(
       bandaidCounter: saved.relicMultiplierState?.bandaidCounter ?? INITIAL_RELIC_MULTIPLIER_STATE.bandaidCounter,
       anchorHasClearedInRound: saved.relicMultiplierState?.anchorHasClearedInRound ?? INITIAL_RELIC_MULTIPLIER_STATE.anchorHasClearedInRound,
       firstStrikeHasClearedInRound: saved.relicMultiplierState?.firstStrikeHasClearedInRound ?? INITIAL_RELIC_MULTIPLIER_STATE.firstStrikeHasClearedInRound,
+      patienceConsecutiveNonClearHands: saved.relicMultiplierState?.patienceConsecutiveNonClearHands ?? INITIAL_RELIC_MULTIPLIER_STATE.patienceConsecutiveNonClearHands,
+      patienceIsCharged: saved.relicMultiplierState?.patienceIsCharged ?? INITIAL_RELIC_MULTIPLIER_STATE.patienceIsCharged,
       // copyRelicStateのマイグレーション（timingCounter/timingBonusActiveを除外）
       copyRelicState: saved.relicMultiplierState?.copyRelicState
         ? {
@@ -497,6 +503,8 @@ export function restoreGameState(
             nobiKaniMultiplier: saved.relicMultiplierState.copyRelicState.nobiKaniMultiplier,
             anchorHasClearedInRound: saved.relicMultiplierState.copyRelicState.anchorHasClearedInRound ?? false,
             firstStrikeHasClearedInRound: saved.relicMultiplierState.copyRelicState.firstStrikeHasClearedInRound ?? false,
+            patienceConsecutiveNonClearHands: saved.relicMultiplierState.copyRelicState.patienceConsecutiveNonClearHands ?? 0,
+            patienceIsCharged: saved.relicMultiplierState.copyRelicState.patienceIsCharged ?? false,
           }
         : null,
     },

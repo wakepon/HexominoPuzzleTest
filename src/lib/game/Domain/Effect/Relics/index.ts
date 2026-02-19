@@ -64,6 +64,7 @@ import { symmetryRelic } from './Symmetry'
 import { crescentRelic } from './Crescent'
 import { lastStandRelic } from './LastStand'
 import { firstStrikeRelic } from './FirstStrike'
+import { patienceRelic } from './Patience'
 
 /**
  * 全レリックモジュールの配列
@@ -108,6 +109,8 @@ const allModules: readonly RelicModule[] = [
   lastStandRelic,
   // 乗算系（先制攻撃）
   firstStrikeRelic,
+  // 乗算系（忍耐）
+  patienceRelic,
 ]
 
 /**
