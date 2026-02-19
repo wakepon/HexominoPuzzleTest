@@ -47,6 +47,8 @@ export function extractRelicState(
       return { bonus: legacy.snowballBonus }
     case 'muscle':
       return { accumulatedBonus: legacy.muscleAccumulatedBonus }
+    case 'gardener':
+      return { accumulatedBonus: legacy.gardenerAccumulatedBonus }
     default:
       return null
   }
@@ -84,6 +86,8 @@ function applyRelicState(
       return { ...legacy, snowballBonus: (newState as { bonus: number }).bonus }
     case 'muscle':
       return { ...legacy, muscleAccumulatedBonus: (newState as { accumulatedBonus: number }).accumulatedBonus }
+    case 'gardener':
+      return { ...legacy, gardenerAccumulatedBonus: (newState as { accumulatedBonus: number }).accumulatedBonus }
     default:
       return legacy
   }
@@ -115,6 +119,8 @@ export function extractCopyRelicState(
       return { bonus: copyState.snowballBonus }
     case 'muscle':
       return { accumulatedBonus: copyState.muscleAccumulatedBonus }
+    case 'gardener':
+      return { accumulatedBonus: copyState.gardenerAccumulatedBonus }
     default:
       return null
   }
@@ -152,6 +158,8 @@ function applyCopyRelicState(
       return { ...copyState, snowballBonus: (newState as { bonus: number }).bonus }
     case 'muscle':
       return { ...copyState, muscleAccumulatedBonus: (newState as { accumulatedBonus: number }).accumulatedBonus }
+    case 'gardener':
+      return { ...copyState, gardenerAccumulatedBonus: (newState as { accumulatedBonus: number }).accumulatedBonus }
     default:
       return copyState
   }

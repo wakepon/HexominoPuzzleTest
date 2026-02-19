@@ -21,6 +21,7 @@ export interface CopyRelicState {
   readonly patienceIsCharged: boolean
   readonly snowballBonus: number
   readonly muscleAccumulatedBonus: number
+  readonly gardenerAccumulatedBonus: number
 }
 
 /**
@@ -39,6 +40,7 @@ export function createInitialCopyRelicState(targetRelicId: RelicId | null): Copy
     patienceIsCharged: false,
     snowballBonus: 0,
     muscleAccumulatedBonus: 0,
+    gardenerAccumulatedBonus: 0,
   }
 }
 
@@ -53,6 +55,7 @@ export interface RelicMultiplierState {
   readonly patienceIsCharged: boolean               // 忍耐: チャージ済みか
   readonly snowballBonus: number                    // 雪だるま: 累積ブロック点ボーナス
   readonly muscleAccumulatedBonus: number           // 筋肉: 累積列点ボーナス
+  readonly gardenerAccumulatedBonus: number         // 庭師: 累積ブロック点ボーナス
   readonly copyRelicState: CopyRelicState | null  // コピーレリック状態（未所持時はnull）
 }
 
@@ -67,6 +70,7 @@ export const INITIAL_RELIC_MULTIPLIER_STATE: RelicMultiplierState = {
   patienceIsCharged: false,
   snowballBonus: 0,
   muscleAccumulatedBonus: 0,
+  gardenerAccumulatedBonus: 0,
   copyRelicState: null,
 }
 

@@ -134,6 +134,7 @@ interface SavedGameState {
     readonly patienceIsCharged?: boolean
     readonly snowballBonus?: number
     readonly muscleAccumulatedBonus?: number
+    readonly gardenerAccumulatedBonus?: number
     readonly copyRelicState?: {
       readonly targetRelicId: string | null
       readonly bandaidCounter: number
@@ -146,6 +147,7 @@ interface SavedGameState {
       readonly patienceIsCharged?: boolean
       readonly snowballBonus?: number
       readonly muscleAccumulatedBonus?: number
+      readonly gardenerAccumulatedBonus?: number
       // マイグレーション: 古いセーブデータにはtimingCounter/timingBonusActiveがある
       readonly timingCounter?: number
       readonly timingBonusActive?: boolean
@@ -499,6 +501,7 @@ export function restoreGameState(
       patienceIsCharged: saved.relicMultiplierState?.patienceIsCharged ?? INITIAL_RELIC_MULTIPLIER_STATE.patienceIsCharged,
       snowballBonus: saved.relicMultiplierState?.snowballBonus ?? INITIAL_RELIC_MULTIPLIER_STATE.snowballBonus,
       muscleAccumulatedBonus: saved.relicMultiplierState?.muscleAccumulatedBonus ?? INITIAL_RELIC_MULTIPLIER_STATE.muscleAccumulatedBonus,
+      gardenerAccumulatedBonus: saved.relicMultiplierState?.gardenerAccumulatedBonus ?? INITIAL_RELIC_MULTIPLIER_STATE.gardenerAccumulatedBonus,
       // copyRelicStateのマイグレーション（timingCounter/timingBonusActiveを除外）
       copyRelicState: saved.relicMultiplierState?.copyRelicState
         ? {
@@ -513,6 +516,7 @@ export function restoreGameState(
             patienceIsCharged: saved.relicMultiplierState.copyRelicState.patienceIsCharged ?? false,
             snowballBonus: saved.relicMultiplierState.copyRelicState.snowballBonus ?? 0,
             muscleAccumulatedBonus: saved.relicMultiplierState.copyRelicState.muscleAccumulatedBonus ?? 0,
+            gardenerAccumulatedBonus: saved.relicMultiplierState.copyRelicState.gardenerAccumulatedBonus ?? 0,
           }
         : null,
     },

@@ -49,6 +49,7 @@ export type RelicType =
   | 'patience'          // 忍耐
   | 'snowball'          // 雪だるま
   | 'muscle'            // 筋肉
+  | 'gardener'          // 庭師
 
 /**
  * レリック定義
@@ -372,6 +373,15 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     rarity: 'uncommon',
     price: 15,
     icon: '💪',
+  },
+  gardener: {
+    id: 'gardener' as RelicId,
+    type: 'gardener',
+    name: '庭師',
+    description: 'パターン付きブロックを消すたびにブロック点+0.2を累積（ラウンド中）',
+    rarity: 'uncommon',
+    price: 15,
+    icon: '🌻',
   },
 }
 

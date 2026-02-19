@@ -575,10 +575,14 @@ function processPiecePlacement(
       : null
 
     // スコア計算後のレリック状態更新（rensha等: lines_cleared イベント）
+    // パターン付きブロック数を消去セルから計算（gardener等で使用）
+    const clearedPatternBlockCount = cells.reduce(
+      (count, c) => count + (newBoard[c.row][c.col].pattern ? 1 : 0), 0
+    )
     const newRelicMultiplierState = dispatchRelicStateEvent(
       state.player.ownedRelics,
       preUpdatedMultState,
-      { type: 'lines_cleared', totalLines, rowLines: completedLines.rows.length, colLines: completedLines.columns.length }
+      { type: 'lines_cleared', totalLines, rowLines: completedLines.rows.length, colLines: completedLines.columns.length, patternBlockCount: clearedPatternBlockCount }
     )
 
     // 得点計算後にchargeValueをインクリメント（配置したピース自身は除外）
@@ -618,7 +622,7 @@ function processPiecePlacement(
   const newRelicMultiplierState = dispatchRelicStateEvent(
     state.player.ownedRelics,
     afterHandState,
-    { type: 'lines_cleared', totalLines: 0, rowLines: 0, colLines: 0 }
+    { type: 'lines_cleared', totalLines: 0, rowLines: 0, colLines: 0, patternBlockCount: 0 }
   )
 
   // 配置不可チェック＆リドロー
