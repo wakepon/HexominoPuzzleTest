@@ -3,7 +3,7 @@
  */
 
 import type { Board, ClearingCell } from '..'
-import type { PatternId, RelicId } from '../Core/Id'
+import type { PatternId, RelicId, SealId } from '../Core/Id'
 import type { PatternEffectResult, ScoreBreakdown } from './PatternEffectTypes'
 import type { RelicEffectContext, RelicEffectResult } from './RelicEffectTypes'
 import type { CompletedLinesInfo } from './SealEffectTypes'
@@ -63,7 +63,8 @@ export function calculateEnhancedBonus(
   for (const cell of cellsToRemove) {
     const boardCell = board[cell.row][cell.col]
     if (boardCell.pattern === ('enhanced' as PatternId)) {
-      bonus += 2
+      const multiplier = boardCell.seal === ('multi' as SealId) ? 2 : 1
+      bonus += 2 * multiplier
     }
   }
   return bonus
@@ -94,7 +95,8 @@ export function calculateAuraBonus(
         adjCell.pattern === ('aura' as PatternId) &&
         adjCell.blockSetId !== currentCell.blockSetId
       ) {
-        bonus += 1
+        const multiplier = currentCell.seal === ('multi' as SealId) ? 2 : 1
+        bonus += 1 * multiplier
         break // 1セルあたり最大+1
       }
     }
@@ -117,7 +119,8 @@ export function calculateMossBonus(
   for (const cell of cellsToRemove) {
     const boardCell = board[cell.row][cell.col]
     if (boardCell.pattern === ('moss' as PatternId)) {
-      bonus += countEdgeContacts(cell.row, cell.col)
+      const multiplier = boardCell.seal === ('multi' as SealId) ? 2 : 1
+      bonus += countEdgeContacts(cell.row, cell.col) * multiplier
     }
   }
 
@@ -137,7 +140,8 @@ export function calculateChargeBonus(
   for (const cell of cellsToRemove) {
     const boardCell = board[cell.row][cell.col]
     if (boardCell.pattern === ('charge' as PatternId)) {
-      bonus += boardCell.chargeValue
+      const multiplier = boardCell.seal === ('multi' as SealId) ? 2 : 1
+      bonus += boardCell.chargeValue * multiplier
     }
   }
   return bonus
@@ -154,16 +158,22 @@ export function rollLuckyMultiplier(
   cellsToRemove: readonly ClearingCell[],
   random: () => number = Math.random
 ): number {
-  // 消去対象にluckyパターンがあるかチェック
-  const hasLucky = cellsToRemove.some((cell) => {
+  // multi付きluckyブロックは2回抽選
+  let luckyRolls = 0
+  for (const cell of cellsToRemove) {
     const boardCell = board[cell.row][cell.col]
-    return boardCell.pattern === ('lucky' as PatternId)
-  })
+    if (boardCell.pattern === ('lucky' as PatternId)) {
+      luckyRolls += boardCell.seal === ('multi' as SealId) ? 2 : 1
+    }
+  }
 
-  if (!hasLucky) return 1
+  if (luckyRolls === 0) return 1
 
-  // 10%の確率で2倍
-  return random() < 0.1 ? 2 : 1
+  // 各ロールで10%の確率 → 1回でも当たれば2倍
+  for (let i = 0; i < luckyRolls; i++) {
+    if (random() < 0.1) return 2
+  }
+  return 1
 }
 
 // === combo効果 ===
@@ -180,7 +190,8 @@ export function calculateComboBonus(
   for (const cell of cellsToRemove) {
     const boardCell = board[cell.row][cell.col]
     if (boardCell.pattern === ('combo' as PatternId)) {
-      comboCount++
+      const increment = boardCell.seal === ('multi' as SealId) ? 2 : 1
+      comboCount += increment
     }
   }
   if (comboCount === 0) return 0

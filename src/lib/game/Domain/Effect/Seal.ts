@@ -54,7 +54,7 @@ export const SEAL_DEFINITIONS: Record<SealType, SealDefinition> = {
     id: 'multi' as SealId,
     type: 'multi',
     name: 'マルチシール',
-    description: 'ライン消し時にこのブロックが2回カウントされる',
+    description: 'このブロックは2回発動する',
     symbol: '×2',
     preventsClearing: false,
     price: 4, // 2倍カウントで高い効果
