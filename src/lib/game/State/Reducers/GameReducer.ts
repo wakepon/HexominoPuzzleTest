@@ -52,15 +52,12 @@ import {
   getActivatedRelicsFromScoreBreakdown,
   hasRelic,
 } from '../../Domain/Effect/RelicEffectHandler'
+import { getRelicModule } from '../../Domain/Effect/Relics/RelicRegistry'
 import {
   INITIAL_RELIC_MULTIPLIER_STATE,
-  updateRenshaMultiplier,
-  updateNobiTakenokoMultiplier,
-  updateNobiKaniMultiplier,
-  updateBandaidCounter,
   createInitialCopyRelicState,
 } from '../../Domain/Effect/RelicState'
-import type { CopyRelicState } from '../../Domain/Effect/RelicState'
+import { dispatchRelicStateEvent, dispatchOnPiecePlaced } from '../../Domain/Effect/Relics/RelicStateDispatcher'
 import {
   resolveCopyTarget,
   shouldResetCopyState,
@@ -96,7 +93,7 @@ import { AMULET_DEFINITIONS, MAX_AMULET_STOCK } from '../../Domain/Effect/Amulet
 import type { AmuletModalState } from '../../Domain/Effect/AmuletModalState'
 import { applyPatternAdd, applySealAdd, applyVanish, applySculpt, isShapeConnected } from '../../Services/AmuletEffectService'
 import { OBSTACLE_BLOCK_COUNT } from '../../Data/BossConditions'
-import { RELIC_DEFINITIONS, RELIC_EFFECT_VALUES } from '../../Domain/Effect/Relic'
+import { RELIC_DEFINITIONS } from '../../Domain/Effect/Relic'
 import { getMinoById } from '../../Data/MinoDefinitions'
 import { saveGameState, clearGameState } from '../../Services/StorageService'
 import type { RelicMultiplierState } from '../../Domain/Effect/RelicState'
@@ -104,59 +101,6 @@ import type { RelicId, PatternId } from '../../Domain/Core/Id'
 import type { RoundInfo } from '../../Domain/Round/RoundTypes'
 import { generateScriptLines } from '../../Domain/Effect/ScriptRelicState'
 
-/**
- * レリック倍率状態を更新
- * ピース配置後に呼び出し、消去ライン数に基づいて各倍率を更新
- */
-function updateRelicMultipliers(
-  currentState: RelicMultiplierState,
-  ownedRelics: readonly RelicId[],
-  totalLines: number
-): RelicMultiplierState {
-  let newState = currentState
-
-  // 2-D: 連射倍率の更新
-  if (hasRelic(ownedRelics, 'rensha')) {
-    newState = updateRenshaMultiplier(newState, totalLines)
-  }
-
-  return newState
-}
-
-/**
- * コピーレリックのカウンターを更新（対象レリックの種別に応じて独立管理）
- */
-function updateCopyRelicCounters(
-  copyState: CopyRelicState | null,
-  handConsumed: boolean,
-  totalLines: number
-): CopyRelicState | null {
-  if (!copyState || !copyState.targetRelicId) return copyState
-
-  const targetType = copyState.targetRelicId as string
-  let updated = copyState
-
-  // 絆創膏カウンター
-  if (targetType === 'bandaid' && handConsumed) {
-    const newCounter = updated.bandaidCounter + 1
-    if (newCounter >= 3) { // BANDAID_TRIGGER_COUNT
-      updated = { ...updated, bandaidCounter: 0 }
-    } else {
-      updated = { ...updated, bandaidCounter: newCounter }
-    }
-  }
-
-  // 連射カウンター
-  if (targetType === 'rensha') {
-    if (totalLines === 0) {
-      updated = { ...updated, renshaMultiplier: 1.0 }
-    } else {
-      updated = { ...updated, renshaMultiplier: updated.renshaMultiplier + RELIC_EFFECT_VALUES.RENSHA_INCREMENT }
-    }
-  }
-
-  return updated
-}
 
 /**
  * スコアアニメーション状態を作成
@@ -235,32 +179,39 @@ function buildScoreBonuses(breakdown: ScoreBreakdown): ScoreBonus[] {
   if (breakdown.sealScoreBonus > 0) {
     bonuses.push({ source: 'seal:score', amount: breakdown.sealScoreBonus })
   }
-  if (breakdown.chainMasterMultiplier > 1) {
-    bonuses.push({
-      source: 'relic:chain_master',
-      amount: 0,
-      multiplier: breakdown.chainMasterMultiplier,
-    })
-  }
-  if (breakdown.sizeBonusTotal > 0 && breakdown.sizeBonusRelicId) {
-    bonuses.push({
-      source: `relic:${breakdown.sizeBonusRelicId}`,
-      amount: breakdown.sizeBonusTotal,
-    })
-  }
-  if (breakdown.fullClearMultiplier > 1) {
-    bonuses.push({
-      source: 'relic:full_clear_bonus',
-      amount: 0,
-      multiplier: breakdown.fullClearMultiplier,
-    })
-  }
-  if (breakdown.timingMultiplier > 1) {
-    bonuses.push({
-      source: 'relic:timing',
-      amount: 0,
-      multiplier: breakdown.timingMultiplier,
-    })
+  // レリック効果（動的マップから生成）
+  for (const [relicId, effectValue] of breakdown.relicEffects) {
+    if (relicId === 'copy') continue // コピーは別途処理
+    const module = getRelicModule(relicId)
+    if (!module) continue
+
+    switch (module.scoreEffect) {
+      case 'multiplicative':
+        if (effectValue !== 1) {
+          bonuses.push({
+            source: `relic:${relicId}`,
+            amount: 0,
+            multiplier: effectValue,
+          })
+        }
+        break
+      case 'additive':
+        if (effectValue > 0) {
+          bonuses.push({
+            source: `relic:${relicId}`,
+            amount: effectValue,
+          })
+        }
+        break
+      case 'line_additive':
+        if (effectValue > 0) {
+          bonuses.push({
+            source: `relic:${relicId}`,
+            amount: effectValue,
+          })
+        }
+        break
+    }
   }
 
   return bonuses
@@ -523,12 +474,19 @@ function processPiecePlacement(
   // nohandパターンの場合はハンド消費をスキップ
   const isNohand = getPiecePattern(piece) === 'nohand'
 
-  // 絆創膏カウンター更新（ハンド消費時のみ）
+  // ハンド消費イベントをディスパッチ（bandaidカウンター等が更新される）
   const handConsumed = !isNohand
-  const { newState: updatedMultState, shouldTrigger: bandaidTrigger } =
-    hasRelic(state.player.ownedRelics, 'bandaid')
-      ? updateBandaidCounter(state.relicMultiplierState, handConsumed)
-      : { newState: state.relicMultiplierState, shouldTrigger: false }
+  const afterHandState = handConsumed
+    ? dispatchRelicStateEvent(state.player.ownedRelics, state.relicMultiplierState, { type: 'hand_consumed' })
+    : state.relicMultiplierState
+
+  // onPiecePlacedフックを実行（bandaid注入判定等）
+  const { effects: hookEffects } = dispatchOnPiecePlaced(
+    state.player.ownedRelics,
+    afterHandState,
+    { ownedRelics: state.player.ownedRelics, phase: state.phase, remainingHands: newDeck.remainingHands, volcanoEligible: state.volcanoEligible }
+  )
+  const bandaidTrigger = hookEffects.some(e => e?.type === 'inject_piece')
 
   // 配置後の状態を計算
   const { finalSlots, finalDeck } = handlePlacement(newSlots, newDeck, isNohand, bandaidTrigger, state.roundInfo)
@@ -554,35 +512,13 @@ function processPiecePlacement(
     // 消去後の盤面を先に計算（全消し判定用）
     const boardAfterClear = clearLines(newBoard, cells)
 
-    // のびのび倍率をスコア計算前に更新（初回から効果を出すため）
-    let preUpdatedMultState = updatedMultState
-    if (hasRelic(state.player.ownedRelics, 'nobi_takenoko')) {
-      preUpdatedMultState = updateNobiTakenokoMultiplier(preUpdatedMultState, completedLines.rows.length, completedLines.columns.length)
-    }
-    if (hasRelic(state.player.ownedRelics, 'nobi_kani')) {
-      preUpdatedMultState = updateNobiKaniMultiplier(preUpdatedMultState, completedLines.rows.length, completedLines.columns.length)
-    }
-
-    // コピーレリックののびのび倍率も事前更新
-    let preUpdatedCopyState = preUpdatedMultState.copyRelicState
-    if (preUpdatedCopyState && preUpdatedCopyState.targetRelicId) {
-      const targetType = preUpdatedCopyState.targetRelicId as string
-      if (targetType === 'nobi_takenoko') {
-        if (completedLines.rows.length > 0) {
-          preUpdatedCopyState = { ...preUpdatedCopyState, nobiTakenokoMultiplier: 1.0 }
-        } else if (completedLines.columns.length > 0) {
-          preUpdatedCopyState = { ...preUpdatedCopyState, nobiTakenokoMultiplier: preUpdatedCopyState.nobiTakenokoMultiplier + 0.5 }
-        }
-      }
-      if (targetType === 'nobi_kani') {
-        if (completedLines.columns.length > 0) {
-          preUpdatedCopyState = { ...preUpdatedCopyState, nobiKaniMultiplier: 1.0 }
-        } else if (completedLines.rows.length > 0) {
-          preUpdatedCopyState = { ...preUpdatedCopyState, nobiKaniMultiplier: preUpdatedCopyState.nobiKaniMultiplier + 0.5 }
-        }
-      }
-      preUpdatedMultState = { ...preUpdatedMultState, copyRelicState: preUpdatedCopyState }
-    }
+    // スコア計算前のレリック状態更新（のびのび系: lines_detected イベント）
+    // ディスパッチャーがコピーレリックのカウンターも同時に更新する
+    const preUpdatedMultState = dispatchRelicStateEvent(
+      state.player.ownedRelics,
+      afterHandState,
+      { type: 'lines_detected', totalLines, rowLines: completedLines.rows.length, colLines: completedLines.columns.length }
+    )
 
     // レリック効果コンテキストを作成
     const relicContext: RelicEffectContext = {
@@ -596,7 +532,7 @@ function processPiecePlacement(
       completedRows: completedLines.rows,
       completedCols: completedLines.columns,
       scriptRelicLines: state.scriptRelicLines,
-      copyRelicState: preUpdatedCopyState,
+      copyRelicState: preUpdatedMultState.copyRelicState,
       remainingHands: finalDeck.remainingHands,
     }
 
@@ -632,17 +568,11 @@ function processPiecePlacement(
       ? createRelicActivationAnimation(activatedRelics, RELIC_EFFECT_STYLE.duration)
       : null
 
-    const newRelicMultiplierState = updateRelicMultipliers(
-      preUpdatedMultState,
+    // スコア計算後のレリック状態更新（rensha等: lines_cleared イベント）
+    const newRelicMultiplierState = dispatchRelicStateEvent(
       state.player.ownedRelics,
-      totalLines
-    )
-
-    // コピーレリックカウンター更新
-    const updatedCopyState = updateCopyRelicCounters(
-      newRelicMultiplierState.copyRelicState,
-      handConsumed,
-      totalLines
+      preUpdatedMultState,
+      { type: 'lines_cleared', totalLines, rowLines: completedLines.rows.length, colLines: completedLines.columns.length }
     )
 
     // 得点計算後にchargeValueをインクリメント（配置したピース自身は除外）
@@ -672,27 +602,17 @@ function processPiecePlacement(
         deck: finalDeck,
         phase: shouldDefer ? 'playing' : newPhase,
         pendingPhase: shouldDefer ? newPhase : null,
-        relicMultiplierState: {
-          ...newRelicMultiplierState,
-          copyRelicState: updatedCopyState,
-        },
+        relicMultiplierState: newRelicMultiplierState,
         volcanoEligible: false, // ライン消去があったので火山は発動不可
       },
     }
   }
 
-  // ライン消去なし
-  const newRelicMultiplierState = updateRelicMultipliers(
-    updatedMultState,
+  // ライン消去なしのレリック状態更新（rensha リセット等）
+  const newRelicMultiplierState = dispatchRelicStateEvent(
     state.player.ownedRelics,
-    0
-  )
-
-  // コピーレリックカウンター更新（ライン消去なし）
-  const updatedCopyStateNoLine = updateCopyRelicCounters(
-    newRelicMultiplierState.copyRelicState,
-    handConsumed,
-    0
+    afterHandState,
+    { type: 'lines_cleared', totalLines: 0, rowLines: 0, colLines: 0 }
   )
 
   // 配置不可チェック＆リドロー
@@ -720,10 +640,7 @@ function processPiecePlacement(
       dragState: initialDragState,
       deck: resolved.finalDeck,
       phase: resolved.phase,
-      relicMultiplierState: {
-        ...newRelicMultiplierState,
-        copyRelicState: updatedCopyStateNoLine,
-      },
+      relicMultiplierState: newRelicMultiplierState,
     },
   }
 }
@@ -821,13 +738,16 @@ function createNextRoundState(currentState: GameState): GameState {
     player: currentState.player,
     targetScore,
     shopState: null,
-    relicMultiplierState: {
-      ...INITIAL_RELIC_MULTIPLIER_STATE,
-      // コピーレリック: カウンターリセットだがtargetは維持
-      copyRelicState: currentState.relicMultiplierState.copyRelicState
-        ? createInitialCopyRelicState(currentState.relicMultiplierState.copyRelicState.targetRelicId)
-        : null,
-    }, // ラウンド開始時に倍率をリセット
+    relicMultiplierState: dispatchRelicStateEvent(
+      currentState.player.ownedRelics,
+      {
+        ...INITIAL_RELIC_MULTIPLIER_STATE,
+        copyRelicState: currentState.relicMultiplierState.copyRelicState
+          ? createInitialCopyRelicState(currentState.relicMultiplierState.copyRelicState.targetRelicId)
+          : null,
+      },
+      { type: 'round_start' }
+    ),
     scriptRelicLines,
     deckViewOpen: false,
     volcanoEligible: true, // ラウンド開始時にリセット

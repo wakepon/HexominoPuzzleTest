@@ -4,6 +4,7 @@
 
 import type { GameState, DragState, PieceSlot, DeckState, GamePhase } from '../Domain'
 import type { RandomGenerator } from '../Utils/Random'
+import { initializeRelicRegistry } from '../Domain/Effect/Relics/index'
 import { createEmptyBoard, placeObstacleOnBoard } from '../Services/BoardService'
 import {
   createInitialDeckStateWithParams,
@@ -122,6 +123,9 @@ function createNewGameState(): GameState {
  * 保存データがあれば復元、なければ新規作成
  */
 export function createInitialState(): GameState {
+  // レリックレジストリを初期化（冪等性あり、複数回呼んでもOK）
+  initializeRelicRegistry()
+
   // 保存データの読み込みを試みる
   const saved = loadGameState()
 

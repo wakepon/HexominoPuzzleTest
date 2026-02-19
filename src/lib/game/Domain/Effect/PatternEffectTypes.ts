@@ -2,8 +2,6 @@
  * パターン効果計算の型定義
  */
 
-import type { RelicId } from '../Core/Id'
-
 /**
  * パターン効果計算の結果
  */
@@ -16,50 +14,50 @@ export interface PatternEffectResult {
 
 /**
  * スコア計算の詳細内訳
+ *
+ * レリック効果は relicEffects マップで動的に管理される。
+ * 各レリックの効果値は ScoreEffectType に応じて解釈される:
+ * - multiplicative: 列点(B)の乗算倍率（1 = 無効）
+ * - additive: ブロック点(A)への加算値（0 = 無効）
+ * - line_additive: ライン数への加算値（0 = 無効）
  */
 export interface ScoreBreakdown {
-  readonly baseBlocks: number // 基本消去ブロック数
-  readonly enhancedBonus: number // enhanced効果
-  readonly auraBonus: number // aura効果
-  readonly mossBonus: number // moss効果
-  readonly multiBonus: number // multiシール効果（追加ブロック数）
-  readonly arrowBonus: number // アローシール効果（+10/個）
-  readonly chargeBonus: number // charge効果による追加ブロック数
-  readonly totalBlocks: number // 合計ブロック数（乗算対象）
-  readonly linesCleared: number // 消去ライン数
-  readonly baseScore: number // 基本スコア（totalBlocks × linesCleared）
-  readonly comboBonus: number // comboボーナス
-  readonly luckyMultiplier: number // lucky倍率（1 or 2）
-  readonly sealScoreBonus: number // scoreシールによる加算（+5点/個）
-  readonly goldCount: number // goldシール数（スコアには影響しないがReducerで使用）
-  // レリック効果
-  readonly chainMasterMultiplier: number // 連鎖の達人倍率（1.0 or 1.5）
-  readonly sizeBonusTotal: number // サイズボーナス（消去ブロック数 or 0）
-  readonly sizeBonusRelicId: RelicId | null // 発動したサイズボーナスレリックID
-  readonly fullClearMultiplier: number // 全消し倍率（1 or 5）
-  readonly relicBonusTotal: number // レリック加算ボーナス合計
-  // 2-A: シングルライン
-  readonly singleLineMultiplier: number // シングルライン倍率（1 or 3）
-  // 2-B: タケノコ
-  readonly takenokoMultiplier: number // タケノコ倍率（縦列数、発動時は1以上）
-  // 2-C: カニ
-  readonly kaniMultiplier: number // カニ倍率（行数、発動時は1以上）
-  // 2-D: 連射
-  readonly renshaMultiplier: number // 連射倍率（累積、1.0から+2ずつ増加）
-  // 2-E: のびのびタケノコ
-  readonly nobiTakenokoMultiplier: number // のびのびタケノコ倍率（累積、1.0から+0.5ずつ増加）
-  // 2-F: のびのびカニ
-  readonly nobiKaniMultiplier: number // のびのびカニ倍率（累積、1.0から+0.5ずつ増加）
-  // 台本
-  readonly scriptLineBonus: number // 台本ライン数ボーナス（0, 1, or 2）
-  // タイミング
-  readonly timingMultiplier: number // タイミング倍率（1 or 3）
-  // コピーレリック
-  readonly copyTargetRelicId: RelicId | null // コピー対象のレリックID
-  readonly copyMultiplier: number // コピーによる乗算倍率（1=無効）
-  readonly copyBonus: number // コピーによる加算ボーナス（0=無効）
-  readonly copyLineBonus: number // コピーによるライン数加算（台本コピー時、0, 1, or 2）
-  readonly blockPoints: number // ブロック点(A): パターン+シール+加算レリック+コンボ
-  readonly linePoints: number // 列点(B): ライン数×lucky×乗算レリック
-  readonly finalScore: number // 最終スコア = Math.floor(A × B)
+  // === パターン・シール効果（レリック非依存） ===
+  readonly baseBlocks: number       // 基本消去ブロック数
+  readonly enhancedBonus: number    // enhanced効果
+  readonly auraBonus: number        // aura効果
+  readonly mossBonus: number        // moss効果
+  readonly multiBonus: number       // multiシール効果（追加ブロック数）
+  readonly arrowBonus: number       // アローシール効果（+10/個）
+  readonly chargeBonus: number      // charge効果による追加ブロック数
+  readonly totalBlocks: number      // 合計ブロック数（乗算対象）
+  readonly linesCleared: number     // 消去ライン数
+  readonly baseScore: number        // 基本スコア（totalBlocks × linesCleared）
+  readonly comboBonus: number       // comboボーナス
+  readonly luckyMultiplier: number  // lucky倍率（1 or 2）
+  readonly sealScoreBonus: number   // scoreシールによる加算（+5点/個）
+  readonly goldCount: number        // goldシール数（スコアには影響しないがReducerで使用）
+
+  // === レリック効果（動的マップ） ===
+  /**
+   * 各レリックの効果値
+   * key: relicId（string）
+   * value: 乗算レリック→倍率, 加算レリック→加算値, ライン加算→ライン数
+   *        コピーレリックは 'copy' キーで格納
+   */
+  readonly relicEffects: ReadonlyMap<string, number>
+
+  /** 発動したサイズボーナスレリックID（size_bonus_1〜6のどれか） */
+  readonly sizeBonusRelicId: string | null
+
+  /** コピー対象のレリックID */
+  readonly copyTargetRelicId: string | null
+
+  /** レリック加算ボーナス合計（サイズボーナス + コピー加算） */
+  readonly relicBonusTotal: number
+
+  // === 最終計算値 ===
+  readonly blockPoints: number  // ブロック点(A): パターン+シール+加算レリック+コンボ
+  readonly linePoints: number   // 列点(B): ライン数×lucky×乗算レリック
+  readonly finalScore: number   // 最終スコア = Math.floor(A × B)
 }

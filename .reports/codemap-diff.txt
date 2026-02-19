@@ -1,0 +1,25 @@
+Codemap Diff Report - 2026-02-20
+=================================
+
+Trigger: レリックシステムのレジストリベース移行 (Phase 1-7)
+
+## architecture.md
+- Lines changed: +63 / -17 (~43% change)
+- Key changes:
+  - モジュール依存関係図にRelicRegistry/RelicEffectEngine/RelicStateDispatcherを追加
+  - Relicsモジュールアーキテクチャセクション新設
+  - Effect処理チェーンをレジストリベースに更新
+  - レリック状態更新チェーン（Reducer内）セクション新設
+
+## data.md
+- Lines changed: +62 / -27 (~32% change)
+- Key changes:
+  - ScoreBreakdown: 個別レリックフィールド → relicEffects動的Map
+  - RelicModuleインターフェース定義セクション新設
+  - RelicStateEventイベント型追加
+  - relicEffectsの解釈テーブル追加
+
+## Summary
+- Total lines changed: +101 / -44
+- Both files exceed 30% threshold
+- Changes reflect completed relic system registry migration

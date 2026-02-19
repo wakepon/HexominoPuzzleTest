@@ -2,7 +2,7 @@
  * エフェクト付きスコア計算テスト
  * calculateScoreWithEffects のパターン・シール・レリック効果を検証
  */
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeAll } from 'vitest'
 import { calculateScoreWithEffects } from '../Services/LineService'
 import type { CompletedLines } from '../Services/LineService'
 import { createEmptyBoard } from '../Services/BoardService'
@@ -10,6 +10,7 @@ import type { Board } from '../Domain'
 import type { BlockSetId, PatternId, SealId, RelicId } from '../Domain/Core/Id'
 import type { RelicEffectContext } from '../Domain/Effect/RelicEffectTypes'
 import { INITIAL_RELIC_MULTIPLIER_STATE } from '../Domain/Effect/RelicState'
+import { initializeRelicRegistry } from '../Domain/Effect/Relics/index'
 
 // === 乱数制御 ===
 const noLuck = () => 0.5           // lucky不発（0.1以上）
@@ -133,6 +134,10 @@ function createDefaultRelicContext(
 // === テスト ===
 
 describe('calculateScoreWithEffects', () => {
+  beforeAll(() => {
+    initializeRelicRegistry()
+  })
+
   // ========================================
   // 基本ケース
   // ========================================
@@ -473,7 +478,7 @@ describe('calculateScoreWithEffects', () => {
 
       const result = calculateScoreWithEffects(board, lines, ctx)
 
-      expect(result.chainMasterMultiplier).toBe(1.5)
+      expect(result.relicEffects.get('chain_master')).toBe(1.5)
       expect(result.blockPoints).toBe(12)
       expect(result.linePoints).toBe(3)
       expect(result.finalScore).toBe(36)
@@ -491,7 +496,7 @@ describe('calculateScoreWithEffects', () => {
 
       const result = calculateScoreWithEffects(board, lines, ctx)
 
-      expect(result.chainMasterMultiplier).toBe(1)
+      expect(result.relicEffects.get('chain_master')).toBeUndefined()
       expect(result.finalScore).toBe(6)
     })
 
@@ -507,7 +512,7 @@ describe('calculateScoreWithEffects', () => {
 
       const result = calculateScoreWithEffects(board, lines, ctx)
 
-      expect(result.singleLineMultiplier).toBe(3)
+      expect(result.relicEffects.get('single_line')).toBe(3)
       expect(result.linePoints).toBe(3)
       expect(result.finalScore).toBe(18)
     })
@@ -533,7 +538,7 @@ describe('calculateScoreWithEffects', () => {
 
       const result = calculateScoreWithEffects(board, lines, ctx)
 
-      expect(result.takenokoMultiplier).toBe(2)
+      expect(result.relicEffects.get('takenoko')).toBe(2)
       expect(result.blockPoints).toBe(12)
       expect(result.linePoints).toBe(4) // 2 × 2
       expect(result.finalScore).toBe(48)
@@ -553,7 +558,7 @@ describe('calculateScoreWithEffects', () => {
 
       const result = calculateScoreWithEffects(board, lines, ctx)
 
-      expect(result.kaniMultiplier).toBe(2)
+      expect(result.relicEffects.get('kani')).toBe(2)
       expect(result.blockPoints).toBe(12)
       expect(result.linePoints).toBe(4) // 2 × 2
       expect(result.finalScore).toBe(48)
@@ -575,7 +580,7 @@ describe('calculateScoreWithEffects', () => {
 
       const result = calculateScoreWithEffects(board, lines, ctx)
 
-      expect(result.renshaMultiplier).toBe(2)
+      expect(result.relicEffects.get('rensha')).toBe(2)
       expect(result.linePoints).toBe(2)
       expect(result.finalScore).toBe(12)
     })
@@ -593,7 +598,7 @@ describe('calculateScoreWithEffects', () => {
 
       const result = calculateScoreWithEffects(board, lines, ctx)
 
-      expect(result.fullClearMultiplier).toBe(5)
+      expect(result.relicEffects.get('full_clear_bonus')).toBe(5)
       expect(result.linePoints).toBe(5)
       expect(result.finalScore).toBe(30)
     })
@@ -612,7 +617,7 @@ describe('calculateScoreWithEffects', () => {
 
       const result = calculateScoreWithEffects(board, lines, ctx, Math.random, relicOrder)
 
-      expect(result.sizeBonusTotal).toBe(6)
+      expect(result.relicEffects.get('size_bonus_3')).toBe(6)
       expect(result.blockPoints).toBe(12) // 6 + 6(sizeBonus)
       expect(result.finalScore).toBe(12)
     })
@@ -630,7 +635,7 @@ describe('calculateScoreWithEffects', () => {
 
       const result = calculateScoreWithEffects(board, lines, ctx)
 
-      expect(result.timingMultiplier).toBe(3)
+      expect(result.relicEffects.get('timing')).toBe(3)
       expect(result.linePoints).toBe(3)
       expect(result.finalScore).toBe(18)
     })
@@ -648,7 +653,7 @@ describe('calculateScoreWithEffects', () => {
 
       const result = calculateScoreWithEffects(board, lines, ctx)
 
-      expect(result.timingMultiplier).toBe(1)
+      expect(result.relicEffects.get('timing')).toBeUndefined()
       expect(result.finalScore).toBe(6)
     })
 
@@ -672,7 +677,7 @@ describe('calculateScoreWithEffects', () => {
 
       const result = calculateScoreWithEffects(board, lines, ctx, Math.random, relicOrder)
 
-      expect(result.scriptLineBonus).toBe(1)
+      expect(result.relicEffects.get('script')).toBe(1)
       expect(result.linePoints).toBe(2) // 1 + 1(script)
       expect(result.finalScore).toBe(12)
     })
@@ -703,7 +708,7 @@ describe('calculateScoreWithEffects', () => {
       expect(result.enhancedBonus).toBe(2)
       expect(result.sealScoreBonus).toBe(5)
       expect(result.blockPoints).toBe(19) // 12 + 2(enhanced) + 5(score)
-      expect(result.chainMasterMultiplier).toBe(1.5)
+      expect(result.relicEffects.get('chain_master')).toBe(1.5)
       expect(result.linePoints).toBe(3) // 2 × 1.5
       expect(result.finalScore).toBe(57) // 19 × 3
     })
@@ -728,7 +733,7 @@ describe('calculateScoreWithEffects', () => {
 
       expect(result.mossBonus).toBe(2)
       expect(result.luckyMultiplier).toBe(2)
-      expect(result.singleLineMultiplier).toBe(3)
+      expect(result.relicEffects.get('single_line')).toBe(3)
       expect(result.blockPoints).toBe(6)
       expect(result.linePoints).toBe(12) // (1×2 + 2) × 3
       expect(result.finalScore).toBe(72)
@@ -747,8 +752,8 @@ describe('calculateScoreWithEffects', () => {
 
       const result = calculateScoreWithEffects(board, lines, ctx)
 
-      expect(result.singleLineMultiplier).toBe(3)
-      expect(result.timingMultiplier).toBe(3)
+      expect(result.relicEffects.get('single_line')).toBe(3)
+      expect(result.relicEffects.get('timing')).toBe(3)
       expect(result.blockPoints).toBe(6)
       expect(result.linePoints).toBe(9) // 1 × 3 × 3
       expect(result.finalScore).toBe(54)

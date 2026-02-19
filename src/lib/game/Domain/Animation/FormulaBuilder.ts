@@ -8,49 +8,17 @@
 import type { RelicId } from '../Core/Id'
 import type { ScoreBreakdown } from '../Effect/PatternEffectTypes'
 import type { FormulaStep } from './ScoreAnimationState'
+import { getRelicModule } from '../Effect/Relics/RelicRegistry'
 import { getRelicDefinition } from '../Effect/Relic'
 
 /**
- * レリックIDから乗算倍率を取得
+ * レリックの表示名を取得（レジストリ → 旧定義の順にフォールバック）
  */
-function getRelicMultiplier(
-  relicId: RelicId,
-  breakdown: ScoreBreakdown
-): number {
-  switch (relicId) {
-    case 'chain_master':
-      return breakdown.chainMasterMultiplier
-    case 'single_line':
-      return breakdown.singleLineMultiplier
-    case 'takenoko':
-      return breakdown.takenokoMultiplier
-    case 'kani':
-      return breakdown.kaniMultiplier
-    case 'nobi_takenoko':
-      return breakdown.nobiTakenokoMultiplier
-    case 'nobi_kani':
-      return breakdown.nobiKaniMultiplier
-    case 'rensha':
-      return breakdown.renshaMultiplier
-    case 'timing':
-      return breakdown.timingMultiplier
-    case 'full_clear_bonus':
-      return breakdown.fullClearMultiplier
-    default:
-      return 1
-  }
-}
-
-/**
- * 乗算系レリックか判定
- */
-function isMultiplicativeRelic(relicId: RelicId): boolean {
-  const multiplicativeRelics: string[] = [
-    'chain_master', 'single_line', 'takenoko', 'kani',
-    'nobi_takenoko', 'nobi_kani', 'rensha', 'timing',
-    'full_clear_bonus',
-  ]
-  return multiplicativeRelics.includes(relicId)
+function getRelicName(relicId: string): string {
+  const module = getRelicModule(relicId)
+  if (module) return module.definition.name
+  const def = getRelicDefinition(relicId as RelicId)
+  return def?.name ?? relicId
 }
 
 /**
@@ -153,32 +121,37 @@ export function buildFormulaSteps(
     })
   }
 
-  // === 4. レリック効果（relicDisplayOrder順） ===
+  // === 4. レリック効果（relicDisplayOrder順）===
   // 加算系レリック → Aに加算
   for (const relicId of relicDisplayOrder) {
-    // サイズボーナス（加算系レリック）: 発動したレリックのみ
-    if (relicId === breakdown.sizeBonusRelicId && breakdown.sizeBonusTotal > 0) {
-      a += breakdown.sizeBonusTotal
-      const def = getRelicDefinition(relicId)
-      const label = def?.name ?? relicId
+    const module = getRelicModule(relicId)
+    const effectValue = breakdown.relicEffects.get(relicId as string)
+
+    // 加算系レリック
+    if (module?.scoreEffect === 'additive' && effectValue !== undefined && effectValue > 0) {
+      a += effectValue
+      const label = getRelicName(relicId as string)
       steps.push({
         type: 'relic',
-        label: `${label} +${breakdown.sizeBonusTotal}`,
+        label: `${label} +${effectValue}`,
         formula: buildABFormula(a, b),
         relicId,
       })
     }
+
     // コピーレリック: 加算系対象の直後にコピー分
-    if (relicId === breakdown.copyTargetRelicId && breakdown.copyBonus > 0 && !isMultiplicativeRelic(relicId) && relicId !== ('script' as string)) {
-      a += breakdown.copyBonus
-      const targetDef = getRelicDefinition(relicId)
-      const targetName = targetDef?.name ?? relicId
-      steps.push({
-        type: 'relic',
-        label: `コピー (${targetName}) +${breakdown.copyBonus}`,
-        formula: buildABFormula(a, b),
-        relicId: 'copy' as RelicId,
-      })
+    if ((relicId as string) === breakdown.copyTargetRelicId && module?.scoreEffect === 'additive') {
+      const copyValue = breakdown.relicEffects.get('copy')
+      if (copyValue !== undefined && copyValue > 0) {
+        a += copyValue
+        const targetName = getRelicName(relicId as string)
+        steps.push({
+          type: 'relic',
+          label: `コピー (${targetName}) +${copyValue}`,
+          formula: buildABFormula(a, b),
+          relicId: 'copy' as RelicId,
+        })
+      }
     }
   }
 
@@ -216,62 +189,65 @@ export function buildFormulaSteps(
   }
 
   // === 7. レリック効果（relicDisplayOrder順） → Bに影響 ===
-  // 台本ライン数ボーナス・乗算レリック
   let effectiveLines = b
   for (const relicId of relicDisplayOrder) {
-    // 台本: Bにライン数加算
-    if (relicId === ('script' as string) && (breakdown.scriptLineBonus ?? 0) > 0) {
-      effectiveLines += breakdown.scriptLineBonus
-      const def = getRelicDefinition(relicId)
-      const label = def?.name ?? relicId
+    const module = getRelicModule(relicId)
+    const effectValue = breakdown.relicEffects.get(relicId as string)
+
+    // ライン加算系レリック: Bにライン数加算
+    if (module?.scoreEffect === 'line_additive' && effectValue !== undefined && effectValue > 0) {
+      effectiveLines += effectValue
+      const label = getRelicName(relicId as string)
       steps.push({
         type: 'relic',
-        label: `${label} +${breakdown.scriptLineBonus}列`,
+        label: `${label} +${effectValue}列`,
         formula: buildABFormula(a, effectiveLines),
         relicId,
       })
     }
-    // コピーレリックが台本をコピー中
-    if (relicId === ('script' as string) && breakdown.copyTargetRelicId === ('script' as string) && (breakdown.copyLineBonus ?? 0) > 0) {
-      effectiveLines += breakdown.copyLineBonus
-      const targetDef = getRelicDefinition(relicId)
-      const targetName = targetDef?.name ?? relicId
-      steps.push({
-        type: 'relic',
-        label: `コピー (${targetName}) +${breakdown.copyLineBonus}列`,
-        formula: buildABFormula(a, effectiveLines),
-        relicId: 'copy' as RelicId,
-      })
-    }
 
-    // 乗算レリック: B列点（X列 → Y列 形式）
-    if (isMultiplicativeRelic(relicId)) {
-      const multiplier = getRelicMultiplier(relicId, breakdown)
-      if (multiplier !== 1) {
-        const beforeLines = effectiveLines
-        effectiveLines *= multiplier
-        const def = getRelicDefinition(relicId)
-        const label = def?.name ?? relicId
+    // コピーレリック: ライン加算系対象の直後にコピー分
+    if ((relicId as string) === breakdown.copyTargetRelicId && module?.scoreEffect === 'line_additive') {
+      const copyValue = breakdown.relicEffects.get('copy')
+      if (copyValue !== undefined && copyValue > 0) {
+        effectiveLines += copyValue
+        const targetName = getRelicName(relicId as string)
         steps.push({
           type: 'relic',
-          label: `${label} 列点×${formatNum(multiplier)}`,
-          formula: `${formatNum(beforeLines)}列 → ${formatNum(effectiveLines)}列`,
-          relicId,
+          label: `コピー (${targetName}) +${copyValue}列`,
+          formula: buildABFormula(a, effectiveLines),
+          relicId: 'copy' as RelicId,
         })
       }
     }
-    // コピーレリック: 乗算系対象の直後にコピー分の乗算
-    if (relicId === breakdown.copyTargetRelicId && breakdown.copyMultiplier > 1) {
+
+    // 乗算レリック: B列点（X列 → Y列 形式）
+    if (module?.scoreEffect === 'multiplicative' && effectValue !== undefined && effectValue !== 1) {
       const beforeLines = effectiveLines
-      effectiveLines *= breakdown.copyMultiplier
-      const targetDef = getRelicDefinition(relicId)
-      const targetName = targetDef?.name ?? relicId
+      effectiveLines *= effectValue
+      const label = getRelicName(relicId as string)
       steps.push({
         type: 'relic',
-        label: `コピー (${targetName}) 列点×${formatNum(breakdown.copyMultiplier)}`,
+        label: `${label} 列点×${formatNum(effectValue)}`,
         formula: `${formatNum(beforeLines)}列 → ${formatNum(effectiveLines)}列`,
-        relicId: 'copy' as RelicId,
+        relicId,
       })
+    }
+
+    // コピーレリック: 乗算系対象の直後にコピー分の乗算
+    if ((relicId as string) === breakdown.copyTargetRelicId && module?.scoreEffect === 'multiplicative') {
+      const copyValue = breakdown.relicEffects.get('copy')
+      if (copyValue !== undefined && copyValue > 1) {
+        const beforeLines = effectiveLines
+        effectiveLines *= copyValue
+        const targetName = getRelicName(relicId as string)
+        steps.push({
+          type: 'relic',
+          label: `コピー (${targetName}) 列点×${formatNum(copyValue)}`,
+          formula: `${formatNum(beforeLines)}列 → ${formatNum(effectiveLines)}列`,
+          relicId: 'copy' as RelicId,
+        })
+      }
     }
   }
 

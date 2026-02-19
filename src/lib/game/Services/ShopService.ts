@@ -6,7 +6,7 @@ import type { ShopItem, ShopState, DeckState, MinoCategory, Piece, RelicShopItem
 import type { AmuletShopItem } from '../Domain/Shop/ShopTypes'
 import type { PatternId, SealId, RelicId } from '../Domain/Core/Id'
 import type { RandomGenerator } from '../Utils/Random'
-import { RELIC_DEFINITIONS, RelicType } from '../Domain/Effect/Relic'
+import { RELIC_DEFINITIONS, RelicType, RelicRarity } from '../Domain/Effect/Relic'
 import { calculatePiecePrice, calculateSalePrice } from './ShopPriceCalculator'
 
 /**
@@ -166,8 +166,48 @@ export function generateShopItems(
   ]
 }
 
+/** レアリティ別の出現重み */
+const RARITY_WEIGHTS: Record<RelicRarity, number> = {
+  common: 70,
+  uncommon: 25,
+  rare: 5,
+  epic: 0.3,
+}
+
 /**
- * 未所持レリックからランダムに選択してショップ商品を生成
+ * 重み付きランダム選択（重複なし）
+ */
+function weightedSelectWithoutDuplication(
+  rng: RandomGenerator,
+  candidates: RelicType[],
+  count: number
+): RelicType[] {
+  const remaining = [...candidates]
+  const selected: RelicType[] = []
+
+  for (let i = 0; i < count && remaining.length > 0; i++) {
+    const weights = remaining.map((type) => RARITY_WEIGHTS[RELIC_DEFINITIONS[type].rarity])
+    const totalWeight = weights.reduce((sum, w) => sum + w, 0)
+
+    let roll = rng.next() * totalWeight
+    let chosenIndex = 0
+    for (let j = 0; j < weights.length; j++) {
+      roll -= weights[j]
+      if (roll <= 0) {
+        chosenIndex = j
+        break
+      }
+    }
+
+    selected.push(remaining[chosenIndex])
+    remaining.splice(chosenIndex, 1)
+  }
+
+  return selected
+}
+
+/**
+ * 未所持レリックからレアリティに基づく重み付きランダムで選択
  * @param ownedRelics 所持済みレリックID配列
  * @param maxCount 最大生成数
  */
@@ -186,9 +226,9 @@ export function generateRelicShopItems(
     return []
   }
 
-  // シャッフルして最大maxCount個を選択
-  const shuffled = [...availableRelics].sort(() => rng.next() - 0.5)
-  const selected = shuffled.slice(0, Math.min(maxCount, shuffled.length))
+  const selected = weightedSelectWithoutDuplication(
+    rng, availableRelics, Math.min(maxCount, availableRelics.length)
+  )
 
   return selected.map((type) => {
     const def = RELIC_DEFINITIONS[type]
