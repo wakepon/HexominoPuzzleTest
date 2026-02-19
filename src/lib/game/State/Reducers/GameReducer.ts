@@ -110,25 +110,13 @@ import { generateScriptLines } from '../../Domain/Effect/ScriptRelicState'
 function updateRelicMultipliers(
   currentState: RelicMultiplierState,
   ownedRelics: readonly RelicId[],
-  totalLines: number,
-  rowLines: number,
-  colLines: number
+  totalLines: number
 ): RelicMultiplierState {
   let newState = currentState
 
   // 2-D: 連射倍率の更新
   if (hasRelic(ownedRelics, 'rensha')) {
     newState = updateRenshaMultiplier(newState, totalLines)
-  }
-
-  // 2-E: のびのびタケノコ倍率の更新
-  if (hasRelic(ownedRelics, 'nobi_takenoko')) {
-    newState = updateNobiTakenokoMultiplier(newState, rowLines, colLines)
-  }
-
-  // 2-F: のびのびカニ倍率の更新
-  if (hasRelic(ownedRelics, 'nobi_kani')) {
-    newState = updateNobiKaniMultiplier(newState, rowLines, colLines)
   }
 
   return newState
@@ -140,9 +128,7 @@ function updateRelicMultipliers(
 function updateCopyRelicCounters(
   copyState: CopyRelicState | null,
   handConsumed: boolean,
-  totalLines: number,
-  rowLines: number,
-  colLines: number
+  totalLines: number
 ): CopyRelicState | null {
   if (!copyState || !copyState.targetRelicId) return copyState
 
@@ -165,24 +151,6 @@ function updateCopyRelicCounters(
       updated = { ...updated, renshaMultiplier: 1.0 }
     } else {
       updated = { ...updated, renshaMultiplier: updated.renshaMultiplier + RELIC_EFFECT_VALUES.RENSHA_INCREMENT }
-    }
-  }
-
-  // のびのびタケノコカウンター
-  if (targetType === 'nobi_takenoko') {
-    if (rowLines > 0) {
-      updated = { ...updated, nobiTakenokoMultiplier: 1.0 }
-    } else if (colLines > 0) {
-      updated = { ...updated, nobiTakenokoMultiplier: updated.nobiTakenokoMultiplier + 0.5 }
-    }
-  }
-
-  // のびのびカニカウンター
-  if (targetType === 'nobi_kani') {
-    if (colLines > 0) {
-      updated = { ...updated, nobiKaniMultiplier: 1.0 }
-    } else if (rowLines > 0) {
-      updated = { ...updated, nobiKaniMultiplier: updated.nobiKaniMultiplier + 0.5 }
     }
   }
 
@@ -586,6 +554,36 @@ function processPiecePlacement(
     // 消去後の盤面を先に計算（全消し判定用）
     const boardAfterClear = clearLines(newBoard, cells)
 
+    // のびのび倍率をスコア計算前に更新（初回から効果を出すため）
+    let preUpdatedMultState = updatedMultState
+    if (hasRelic(state.player.ownedRelics, 'nobi_takenoko')) {
+      preUpdatedMultState = updateNobiTakenokoMultiplier(preUpdatedMultState, completedLines.rows.length, completedLines.columns.length)
+    }
+    if (hasRelic(state.player.ownedRelics, 'nobi_kani')) {
+      preUpdatedMultState = updateNobiKaniMultiplier(preUpdatedMultState, completedLines.rows.length, completedLines.columns.length)
+    }
+
+    // コピーレリックののびのび倍率も事前更新
+    let preUpdatedCopyState = preUpdatedMultState.copyRelicState
+    if (preUpdatedCopyState && preUpdatedCopyState.targetRelicId) {
+      const targetType = preUpdatedCopyState.targetRelicId as string
+      if (targetType === 'nobi_takenoko') {
+        if (completedLines.rows.length > 0) {
+          preUpdatedCopyState = { ...preUpdatedCopyState, nobiTakenokoMultiplier: 1.0 }
+        } else if (completedLines.columns.length > 0) {
+          preUpdatedCopyState = { ...preUpdatedCopyState, nobiTakenokoMultiplier: preUpdatedCopyState.nobiTakenokoMultiplier + 0.5 }
+        }
+      }
+      if (targetType === 'nobi_kani') {
+        if (completedLines.columns.length > 0) {
+          preUpdatedCopyState = { ...preUpdatedCopyState, nobiKaniMultiplier: 1.0 }
+        } else if (completedLines.rows.length > 0) {
+          preUpdatedCopyState = { ...preUpdatedCopyState, nobiKaniMultiplier: preUpdatedCopyState.nobiKaniMultiplier + 0.5 }
+        }
+      }
+      preUpdatedMultState = { ...preUpdatedMultState, copyRelicState: preUpdatedCopyState }
+    }
+
     // レリック効果コンテキストを作成
     const relicContext: RelicEffectContext = {
       ownedRelics: state.player.ownedRelics,
@@ -594,11 +592,11 @@ function processPiecePlacement(
       colLines: completedLines.columns.length,
       placedBlockSize: getPieceBlockCount(piece),
       isBoardEmptyAfterClear: isBoardEmpty(boardAfterClear),
-      relicMultiplierState: updatedMultState,
+      relicMultiplierState: preUpdatedMultState,
       completedRows: completedLines.rows,
       completedCols: completedLines.columns,
       scriptRelicLines: state.scriptRelicLines,
-      copyRelicState: updatedMultState.copyRelicState,
+      copyRelicState: preUpdatedCopyState,
       remainingHands: finalDeck.remainingHands,
     }
 
@@ -636,20 +634,16 @@ function processPiecePlacement(
       : null
 
     const newRelicMultiplierState = updateRelicMultipliers(
-      updatedMultState,
+      preUpdatedMultState,
       state.player.ownedRelics,
-      totalLines,
-      completedLines.rows.length,
-      completedLines.columns.length
+      totalLines
     )
 
     // コピーレリックカウンター更新
     const updatedCopyState = updateCopyRelicCounters(
       newRelicMultiplierState.copyRelicState,
       handConsumed,
-      totalLines,
-      completedLines.rows.length,
-      completedLines.columns.length
+      totalLines
     )
 
     // 得点計算後にchargeValueをインクリメント（配置したピース自身は除外）
@@ -692,8 +686,6 @@ function processPiecePlacement(
   const newRelicMultiplierState = updateRelicMultipliers(
     updatedMultState,
     state.player.ownedRelics,
-    0,
-    0,
     0
   )
 
@@ -701,8 +693,6 @@ function processPiecePlacement(
   const updatedCopyStateNoLine = updateCopyRelicCounters(
     newRelicMultiplierState.copyRelicState,
     handConsumed,
-    0,
-    0,
     0
   )
 
