@@ -1,4 +1,5 @@
 # アーキテクチャ詳細
+<!-- Updated: 2026-02-20 -->
 
 ## モジュール依存関係
 
@@ -7,8 +8,8 @@ GameContainer ─→ useGame (dispatch) ─→ GameReducer ─→ Services
      │                                      │
      ├→ useCanvasLayout                     ├→ BoardService
      │                                      ├→ LineService ─→ PatternEffectHandler
-     └→ GameCanvas ─→ renderer/*            │                  RelicEffectHandler
-                                            │                  SealEffectHandler
+     └→ GameCanvas ─→ renderer/*            │                  SealEffectHandler
+                                            │
                                             ├→ PieceService
                                             ├→ DeckService
                                             ├→ RoundService
@@ -16,7 +17,25 @@ GameContainer ─→ useGame (dispatch) ─→ GameReducer ─→ Services
                                             ├→ AmuletEffectService
                                             ├→ ClearingCellService
                                             └→ StorageService
+
+GameReducer ──→ RelicStateDispatcher ──→ RelicRegistry → 個別RelicModule
+PatternEffectHandler ──→ RelicEffectEngine ──→ RelicRegistry → 個別RelicModule
+FormulaBuilder ──→ RelicRegistry → 個別RelicModule
 ```
+
+## レリックモジュールアーキテクチャ（Relics/）
+
+```
+Relics/
+├── RelicModule.ts          # 統一インターフェース定義
+├── RelicRegistry.ts        # 登録・検索API（Map<string, RelicModule>）
+├── RelicEffectEngine.ts    # 汎用エフェクト評価（スコア計算時）
+├── RelicStateDispatcher.ts # 汎用状態更新ディスパッチ（Reducer用）
+├── index.ts                # レジストリ初期化（全モジュール登録）
+└── *.ts                    # 個別レリック（1ファイル = 1レリック、計20ファイル）
+```
+
+**レリック追加手順**: 新規 `Relics/NewRelic.ts` 作成 + `Relics/index.ts` に1行import追加
 
 ## Service 関数一覧
 
@@ -168,18 +187,30 @@ calculateTooltipState(mouseX, mouseY, board, layout, ownedRelics, ...): TooltipS
 
 ```
 LineService.calculateScoreWithEffects()
-  ├→ PatternEffectHandler.calculatePatternEffects()
-  │    ├→ calculateEnhancedBonus()  → ブロック点+2
-  │    ├→ calculateAuraBonus()      → 隣接ブロック点+1
-  │    ├→ rollLuckyMultiplier()     → 10%で列点×2
-  │    ├→ calculateComboBonus()     → 同時消去ブロック点
-  │    └→ calculateMossBonus()      → 端接触で列点+1
-  ├→ SealEffectHandler.calculateSealEffects()
-  │    ├→ filterClearableCells()    → 石シール除外
-  │    ├→ calculateGoldCount()     → ゴールドシール
-  │    ├→ calculateScoreBonus()    → スコアシール+5
-  │    └→ calculateMultiBonus()    → マルチシール×2
-  └→ RelicEffectHandler.calculateRelicEffects()
-       ├→ checkRelicActivations()  → 発動判定
-       └→ applyRelicEffectsToScore() → 列点乗算
+  └→ PatternEffectHandler.calculateScoreBreakdown()
+       ├→ calculatePatternEffects()            → パターン効果（enhanced, aura, lucky, combo, moss）
+       ├→ SealEffectHandler.calculateSealEffects()
+       │    ├→ filterClearableCells()           → 石シール除外
+       │    ├→ calculateGoldCount()             → ゴールドシール
+       │    ├→ calculateScoreBonus()            → スコアシール+5
+       │    └→ calculateMultiBonus()            → マルチシール×2
+       ├→ RelicEffectEngine.evaluateRelicEffects()  → 全レリック発動判定（Registry経由）
+       ├→ RelicEffectEngine.evaluateCopyRelicEffect() → コピーレリック評価
+       └→ スコア合算（relicEffects Mapから動的に乗算/加算/ライン加算を分類）
+```
+
+### レリック状態更新チェーン（Reducer内）
+
+```
+GameReducer (ライン検出時)
+  ├→ dispatchRelicStateEvent({type:'lines_detected'})  → スコア計算前の状態更新（のびのび系）
+  ├→ calculateScoreBreakdown()                          → スコア計算
+  └→ dispatchRelicStateEvent({type:'lines_cleared'})   → スコア計算後の状態更新（連射）
+
+GameReducer (ピース配置時)
+  ├→ dispatchRelicStateEvent({type:'hand_consumed'})   → ハンド消費通知
+  └→ dispatchOnPiecePlaced()                            → フック実行（絆創膏注入等）
+
+GameReducer (ラウンド開始時)
+  └→ dispatchRelicStateEvent({type:'round_start'})     → 累積状態リセット
 ```

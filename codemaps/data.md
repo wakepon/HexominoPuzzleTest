@@ -1,4 +1,5 @@
 # データモデル詳細
+<!-- Updated: 2026-02-20 -->
 
 ## ID型（ブランド型）
 ```typescript
@@ -178,36 +179,61 @@ type BossCondition = 'obstacle'  // おじゃまブロック配置
 ## ScoreBreakdown（スコア内訳）
 ```typescript
 interface ScoreBreakdown {
-  baseBlocks: number              // 基本ブロック数
+  // パターン・シール効果（レリック非依存）
+  baseBlocks: number              // 基本消去ブロック数
+  enhancedBonus: number           // enhanced効果
+  auraBonus: number               // aura効果
+  mossBonus: number               // moss効果
+  multiBonus: number              // multiシール効果
+  arrowBonus: number              // アローシール効果
+  chargeBonus: number             // charge効果
+  totalBlocks: number             // 合計ブロック数
   linesCleared: number            // 消去ライン数
-  enhancedBonus: number           // 強化パターンボーナス
-  auraBonus: number               // オーラボーナス
-  chargeBonus: number             // チャージボーナス
-  luckyMultiplier: number         // ラッキー倍率
-  comboBonus: number              // コンボボーナス
-  mossBonus: number               // 苔ボーナス
-  sealScoreBonus: number          // スコアシールボーナス
-  multiBonus: number              // マルチシールボーナス
-  arrowBonus: number              // アローシールボーナス
-  // レリック系
-  chainMasterMultiplier: number
-  singleLineMultiplier: number
-  takenokoMultiplier: number
-  kaniMultiplier: number
-  renshaMultiplier: number
-  nobiTakenokoMultiplier: number
-  nobiKaniMultiplier: number
-  fullClearMultiplier: number
-  timingMultiplier: number
-  sizeBonusTotal: number
-  sizeBonusRelicId: RelicId | null
-  scriptLineBonus: number
-  copyTargetRelicId: RelicId | null
-  copyBonus: number
-  copyMultiplier: number
-  copyLineBonus: number
-  finalScore: number
+  baseScore: number               // 基本スコア（totalBlocks × linesCleared）
+  comboBonus: number              // comboボーナス
+  luckyMultiplier: number         // lucky倍率（1 or 2）
+  sealScoreBonus: number          // scoreシール加算
+  goldCount: number               // goldシール数
+
+  // レリック効果（動的マップ）
+  relicEffects: ReadonlyMap<string, number>  // relicId → 効果値
+  sizeBonusRelicId: string | null            // 発動サイズボーナスID
+  copyTargetRelicId: string | null           // コピー対象ID
+  relicBonusTotal: number                    // レリック加算合計
+
+  // 最終計算値
+  blockPoints: number             // ブロック点(A)
+  linePoints: number              // 列点(B)
+  finalScore: number              // Math.floor(A × B)
 }
+```
+
+### relicEffectsの解釈（ScoreEffectType別）
+| ScoreEffectType | Mapの値の意味 | 例 |
+|----------------|-------------|---|
+| multiplicative | 列点(B)の乗算倍率 | chain_master→1.5 |
+| additive | ブロック点(A)への加算 | size_bonus_3→消去ブロック数 |
+| line_additive | ライン数への加算 | script→1 or 2 |
+
+## RelicModule（レリックモジュールインターフェース）
+```typescript
+// src/lib/game/Domain/Effect/Relics/RelicModule.ts
+interface RelicModule {
+  type: string                              // レリックID
+  definition: RelicModuleDefinition         // 名前、説明、レアリティ等
+  scoreEffect: ScoreEffectType              // 'multiplicative'|'additive'|'line_additive'|'none'
+  checkActivation(ctx: RelicContext): RelicActivation  // 発動判定+効果値
+  initialState?: () => unknown              // 累積状態の初期値
+  updateState?: (state, event) => unknown   // イベントに応じた状態更新
+  onPiecePlaced?: (ctx) => RelicHookResult  // ピース配置後フック
+  onRoundStart?: (ctx) => RelicHookResult   // ラウンド開始フック
+}
+
+type RelicStateEvent =
+  | { type: 'lines_detected'; totalLines; rowLines; colLines }  // スコア計算前
+  | { type: 'lines_cleared'; totalLines; rowLines; colLines }   // スコア計算後
+  | { type: 'hand_consumed' }
+  | { type: 'round_start' }
 ```
 
 ## GameAction 全種別
