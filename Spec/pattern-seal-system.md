@@ -25,7 +25,7 @@
 | 説明 | ブロック点+2 |
 | 効果タイミング | 消去時 |
 
-**効果**: 消去対象セルのうち `enhanced` パターンを持つセルごとに、乗算対象ブロック数を加算する。
+**効果**: 消去対象セルのうち `enhanced` パターンを持つセルごとに、ブロック点(A)を+2する。multiシール付きの場合は+4になる。
 
 ---
 
@@ -55,7 +55,7 @@
 | 説明 | 連続配置でボーナススコア |
 | 効果タイミング | 配置時（スコアへの加算は消去時） |
 
-**効果**: 直前の配置ピースが `combo` パターンを持つ場合、コンボカウントを継続させる。コンボカウントに応じて消去時のスコアボーナスが加算される（1回目=0、2回目以降は回数に応じて増加）。
+**効果**: 同時消去されたcomboブロック数nに応じて `2^n - 1` のボーナスがブロック点(A)に加算される（1個→+1、2個→+3、3個→+7）。multiシール付きcomboブロックは2カウントとして扱われる。
 
 ---
 
@@ -85,7 +85,7 @@
 | 説明 | フィールド端と接している辺の数だけスコア加算 |
 | 効果タイミング | 消去時 |
 
-**効果**: 消去対象セルのうち `moss` パターンを持つセルごとに、ボード端と接している辺の数だけ乗算対象ブロック数を加算する。上端・下端・左端・右端の各1点で最大+4（角のセルの場合）。
+**効果**: 消去対象セルのうち `moss` パターンを持つセルごとに、ボード端と接している辺の数だけ**列点(B)**に加算する（ブロック点ではなく列点に影響）。上端・下端・左端・右端の各1点で最大+4（角のセルの場合）。multiシール付きの場合は加算値が2倍になる。
 
 ---
 
@@ -127,7 +127,7 @@
 | 名前 | チャージブロック |
 | symbol | ⚡ |
 | isNegative | false |
-| 説明 | 配置後、他のブロックが置かれるたびにスコア+0.5 |
+| 説明 | 配置後、他のブロックが置かれるたびにスコア+1 |
 | 効果タイミング | 消去時（蓄積は他ブロック配置のたびに更新） |
 
 **効果**: 詳細は後述のチャージ蓄積メカニクスを参照。
@@ -155,7 +155,7 @@
 
 **蓄積ルール**:
 1. チャージブロックが盤面に配置された時点では `chargeValue = 0`
-2. 別のブロックセットのピースが配置されるたびに、盤面上の全 `charge` セルの `chargeValue` に一定値を加算する
+2. 別のブロックセットのピースが配置されるたびに、盤面上の全 `charge` セルの `chargeValue` に+1する
 3. 加算タイミングは、配置による得点計算が完了した後
 4. 配置されたピース自身と同一の `blockSetId` を持つ `charge` セルは対象外（自己カウントなし）
 
@@ -288,35 +288,29 @@
 - `isNegative: true` のパターンを持つセル（`obstacle` など）
 - `preventsClearing: true` のシールを持つセル（`stone`）
 
-### スコア計算フロー
+### スコア計算フロー（A×B方式）
+
+最終スコアは `ブロック点(A) × 列点(B)` で計算される。詳細は [game-mechanics.md](./game-mechanics.md) を参照。
 
 ```
 1. 消去対象セルを収集（filterClearableCells でフィルタリング）
 2. パターン効果を計算
-   - enhancedBonus: enhanced セルの数 × 加算値
-   - auraBonus: 隣接 aura ブロック（別セット）がある消去セルの数
-   - mossBonus: moss セルごとのボード端接触辺数の合計
-   - chargeBonus: charge セルの chargeValue の合計
-3. シール効果を計算（CompletedLinesInfo を使用）
-   - multiBonus: multi シール数（+1/個）
-   - arrowBonus: arrow_v/arrow_h 条件一致数（+10相当の加算値/個）
-   - goldCount: gold シール数（ゴールド加算用）
-   - scoreBonus: score シール数 × 固定値（スコア直接加算）
-4. 合計ブロック数（乗算対象）を算出
-   totalBlocks = baseBlocks
-              - chargeBlockCount（charge ブロック自身の基礎分を除外）
-              + enhancedBonus
-              + auraBonus
-              + mossBonus
-              + chargeBonus
-              + multiBonus
-              + arrowBonus
-5. 基本スコア: baseScore = totalBlocks × linesCleared
-6. コンボボーナス加算: comboBonus（1回目=0、2回目以降は回数増加に応じて増加）
-7. lucky 倍率を適用: (baseScore + comboBonus) × luckyMultiplier
-8. scoreシールによるスコアを加算: + sealScoreBonus
-9. レリック効果を適用（乗算レリックは relicDisplayOrder の順序で適用後、加算レリックを加算）
-10. 最終スコアを確定
+   - enhancedBonus: enhanced セル × 2（multi付きで×4）→ ブロック点(A)
+   - auraBonus: 隣接別セット aura がある消去セル（multi付きで×2）→ ブロック点(A)
+   - chargeBonus: charge セルの chargeValue 合計（multi付きで2倍）→ ブロック点(A)
+   - mossBonus: moss セルの端接触辺数合計（multi付きで2倍）→ 列点(B)
+3. シール効果を計算
+   - multiBonus: multi シール数（+1/個）→ ブロック点(A)
+   - arrowBonus: arrow_v/arrow_h 条件一致数 × 10 → ブロック点(A)
+   - sealScoreBonus: score シール数 × 5 → ブロック点(A)
+   - goldCount: gold シール数（ゴールド加算用、スコアに影響なし）
+4. totalBlocks = baseBlocks - chargeBlockCount
+              + enhancedBonus + auraBonus + chargeBonus
+              + multiBonus + arrowBonus
+   ※ mossBonus はここに含まれない
+5. ブロック点(A) = totalBlocks + sealScoreBonus + 加算レリック + comboBonus
+6. 列点(B) = linesCleared × luckyMultiplier + mossBonus + 台本加算 × 乗算レリック
+7. 最終スコア = Math.floor(A × B)
 ```
 
 ### パターン効果の詳細計算
@@ -348,7 +342,7 @@ calculateSealEffects(board, cellsToRemove, completedLines):
 incrementChargeValues(board, excludeBlockSetId):
     board 上の全セルを走査
     cell.filled && cell.pattern==='charge' && cell.blockSetId !== excludeBlockSetId
-    の場合: cell.chargeValue += 0.5
+    の場合: cell.chargeValue += 1
 ```
 
 ---
@@ -367,5 +361,6 @@ incrementChargeValues(board, excludeBlockSetId):
 
 ## 更新履歴
 
+- 2026-02-19: A×B方式（ブロック点×列点）に基づくスコア計算フロー更新。mossBonus→列点(B)、charge蓄積値+1、enhanced/auraのmultiシール効果追記
 - 2026-02-17: feather・nohand・charge・arrow_v・arrow_h を追加。ショップ出現確率・charge蓄積メカニクス・スコア計算フローを実装に基づき大幅更新
 - 2026-02-06: 初版作成（JSVersionSpecから移植）

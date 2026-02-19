@@ -504,114 +504,165 @@ goldReward = BASE_REWARD[roundType] + remainingHands + interest
 
 ## スコア計算
 
-### 計算フロー概要
+### 用語定義
 
-スコアは以下の順序で計算される:
+| 用語 | 変数名 | 説明 |
+|------|--------|------|
+| **ブロック点 (A)** | `blockPoints` | 消去ブロック数にパターン・シール効果と加算レリック・コンボを加えた値 |
+| **列点 (B)** | `linePoints` | 消去ライン数にlucky・moss・台本加算を加え、乗算レリックを適用した値 |
+| **列倍率** | — | 列点(B)に対して適用される各種乗算レリック効果の総称 |
+
+### 計算式（A×B方式）
+
+最終スコアはブロック点(A)と列点(B)の積で決定される:
+
+```
+最終スコア = Math.floor( ブロック点(A) × 列点(B) )
+```
+
+### 計算フロー概要
 
 ```
 1. 消去対象セルを収集（石シール・ネガティブパターン除外）
-2. パターン効果を計算（乗算対象のブロック数を決定）
-3. シール効果（multiシール・arrowシール）を計算（乗算対象に加算）
-4. 台本レリック効果（ライン数加算）
-   - effectiveLinesCleared = linesCleared + scriptLineBonus + copyLineBonus
-5. 基本スコア = totalBlocks × effectiveLinesCleared
-6. コンボボーナスを加算
-7. luckyパターン抽選で乗算
-8. scoreシールボーナスを加算（乗算対象外）
-9. 乗算レリックを適用（relicDisplayOrder順）
-10. 加算レリックを適用（サイズボーナス、全消しボーナス、コピー加算）
-11. finalScore確定
+2. パターン効果を計算（ブロック点・列点への加算を決定）
+3. シール効果を計算（multi/arrow/score→ブロック点、gold→ゴールド）
+4. ブロック点(A) = totalBlocks + sealScoreBonus + 加算レリック + comboBonus
+5. 列点(B) = linesCleared × luckyMultiplier + mossBonus + 台本加算 × 乗算レリック
+6. 最終スコア = Math.floor(A × B)
 ```
 
-### 乗算対象ブロック数（totalBlocks）の計算
+### totalBlocks（基礎ブロック数）の計算
 
 ```
 totalBlocks =
   baseBlocks            // 消去対象セル数
-  - chargeBlockCount    // chargeパターンセルの基礎分を除外
-  + enhancedBonus       // enhancedパターン付きセル1個につき+2
-  + auraBonus           // auraボーナス
-  + mossBonus           // mossボーナス
-  + chargeBonus         // chargeValue合算
-  + multiBonus          // multiシール1個につき+1
-  + arrowBonus          // arrowシール効果
+  - chargeBlockCount    // chargeブロックの基礎分を除外
+  + enhancedBonus       // enhanced効果（+2/個、multi付きで+4）
+  + auraBonus           // aura効果（隣接別セットauraで+1、multi付きで+2）
+  + chargeBonus         // charge蓄積値合計（multi付きで2倍）
+  + multiBonus          // multiシール効果（+1/個）
+  + arrowBonus          // arrowシール効果（対応ライン完成時+10/個）
 ```
+
+※ mossBonus は列点(B)に加算される（totalBlocksには含まれない）
 
 ### パターン効果
 
+#### ブロック点(A)に影響するパターン
+
+| パターンID | 効果 | multiシール |
+|-----------|------|------------|
+| `enhanced` | ブロック点+2/個 | +4/個 |
+| `aura` | 隣接する別セットauraブロックがあるセルはブロック点+1（1セルあたり上限+1） | +2 |
+| `charge` | 基礎ブロック数から除外され、chargeValue合計をブロック点に加算 | 2倍 |
+| `combo` | 同時消去comboブロック数nに応じて `2^n - 1` をブロック点に加算 | 1個が2カウント |
+
+#### 列点(B)に影響するパターン
+
+| パターンID | 効果 | multiシール |
+|-----------|------|------------|
+| `moss` | 端接触辺数だけ列点に加算（角で+2、辺で+1） | 2倍 |
+| `lucky` | 10%の確率でluckyMultiplier=2（列点の起点値が2倍） | 2回抽選 |
+
+#### スコアに影響しないパターン
+
 | パターンID | 効果 |
 |-----------|------|
-| `enhanced` | 消去時に乗算対象を+2（1セルにつき） |
-| `aura` | 隣接する別セットのauraブロックがあるセルは乗算対象を+1（1セルあたり最大+1） |
-| `moss` | 消去時に盤面端と接している辺の数だけ乗算対象を加算 |
-| `charge` | 基礎ブロック数から除外され、代わりにchargeValueを加算 |
-| `lucky` | 消去時に一定確率でスコアが2倍になる抽選 |
-| `combo` | コンボカウントに応じて加算ボーナスが発生 |
-| `nohand` | 消去に参加しない特殊ブロック（詳細はパターンシステム参照） |
-| `feather` | パターン効果あり（詳細はパターンシステム参照） |
+| `nohand` | 配置時にハンドを消費しない |
+| `feather` | 既存ブロックの上に重ね置き可能 |
 | `obstacle` | ネガティブパターン。消去不可 |
 
 ### シール効果
 
-| シールID | 効果の種別 | 内容 |
-|---------|-----------|------|
-| `multi` | 乗算対象加算 | 乗算対象ブロック数を+1（1個につき） |
-| `arrow_v` | 乗算対象加算 | 縦列が完成した場合に乗算対象を+一定量 |
-| `arrow_h` | 乗算対象加算 | 横行が完成した場合に乗算対象を+一定量 |
-| `score` | 加算ボーナス | 乗算後に加算（1個につき一定点） |
-| `gold` | ゴールド獲得 | 消去時にゴールドを+1 |
-| `stone` | 消去阻害 | 消去対象から除外（ライン完成を阻害） |
+| シールID | 影響先 | 効果 |
+|---------|--------|------|
+| `multi` | ブロック点(A) | ブロック点+1/個（2回カウント）。加えてパターン効果を2倍化 |
+| `arrow_v` | ブロック点(A) | 縦列完成時にブロック点+10/個 |
+| `arrow_h` | ブロック点(A) | 横行完成時にブロック点+10/個 |
+| `score` | ブロック点(A) | ブロック点+5/個 |
+| `gold` | — | ゴールド+1/個（スコアに影響しない） |
+| `stone` | — | 消去対象から除外（ライン完成を阻害） |
 
 ### コンボボーナス
 
-- ライン消去が連続するたびにボーナスが増加する（1回目は0、2回目以降は増加）
-- コンボカウントが増えるほどボーナスが大きくなる
+消去対象に含まれる `combo` パターンのブロック数に応じて指数的にブロック点(A)を加算する:
+
+```
+comboBonus = 2^n - 1  (n = comboブロック数、multiシール付きは2カウント)
+
+例: 1個→+1, 2個→+3, 3個→+7, 4個→+15
+```
+
+- comboパターンのブロックが消去対象に含まれていなければ0
+- multiシール付きcomboブロックは2個としてカウント
 
 ### luckyパターン
 
-- 消去対象に `lucky` パターンのセルが含まれる場合に抽選が発生
-- 当選時はスコアが一定倍率になる
-- 外れた場合は倍率1.0（通常通り）
+- 消去対象に `lucky` パターンのセルが含まれる場合、10%の確率で当選
+- 当選時: luckyMultiplier=2（列点(B)の起点計算で `linesCleared × 2` になる）
+- 外れ: luckyMultiplier=1（通常通り）
+- multiシール付きluckyブロックは2回抽選（どちらか1回でも当たれば2倍）
 
-### scoreBeforeRelics の計算
+### ブロック点(A)の詳細計算
 
 ```
-scoreBeforeRelics = (baseScore + comboBonus) × luckyMultiplier + sealScoreBonus
+blockPoints = totalBlocks + sealScoreBonus
+
+// relicDisplayOrder順に加算レリックを適用:
+//   + sizeBonusTotal（サイズボーナス発動時: baseBlocks）
+//   + copyBonus（コピーが加算系対象の場合）
+
+blockPoints += comboBonus
 ```
 
-- sealScoreBonus（scoreシール）は `luckyMultiplier` の乗算外で後から加算される
+- scoreシール（+5/個）はブロック点(A)に直接加算される
+- サイズボーナス発動時は消去ブロック数（baseBlocks）をそのまま加算
+- comboBonus（2^n - 1）は最後にブロック点に加算
 
-### レリック効果（乗算系）
+### 列点(B)の詳細計算
 
-乗算レリックは `relicDisplayOrder`（所持レリックの表示順）に従って順番に適用される。
+```
+linePoints = linesCleared × luckyMultiplier + mossBonus
 
-| レリックID | 発動条件 | 効果 |
-|-----------|---------|------|
-| `chain_master` | 2ライン以上同時消去 | スコアに一定倍率を乗算（切り捨て） |
-| `single_line` | 1ラインのみ消去 | スコアに一定倍率を乗算 |
-| `takenoko` | 縦列のみ消去（横行なし） | 消去した列数を倍率として乗算 |
-| `kani` | 横行のみ消去（縦列なし） | 消去した行数を倍率として乗算 |
-| `nobi_takenoko` | 縦列のみ消去 | 累積倍率を乗算（縦列消しごとに増分、横行消しでリセット） |
-| `nobi_kani` | 横行のみ消去 | 累積倍率を乗算（横行消しごとに増分、縦列消しでリセット） |
-| `rensha` | ライン消去時 | 累積倍率を乗算（消去ごとに増分、消去なしでリセット） |
-| `timing` | 一定ハンド消費ごとのボーナスタイミング中 | スコアに一定倍率を乗算 |
-| `copy` | 1つ上のレリックに乗算効果がある場合 | 対象レリックと同じ乗算倍率をコピーして乗算 |
+// relicDisplayOrder順に台本加算・乗算レリックを適用:
+//   + scriptLineBonus（台本: 1本→+1、2本→+2）
+//   + copyLineBonus（コピーが台本対象の場合）
+//   × 各乗算レリック倍率（切り捨てなし）
+//   × copyMultiplier（コピーが乗算系対象の場合、対象直後）
+```
 
-**連射（rensha）増分:** ライン消去のたびに累積倍率が一定値（+2）ずつ増加する。
+- mossBonus は列点(B)の起点値に加算される
+- 乗算レリックは切り捨てなしで順次適用される
 
-**のびのび系増分:** 条件を満たす消去のたびに累積倍率が一定値（+0.5）ずつ増加する。
+### 列倍率（乗算レリック → 列点(B)に乗算）
+
+乗算レリックは列点(B)に対して `relicDisplayOrder`（所持レリックの表示順）に従って順番に適用される。各ステップでは切り捨てなしで乗算される。
+
+| レリックID | 発動条件 | 列倍率 |
+|-----------|---------|--------|
+| `chain_master` | 2ライン以上同時消去 | 列点×1.5 |
+| `single_line` | 1ラインのみ消去 | 列点×3 |
+| `takenoko` | 縦列のみ消去（横行なし） | 列点×消去列数 |
+| `kani` | 横行のみ消去（縦列なし） | 列点×消去行数 |
+| `nobi_takenoko` | 縦列のみ消去 | 列点×累積倍率（+0.5ずつ増加、横行消しで1.0にリセット） |
+| `nobi_kani` | 横行のみ消去 | 列点×累積倍率（+0.5ずつ増加、縦列消しで1.0にリセット） |
+| `rensha` | ライン消去時 | 列点×累積倍率（+1ずつ増加、消去なしで1.0にリセット） |
+| `timing` | 残りハンド数が3の倍数かつライン消去あり | 列点×3 |
+| `full_clear_bonus` | 盤面を全て空にした場合 | 列点×5 |
+| `copy` | 1つ上のレリックが乗算系 | 対象と同じ倍率をコピーして乗算 |
 
 **コピーレリックの乗算タイミング:** コピー対象レリックの直後に乗算が適用される（`relicDisplayOrder` 順）。
 
-### レリック効果（加算系）
+### レリック効果（加算系 → ブロック点(A)に加算）
 
-乗算レリック適用後に加算される:
+relicDisplayOrder順にブロック点(A)に加算される:
 
 | レリックID | 発動条件 | 効果 |
 |-----------|---------|------|
-| `size_bonus_1` ～ `size_bonus_6` | 対応サイズのピースでライン消去 | スコアに一定値を加算 |
-| `full_clear_bonus` | 盤面を完全に空にした場合 | スコアに一定値を加算（+100） |
+| `size_bonus_1` ～ `size_bonus_6` | 対応サイズのピースでライン消去 | 消去ブロック数（baseBlocks）をブロック点に加算 |
 | `copy` | コピー対象が加算レリックの場合 | 対象レリックと同じ加算量をコピーして加算 |
+
+※ `full_clear_bonus` は乗算レリック（列点×5）に変更されています。
 
 ### レリック効果（ライン数加算系）
 
@@ -622,17 +673,15 @@ scoreBeforeRelics = (baseScore + comboBonus) × luckyMultiplier + sealScoreBonus
 | `script` | ラウンド開始時指定の2本のラインを揃えた場合 | 1本揃いでライン数を+1、2本同時揃いでライン数を+2 |
 | `copy` | コピー対象が台本レリックの場合 | 対象レリックと同じライン数加算をコピーして加算 |
 
-### finalScore の計算
+### 最終スコアの計算
 
 ```
-finalScore =
-  scoreAfterRelicMultipliers  // 乗算レリック適用済みスコア
-  + sizeBonusTotal             // サイズボーナスレリック加算
-  + fullClearBonus             // 全消しボーナスレリック加算（+100）
-  + copyBonus                  // コピーレリック加算分
+finalScore = Math.floor( blockPoints × linePoints )
 ```
 
-**注記:** 台本レリックは加算ではなく、ライン数加算方式に変更されています（基本スコア計算に影響）。
+- ブロック点(A)と列点(B)の積を切り捨てたものが最終スコア
+- 各乗算レリックは列点(B)に対して切り捨てなしで順次適用される
+- 最後の `Math.floor` のみで切り捨てが行われる
 
 ### スコア計算フロー（詳細）
 
@@ -641,41 +690,38 @@ finalScore =
    （石シール・ネガティブパターン除外済み）
 
 2. パターン効果計算:
-   enhancedBonus = enhanced付きセル数 × 2
-   auraBonus     = 別セットaura隣接セル数
-   mossBonus     = moss付きセルの端接触辺数合計
-   chargeBonus   = charge付きセルのchargeValue合計
+   enhancedBonus = enhanced付きセル数 × 2（multi付きなら×4）
+   auraBonus     = 隣接に別セットauraがある消去セル数（multi付きなら+2）
+   chargeBonus   = charge付きセルのchargeValue合計（multi付きなら2倍）
+   mossBonus     = moss付きセルの端接触辺数合計（multi付きなら2倍）
 
 3. シール効果計算:
-   multiBonus    = multi付きセル数
-   arrowBonus    = 対応ライン完成時のarrow付きセル × 一定量
-   sealScoreBonus = score付きセル数 × 一定点
+   multiBonus     = multi付きセル数（+1/個）
+   arrowBonus     = 対応ライン完成時のarrow付きセル × 10
+   sealScoreBonus = score付きセル数 × 5
    goldCount      = gold付きセル数（ゴールド付与用）
 
 4. totalBlocks = baseBlocks - chargeBlockCount
-                + enhancedBonus + auraBonus + mossBonus + chargeBonus
+                + enhancedBonus + auraBonus + chargeBonus
                 + multiBonus + arrowBonus
+   ※ mossBonus は列点(B)に加算されるため、ここには含まれない
 
-5. 台本レリック効果（ライン数加算）:
-   scriptLineBonus = 台本指定ライン1本揃い時+1、2本同時揃い時+2
-   copyLineBonus   = コピーレリックが台本をコピーした場合の加算
-   effectiveLinesCleared = linesCleared + scriptLineBonus + copyLineBonus
+5. ブロック点(A):
+   blockPoints = totalBlocks + sealScoreBonus
+   relicDisplayOrder順に加算レリックを適用:
+     + sizeBonusTotal（サイズボーナス発動時: baseBlocks）
+     + copyBonus（コピーが加算系対象の場合）
+   blockPoints += comboBonus（2^n - 1, n=comboブロック数）
 
-6. baseScore = totalBlocks × effectiveLinesCleared
+6. 列点(B):
+   linePoints = linesCleared × luckyMultiplier + mossBonus
+   relicDisplayOrder順に台本加算・乗算レリックを適用:
+     + scriptLineBonus（台本: 1本→+1、2本→+2）
+     + copyLineBonus（コピーが台本対象の場合）
+     × 各乗算レリック倍率（切り捨てなし）
+     × copyMultiplier（コピーが乗算系対象の場合、対象直後）
 
-7. comboBonus = (comboCount - 1) × 2  // 1回目は0
-
-8. luckyMultiplier = lucky抽選結果（1 または 2）
-
-9. scoreBeforeRelics = (baseScore + comboBonus) × luckyMultiplier + sealScoreBonus
-
-10. 乗算レリック適用（relicDisplayOrder順）:
-    各レリックの倍率を Math.floor でスコアに乗算
-    copyレリックはコピー対象レリックの直後に乗算
-
-11. 加算レリック適用:
-    finalScore = scoreAfterRelicMultipliers
-               + sizeBonusTotal + fullClearBonus + copyBonus
+7. 最終スコア = Math.floor(blockPoints × linePoints)
 ```
 
 ### スコア演出
@@ -763,6 +809,7 @@ finalScore =
 
 ## 更新履歴
 
+- 2026-02-19: スコア計算をA×B方式（ブロック点×列点）に全面書き直し。用語定義（ブロック点/列点/列倍率）追加、mossBonus→列点(B)、comboBonus→2^n-1、full_clear_bonus→列点×5（乗算）、rensha増分+1、multiシールのパターン効果2倍化を明記
 - 2026-02-18: 台本レリック効果を「スコア加算」から「ライン数加算」に変更（scriptBonus → scriptLineBonus、copyLineBonus追加、effectiveLinesCleared計算追加）
 - 2026-02-17: コードに基づき全面更新（ボス条件おじゃまブロック数修正、全消しボーナス+100に修正、スコア計算式を全レリック・パターン・シール反映で更新、コンボカウンター追加、ゴールド報酬計算式更新、連射増分+2・全消しボーナス+100を反映、legiDisplayOrder適用順序を明記）
 - 2026-02-17: レリック中心設計を反映（デッキ6枚化、利息、ショップ2+3構成、レリック売却、護符商品・購入フロー追加）

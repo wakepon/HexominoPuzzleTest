@@ -78,7 +78,7 @@ interface ScoreBreakdown {
   readonly chainMasterMultiplier: number
   readonly sizeBonusTotal: number
   readonly sizeBonusRelicId: RelicId | null
-  readonly fullClearBonus: number
+  readonly fullClearMultiplier: number   // 全消し倍率（1 or 5）
   readonly relicBonusTotal: number
   readonly singleLineMultiplier: number
   readonly takenokoMultiplier: number
@@ -92,7 +92,9 @@ interface ScoreBreakdown {
   readonly copyMultiplier: number
   readonly copyBonus: number
   readonly copyLineBonus: number           // コピーによるライン数加算（台本コピー時、0, 1, or 2）
-  readonly finalScore: number              // 最終スコア
+  readonly blockPoints: number             // ブロック点(A): パターン+シール+加算レリック+コンボ
+  readonly linePoints: number              // 列点(B): ライン数×lucky+moss×乗算レリック
+  readonly finalScore: number              // 最終スコア = Math.floor(A × B)
 }
 ```
 
@@ -125,6 +127,7 @@ interface RelicEffectContext {
   readonly completedCols: readonly number[]
   readonly scriptRelicLines: ScriptRelicLines | null
   readonly copyRelicState?: CopyRelicState | null
+  readonly remainingHands: number              // 残りハンド数（タイミングレリック判定用）
 }
 ```
 
@@ -185,7 +188,7 @@ interface RelicEffectResult {
   readonly activations: RelicActivationState
   readonly chainMasterMultiplier: number
   readonly sizeBonusTotal: number
-  readonly fullClearBonus: number
+  readonly fullClearMultiplier: number         // 全消し倍率（1 or 5）
   readonly totalRelicBonus: number            // 加算ボーナス合計
   readonly singleLineMultiplier: number
   readonly takenokoMultiplier: number
@@ -294,5 +297,6 @@ interface ScoreAnimationState {
 
 ## 更新履歴
 
+- 2026-02-19: ScoreBreakdown型に `blockPoints`/`linePoints` 追加、`fullClearBonus` → `fullClearMultiplier` に修正。RelicEffectResult型も同様に修正。RelicEffectContextに `remainingHands` 追加
 - 2026-02-18: ScoreBreakdown型とRelicEffectResult型に `scriptLineBonus` と `copyLineBonus` を追加（台本レリック効果のライン数加算方式への変更に対応）
 - 2026-02-17: data-structures.md から分割して新規作成

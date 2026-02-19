@@ -53,7 +53,7 @@
 
 | type | name | rarity | price | icon | description |
 |------|------|--------|-------|------|-------------|
-| `full_clear_bonus` | 全消しボーナス | common | 低価格 | 🏆 | 盤面を全て空にするとスコア加算 |
+| `full_clear_bonus` | 全消しボーナス | common | 低価格 | 🏆 | 盤面を全て空にすると列点×5 |
 | `size_bonus_1` | 1サイズボーナス | common | 低価格 | 1️⃣ | 1ブロックのピースでライン消去時にスコア加算 |
 | `size_bonus_2` | 2サイズボーナス | common | 低価格 | 2️⃣ | 2ブロックのピースでライン消去時にスコア加算 |
 | `size_bonus_3` | 3サイズボーナス | common | 低価格 | 3️⃣ | 3ブロックのピースでライン消去時にスコア加算 |
@@ -78,25 +78,23 @@
 
 `src/lib/game/Domain/Effect/Relic.ts` の `RELIC_EFFECT_VALUES` に定義された定数。
 
-| 定数名 | 用途 |
-|--------|------|
-| `CHAIN_MASTER_MULTIPLIER` | 連鎖の達人の倍率 |
-| `SIZE_BONUS_SCORE` | サイズボーナス系の加算スコア |
-| `FULL_CLEAR_BONUS` | 全消しボーナスの加算スコア |
-| `SINGLE_LINE_MULTIPLIER` | シングルラインの倍率 |
-| `RENSHA_INCREMENT` | 連射1回あたりの倍率加算量 |
-| `NOBI_INCREMENT` | のびのび系1回あたりの倍率加算量 |
-| `SCRIPT_LINE_BONUS_SINGLE` | 台本: 指定ライン1本揃い時のライン数加算 |
-| `SCRIPT_LINE_BONUS_DOUBLE` | 台本: 指定ライン2本同時揃い時のライン数加算 |
-| `BANDAID_TRIGGER_COUNT` | 絆創膏: 発動に必要なハンド消費回数 |
-| `TIMING_TRIGGER_COUNT` | タイミング: 発動に必要なハンド消費回数 |
-| `TIMING_MULTIPLIER` | タイミングの倍率 |
+| 定数名 | 値 | 用途 |
+|--------|-----|------|
+| `CHAIN_MASTER_MULTIPLIER` | 1.5 | 連鎖の達人の列倍率 |
+| `FULL_CLEAR_MULTIPLIER` | 5 | 全消しボーナスの列倍率 |
+| `SINGLE_LINE_MULTIPLIER` | 3 | シングルラインの列倍率 |
+| `RENSHA_INCREMENT` | 1 | 連射1回あたりの累積倍率加算量 |
+| `NOBI_INCREMENT` | 0.5 | のびのび系1回あたりの累積倍率加算量 |
+| `SCRIPT_LINE_BONUS_SINGLE` | 1 | 台本: 指定ライン1本揃い時のライン数加算 |
+| `SCRIPT_LINE_BONUS_DOUBLE` | 2 | 台本: 指定ライン2本同時揃い時のライン数加算 |
+| `BANDAID_TRIGGER_COUNT` | 3 | 絆創膏: 発動に必要なハンド消費回数 |
+| `TIMING_MULTIPLIER` | 3 | タイミングの列倍率 |
 
 ## レリック効果の発動条件
 
 | type | 発動条件 | 効果種別 |
 |------|----------|----------|
-| `full_clear_bonus` | ライン消去後に盤面が完全に空 | 加算 |
+| `full_clear_bonus` | ライン消去後に盤面が完全に空 | 乗算（列点×5） |
 | `size_bonus_1〜6` | 対応するブロック数のピース配置でライン消去 | 加算 |
 | `chain_master` | 消去ライン数が2以上 | 乗算 |
 | `single_line` | 消去ライン数がちょうど1 | 乗算 |
@@ -114,28 +112,28 @@
 - `takenoko`（縦列のみ）と `kani`（横列のみ）は同時発動しない
 - 縦列と横列が混在する消去では両方とも発動しない
 
-## スコア計算の適用順序
+## スコア計算の適用順序（A×B方式）
 
-最終スコアは以下の順序で計算される。
+最終スコアは **ブロック点(A) × 列点(B)** で計算される。
 
 ```
-1. 台本レリック効果（ライン数加算）
-   - effectiveLinesCleared = linesCleared + scriptLineBonus + copyLineBonus
-2. 基本スコア = 総消去ブロック数 × effectiveLinesCleared
-3. コンボボーナス（加算）
-4. lucky効果（乗算）
-5. シールスコアボーナス（加算）
-   ↓ ここまでが scoreBeforeRelics
-6. 乗算レリック（relicDisplayOrder の並び順に適用、各ステップで切り捨て）
-   - chain_master / single_line / takenoko / kani / nobi_takenoko / nobi_kani / rensha / timing
-   - copy（コピー対象レリックの直後に適用）
-   ↓ ここまでが scoreAfterRelicMultipliers
-7. 加算レリック（乗算後に一括加算）
-   - sizeBonusTotal（サイズボーナス）
-   - fullClearBonus（全消しボーナス）
-   - copyBonus（コピー加算ボーナス）
-   ↓ 最終スコア (finalScore)
+ブロック点(A):
+  totalBlocks + sealScoreBonus
+  + 加算レリック（sizeBonusTotal, copyBonus）（relicDisplayOrder順）
+  + comboBonus
+
+列点(B):
+  linesCleared × luckyMultiplier + mossBonus
+  + 台本レリック加算（scriptLineBonus, copyLineBonus）
+  × 乗算レリック（relicDisplayOrder順、切り捨てなし）
+    chain_master / single_line / takenoko / kani / nobi_takenoko
+    / nobi_kani / rensha / timing / full_clear_bonus
+  × copy（コピー対象レリックの直後に適用）
+
+最終スコア = Math.floor(A × B)
 ```
+
+詳細は [game-mechanics.md](./game-mechanics.md) を参照。
 
 ### 乗算レリックの適用順序
 
@@ -146,7 +144,7 @@
 chain_master → single_line → takenoko → kani → nobi_takenoko → nobi_kani → rensha → timing
 ```
 
-各乗算ステップでは `Math.floor`（切り捨て）が適用される。
+各乗算ステップでは切り捨てなしで列点(B)に乗算される。最終的に `Math.floor(A × B)` で切り捨てが行われる。
 
 ### コピーレリックの乗算タイミング
 
@@ -170,7 +168,9 @@ chain_master → single_line → takenoko → kani → nobi_takenoko → nobi_ka
 - `rensha`, `nobi_takenoko`, `nobi_kani`, `timing`
 
 **加算系レリック**（ボーナス値をそのままコピー）:
-- `size_bonus_1〜6`, `full_clear_bonus`
+- `size_bonus_1〜6`
+
+※ `full_clear_bonus` は乗算系レリック（列点×5）のため、乗算系としてコピーされる。
 
 **ライン数加算系レリック**（ライン数ボーナスをそのままコピー）:
 - `script`
@@ -392,6 +392,7 @@ interface PlayerState {
 
 ## 更新履歴
 
+- 2026-02-19: A×B方式スコア計算に基づき更新。full_clear_bonus→乗算レリック（列点×5）、RELIC_EFFECT_VALUES定数値追記、rensha増分+1
 - 2026-02-17: コードに基づいて全面書き直し（全レリック一覧・RELIC_EFFECT_VALUES定数・スコア適用順序・コピーレリック・台本・火山・絆創膏・タイミング・状態管理・ショップルールを追加）
 - 2026-02-17: レリック中心設計を反映（所持上限5枠、売却機能、レアリティ価格帯、カテゴリ拡充計画200〜300種、護符システム追加）
 - 2026-02-06: 初版作成（JSVersionSpecから移植）
