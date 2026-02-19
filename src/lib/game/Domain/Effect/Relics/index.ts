@@ -66,6 +66,7 @@ import { lastStandRelic } from './LastStand'
 import { firstStrikeRelic } from './FirstStrike'
 import { patienceRelic } from './Patience'
 import { snowballRelic } from './Snowball'
+import { muscleRelic } from './Muscle'
 
 /**
  * 全レリックモジュールの配列
@@ -114,6 +115,8 @@ const allModules: readonly RelicModule[] = [
   patienceRelic,
   // 加算系（雪だるま）
   snowballRelic,
+  // 乗算系（筋肉）
+  muscleRelic,
 ]
 
 /**

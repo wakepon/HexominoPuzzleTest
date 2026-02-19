@@ -45,6 +45,8 @@ export function extractRelicState(
       return { consecutiveNonClearHands: legacy.patienceConsecutiveNonClearHands, isCharged: legacy.patienceIsCharged }
     case 'snowball':
       return { bonus: legacy.snowballBonus }
+    case 'muscle':
+      return { accumulatedBonus: legacy.muscleAccumulatedBonus }
     default:
       return null
   }
@@ -80,6 +82,8 @@ function applyRelicState(
       }
     case 'snowball':
       return { ...legacy, snowballBonus: (newState as { bonus: number }).bonus }
+    case 'muscle':
+      return { ...legacy, muscleAccumulatedBonus: (newState as { accumulatedBonus: number }).accumulatedBonus }
     default:
       return legacy
   }
@@ -109,6 +113,8 @@ export function extractCopyRelicState(
       return { consecutiveNonClearHands: copyState.patienceConsecutiveNonClearHands, isCharged: copyState.patienceIsCharged }
     case 'snowball':
       return { bonus: copyState.snowballBonus }
+    case 'muscle':
+      return { accumulatedBonus: copyState.muscleAccumulatedBonus }
     default:
       return null
   }
@@ -144,6 +150,8 @@ function applyCopyRelicState(
       }
     case 'snowball':
       return { ...copyState, snowballBonus: (newState as { bonus: number }).bonus }
+    case 'muscle':
+      return { ...copyState, muscleAccumulatedBonus: (newState as { accumulatedBonus: number }).accumulatedBonus }
     default:
       return copyState
   }

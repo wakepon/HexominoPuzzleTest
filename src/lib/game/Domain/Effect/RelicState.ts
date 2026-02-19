@@ -20,6 +20,7 @@ export interface CopyRelicState {
   readonly patienceConsecutiveNonClearHands: number
   readonly patienceIsCharged: boolean
   readonly snowballBonus: number
+  readonly muscleAccumulatedBonus: number
 }
 
 /**
@@ -37,6 +38,7 @@ export function createInitialCopyRelicState(targetRelicId: RelicId | null): Copy
     patienceConsecutiveNonClearHands: 0,
     patienceIsCharged: false,
     snowballBonus: 0,
+    muscleAccumulatedBonus: 0,
   }
 }
 
@@ -50,6 +52,7 @@ export interface RelicMultiplierState {
   readonly patienceConsecutiveNonClearHands: number // 忍耐: 連続非消去ハンド数
   readonly patienceIsCharged: boolean               // 忍耐: チャージ済みか
   readonly snowballBonus: number                    // 雪だるま: 累積ブロック点ボーナス
+  readonly muscleAccumulatedBonus: number           // 筋肉: 累積列点ボーナス
   readonly copyRelicState: CopyRelicState | null  // コピーレリック状態（未所持時はnull）
 }
 
@@ -63,6 +66,7 @@ export const INITIAL_RELIC_MULTIPLIER_STATE: RelicMultiplierState = {
   patienceConsecutiveNonClearHands: 0,
   patienceIsCharged: false,
   snowballBonus: 0,
+  muscleAccumulatedBonus: 0,
   copyRelicState: null,
 }
 

@@ -480,7 +480,7 @@ function processPiecePlacement(
   // ハンド消費イベントをディスパッチ（bandaidカウンター等が更新される）
   const handConsumed = !isNohand
   const afterHandState = handConsumed
-    ? dispatchRelicStateEvent(state.player.ownedRelics, state.relicMultiplierState, { type: 'hand_consumed' })
+    ? dispatchRelicStateEvent(state.player.ownedRelics, state.relicMultiplierState, { type: 'hand_consumed', placedBlockSize: getPieceBlockCount(piece) })
     : state.relicMultiplierState
 
   // onPiecePlacedフックを実行（bandaid注入判定等）

@@ -91,7 +91,7 @@ export interface RelicActivation {
 export type RelicStateEvent =
   | { readonly type: 'lines_detected'; readonly totalLines: number; readonly rowLines: number; readonly colLines: number }
   | { readonly type: 'lines_cleared'; readonly totalLines: number; readonly rowLines: number; readonly colLines: number }
-  | { readonly type: 'hand_consumed' }
+  | { readonly type: 'hand_consumed'; readonly placedBlockSize: number }
   | { readonly type: 'round_start' }
 
 // ============================================================

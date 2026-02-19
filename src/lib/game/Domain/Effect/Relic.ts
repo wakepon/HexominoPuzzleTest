@@ -48,6 +48,7 @@ export type RelicType =
   | 'first_strike'      // 先制攻撃
   | 'patience'          // 忍耐
   | 'snowball'          // 雪だるま
+  | 'muscle'            // 筋肉
 
 /**
  * レリック定義
@@ -362,6 +363,15 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     rarity: 'rare',
     price: 20,
     icon: '⛄',
+  },
+  muscle: {
+    id: 'muscle' as RelicId,
+    type: 'muscle',
+    name: '筋肉',
+    description: '4ブロック以上のピースを配置するたびに列点+0.3を累積（ラウンド中）',
+    rarity: 'uncommon',
+    price: 15,
+    icon: '💪',
   },
 }
 
