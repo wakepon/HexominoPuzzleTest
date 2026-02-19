@@ -39,10 +39,10 @@ export const PATTERN_DEFINITIONS: Record<PatternType, PatternDefinition> = {
     id: 'enhanced' as PatternId,
     type: 'enhanced',
     name: '強化ブロック',
-    description: 'このセットのブロックが消えると+2点/ブロック',
+    description: 'ブロック点+2',
     symbol: '★',
     isNegative: false,
-    price: 4, // 安定した+2点/ブロック
+    price: 4, // 安定したブロック点+2
   },
   lucky: {
     id: 'lucky' as PatternId,
