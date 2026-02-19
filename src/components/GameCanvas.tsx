@@ -783,7 +783,7 @@ export function GameCanvas({
 
       // リロールボタンのクリック
       if (isPointInArea(pos, shopResult.rerollButtonArea)) {
-        if (canAfford(state.player.gold, getRerollCost(state.shopState.rerollCount))) {
+        if (canAfford(state.player.gold, getRerollCost(state.shopState.rerollCount, state.player.ownedRelics))) {
           onRerollShop()
         }
         return true

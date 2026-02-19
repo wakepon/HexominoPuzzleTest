@@ -51,6 +51,7 @@ export type RelicType =
   | 'muscle'            // 筋肉
   | 'gardener'          // 庭師
   | 'collector'         // 収集家
+  | 'merchant'          // 商人
 
 /**
  * レリック定義
@@ -392,6 +393,15 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     rarity: 'uncommon',
     price: 15,
     icon: '🎪',
+  },
+  merchant: {
+    id: 'merchant' as RelicId,
+    type: 'merchant',
+    name: '商人',
+    description: 'ショップのリロール費用を-2G',
+    rarity: 'uncommon',
+    price: 15,
+    icon: '🏪',
   },
 }
 

@@ -1244,7 +1244,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       // shopping状態でのみリロール可能
       if (state.phase !== 'shopping' || !state.shopState) return state
 
-      const rerollCost = getRerollCost(state.shopState.rerollCount)
+      const rerollCost = getRerollCost(state.shopState.rerollCount, state.player.ownedRelics)
       if (!canAfford(state.player.gold, rerollCost)) return state
 
       // ゴールド消費

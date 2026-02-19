@@ -20,6 +20,7 @@ export interface ProbabilityOverride {
   seal?: number
 }
 import { SHOP_STYLE } from '../Data/Constants'
+import { MERCHANT_REROLL_DISCOUNT } from '../Domain/Effect/Relics/Merchant'
 import { MINOS_BY_CATEGORY } from '../Data/MinoDefinitions'
 import { shuffleDeck } from './DeckService'
 import {
@@ -334,9 +335,19 @@ export function createShopState(
 
 /**
  * リロールコストを計算
+ * @param rerollCount リロール回数
+ * @param ownedRelics 所持レリック（merchantレリック所持時は-2G割引）
  */
-export function getRerollCost(rerollCount: number): number {
-  return SHOP_STYLE.rerollInitialCost + rerollCount * SHOP_STYLE.rerollCostIncrement
+export function getRerollCost(
+  rerollCount: number,
+  ownedRelics: readonly RelicId[] = []
+): number {
+  const baseCost = SHOP_STYLE.rerollInitialCost + rerollCount * SHOP_STYLE.rerollCostIncrement
+  const hasMerchant = ownedRelics.includes('merchant' as RelicId)
+  if (hasMerchant) {
+    return Math.max(0, baseCost - MERCHANT_REROLL_DISCOUNT)
+  }
+  return baseCost
 }
 
 /**

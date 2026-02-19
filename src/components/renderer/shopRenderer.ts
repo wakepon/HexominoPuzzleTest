@@ -935,7 +935,7 @@ export function renderShop(
   const buttonsStartX = centerX - totalButtonWidth / 2
 
   // リロールボタン
-  const rerollCost = getRerollCost(rerollCount)
+  const rerollCost = getRerollCost(rerollCount, ownedRelics)
   const canReroll = canAfford(gold, rerollCost)
   const rerollButtonX = buttonsStartX
 
