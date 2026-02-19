@@ -47,6 +47,7 @@ export type RelicType =
   | 'last_stand'        // ラストスタンド
   | 'first_strike'      // 先制攻撃
   | 'patience'          // 忍耐
+  | 'snowball'          // 雪だるま
 
 /**
  * レリック定義
@@ -352,6 +353,15 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     rarity: 'rare',
     price: 20,
     icon: '🧘',
+  },
+  snowball: {
+    id: 'snowball' as RelicId,
+    type: 'snowball',
+    name: '雪だるま',
+    description: 'ライン消去ごとにブロック点+0.5（ラウンドをまたいで永続）',
+    rarity: 'rare',
+    price: 20,
+    icon: '⛄',
   },
 }
 

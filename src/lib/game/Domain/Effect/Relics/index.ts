@@ -65,6 +65,7 @@ import { crescentRelic } from './Crescent'
 import { lastStandRelic } from './LastStand'
 import { firstStrikeRelic } from './FirstStrike'
 import { patienceRelic } from './Patience'
+import { snowballRelic } from './Snowball'
 
 /**
  * 全レリックモジュールの配列
@@ -111,6 +112,8 @@ const allModules: readonly RelicModule[] = [
   firstStrikeRelic,
   // 乗算系（忍耐）
   patienceRelic,
+  // 加算系（雪だるま）
+  snowballRelic,
 ]
 
 /**

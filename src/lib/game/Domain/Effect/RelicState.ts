@@ -19,6 +19,7 @@ export interface CopyRelicState {
   readonly firstStrikeHasClearedInRound: boolean
   readonly patienceConsecutiveNonClearHands: number
   readonly patienceIsCharged: boolean
+  readonly snowballBonus: number
 }
 
 /**
@@ -35,6 +36,7 @@ export function createInitialCopyRelicState(targetRelicId: RelicId | null): Copy
     firstStrikeHasClearedInRound: false,
     patienceConsecutiveNonClearHands: 0,
     patienceIsCharged: false,
+    snowballBonus: 0,
   }
 }
 
@@ -47,6 +49,7 @@ export interface RelicMultiplierState {
   readonly firstStrikeHasClearedInRound: boolean // 先制攻撃: ラウンド中に消去済みか
   readonly patienceConsecutiveNonClearHands: number // 忍耐: 連続非消去ハンド数
   readonly patienceIsCharged: boolean               // 忍耐: チャージ済みか
+  readonly snowballBonus: number                    // 雪だるま: 累積ブロック点ボーナス
   readonly copyRelicState: CopyRelicState | null  // コピーレリック状態（未所持時はnull）
 }
 
@@ -59,6 +62,7 @@ export const INITIAL_RELIC_MULTIPLIER_STATE: RelicMultiplierState = {
   firstStrikeHasClearedInRound: false,
   patienceConsecutiveNonClearHands: 0,
   patienceIsCharged: false,
+  snowballBonus: 0,
   copyRelicState: null,
 }
 

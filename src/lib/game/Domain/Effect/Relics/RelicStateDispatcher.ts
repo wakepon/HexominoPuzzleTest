@@ -43,6 +43,8 @@ export function extractRelicState(
       return { hasClearedInRound: legacy.firstStrikeHasClearedInRound }
     case 'patience':
       return { consecutiveNonClearHands: legacy.patienceConsecutiveNonClearHands, isCharged: legacy.patienceIsCharged }
+    case 'snowball':
+      return { bonus: legacy.snowballBonus }
     default:
       return null
   }
@@ -76,6 +78,8 @@ function applyRelicState(
         patienceConsecutiveNonClearHands: (newState as { consecutiveNonClearHands: number }).consecutiveNonClearHands,
         patienceIsCharged: (newState as { isCharged: boolean }).isCharged,
       }
+    case 'snowball':
+      return { ...legacy, snowballBonus: (newState as { bonus: number }).bonus }
     default:
       return legacy
   }
@@ -103,6 +107,8 @@ export function extractCopyRelicState(
       return { hasClearedInRound: copyState.firstStrikeHasClearedInRound }
     case 'patience':
       return { consecutiveNonClearHands: copyState.patienceConsecutiveNonClearHands, isCharged: copyState.patienceIsCharged }
+    case 'snowball':
+      return { bonus: copyState.snowballBonus }
     default:
       return null
   }
@@ -136,6 +142,8 @@ function applyCopyRelicState(
         patienceConsecutiveNonClearHands: (newState as { consecutiveNonClearHands: number }).consecutiveNonClearHands,
         patienceIsCharged: (newState as { isCharged: boolean }).isCharged,
       }
+    case 'snowball':
+      return { ...copyState, snowballBonus: (newState as { bonus: number }).bonus }
     default:
       return copyState
   }
