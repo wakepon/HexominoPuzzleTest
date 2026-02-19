@@ -16,6 +16,7 @@ export interface CopyRelicState {
   readonly nobiTakenokoMultiplier: number
   readonly nobiKaniMultiplier: number
   readonly anchorHasClearedInRound: boolean
+  readonly firstStrikeHasClearedInRound: boolean
 }
 
 /**
@@ -29,6 +30,7 @@ export function createInitialCopyRelicState(targetRelicId: RelicId | null): Copy
     nobiTakenokoMultiplier: 1.0,
     nobiKaniMultiplier: 1.0,
     anchorHasClearedInRound: false,
+    firstStrikeHasClearedInRound: false,
   }
 }
 
@@ -38,6 +40,7 @@ export interface RelicMultiplierState {
   readonly renshaMultiplier: number        // 連射倍率
   readonly bandaidCounter: number          // 絆創膏カウンター（0〜2、3で発動→0リセット）
   readonly anchorHasClearedInRound: boolean // アンカー: ラウンド中に消去済みか
+  readonly firstStrikeHasClearedInRound: boolean // 先制攻撃: ラウンド中に消去済みか
   readonly copyRelicState: CopyRelicState | null  // コピーレリック状態（未所持時はnull）
 }
 
@@ -47,6 +50,7 @@ export const INITIAL_RELIC_MULTIPLIER_STATE: RelicMultiplierState = {
   renshaMultiplier: 1.0,
   bandaidCounter: 0,
   anchorHasClearedInRound: false,
+  firstStrikeHasClearedInRound: false,
   copyRelicState: null,
 }
 

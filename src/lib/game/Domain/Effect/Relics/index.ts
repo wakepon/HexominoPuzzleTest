@@ -63,6 +63,7 @@ import { meteorRelic } from './Meteor'
 import { symmetryRelic } from './Symmetry'
 import { crescentRelic } from './Crescent'
 import { lastStandRelic } from './LastStand'
+import { firstStrikeRelic } from './FirstStrike'
 
 /**
  * 全レリックモジュールの配列
@@ -105,6 +106,8 @@ const allModules: readonly RelicModule[] = [
   symmetryRelic,
   crescentRelic,
   lastStandRelic,
+  // 乗算系（先制攻撃）
+  firstStrikeRelic,
 ]
 
 /**

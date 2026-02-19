@@ -45,6 +45,7 @@ export type RelicType =
   | 'symmetry'          // シンメトリー
   | 'crescent'          // 三日月
   | 'last_stand'        // ラストスタンド
+  | 'first_strike'      // 先制攻撃
 
 /**
  * レリック定義
@@ -332,6 +333,15 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     rarity: 'rare',
     price: 20,
     icon: '🔥',
+  },
+  first_strike: {
+    id: 'first_strike' as RelicId,
+    type: 'first_strike',
+    name: '先制攻撃',
+    description: 'ラウンド中の最初のライン消去で列点×2.5',
+    rarity: 'uncommon',
+    price: 15,
+    icon: '⚡',
   },
 }
 

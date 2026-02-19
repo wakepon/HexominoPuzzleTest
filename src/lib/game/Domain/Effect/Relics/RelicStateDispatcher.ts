@@ -39,6 +39,8 @@ export function extractRelicState(
       return { counter: legacy.bandaidCounter, shouldTrigger: false }
     case 'anchor':
       return { hasClearedInRound: legacy.anchorHasClearedInRound }
+    case 'first_strike':
+      return { hasClearedInRound: legacy.firstStrikeHasClearedInRound }
     default:
       return null
   }
@@ -64,6 +66,8 @@ function applyRelicState(
       return { ...legacy, bandaidCounter: (newState as { counter: number }).counter }
     case 'anchor':
       return { ...legacy, anchorHasClearedInRound: (newState as { hasClearedInRound: boolean }).hasClearedInRound }
+    case 'first_strike':
+      return { ...legacy, firstStrikeHasClearedInRound: (newState as { hasClearedInRound: boolean }).hasClearedInRound }
     default:
       return legacy
   }
@@ -87,6 +91,8 @@ export function extractCopyRelicState(
       return { counter: copyState.bandaidCounter, shouldTrigger: false }
     case 'anchor':
       return { hasClearedInRound: copyState.anchorHasClearedInRound }
+    case 'first_strike':
+      return { hasClearedInRound: copyState.firstStrikeHasClearedInRound }
     default:
       return null
   }
@@ -112,6 +118,8 @@ function applyCopyRelicState(
       return { ...copyState, bandaidCounter: (newState as { counter: number }).counter }
     case 'anchor':
       return { ...copyState, anchorHasClearedInRound: (newState as { hasClearedInRound: boolean }).hasClearedInRound }
+    case 'first_strike':
+      return { ...copyState, firstStrikeHasClearedInRound: (newState as { hasClearedInRound: boolean }).hasClearedInRound }
     default:
       return copyState
   }

@@ -129,6 +129,7 @@ interface SavedGameState {
     readonly renshaMultiplier: number
     readonly bandaidCounter?: number
     readonly anchorHasClearedInRound?: boolean
+    readonly firstStrikeHasClearedInRound?: boolean
     readonly copyRelicState?: {
       readonly targetRelicId: string | null
       readonly bandaidCounter: number
@@ -136,6 +137,7 @@ interface SavedGameState {
       readonly nobiTakenokoMultiplier: number
       readonly nobiKaniMultiplier: number
       readonly anchorHasClearedInRound?: boolean
+      readonly firstStrikeHasClearedInRound?: boolean
       // マイグレーション: 古いセーブデータにはtimingCounter/timingBonusActiveがある
       readonly timingCounter?: number
       readonly timingBonusActive?: boolean
@@ -484,6 +486,7 @@ export function restoreGameState(
       renshaMultiplier: saved.relicMultiplierState?.renshaMultiplier ?? INITIAL_RELIC_MULTIPLIER_STATE.renshaMultiplier,
       bandaidCounter: saved.relicMultiplierState?.bandaidCounter ?? INITIAL_RELIC_MULTIPLIER_STATE.bandaidCounter,
       anchorHasClearedInRound: saved.relicMultiplierState?.anchorHasClearedInRound ?? INITIAL_RELIC_MULTIPLIER_STATE.anchorHasClearedInRound,
+      firstStrikeHasClearedInRound: saved.relicMultiplierState?.firstStrikeHasClearedInRound ?? INITIAL_RELIC_MULTIPLIER_STATE.firstStrikeHasClearedInRound,
       // copyRelicStateのマイグレーション（timingCounter/timingBonusActiveを除外）
       copyRelicState: saved.relicMultiplierState?.copyRelicState
         ? {
@@ -493,6 +496,7 @@ export function restoreGameState(
             nobiTakenokoMultiplier: saved.relicMultiplierState.copyRelicState.nobiTakenokoMultiplier,
             nobiKaniMultiplier: saved.relicMultiplierState.copyRelicState.nobiKaniMultiplier,
             anchorHasClearedInRound: saved.relicMultiplierState.copyRelicState.anchorHasClearedInRound ?? false,
+            firstStrikeHasClearedInRound: saved.relicMultiplierState.copyRelicState.firstStrikeHasClearedInRound ?? false,
           }
         : null,
     },
