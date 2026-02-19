@@ -66,7 +66,7 @@ export const PATTERN_DEFINITIONS: Record<PatternType, PatternDefinition> = {
     id: 'aura' as PatternId,
     type: 'aura',
     name: 'オーラブロック',
-    description: '隣接する既存ブロックにバフ付与（消去時+1点）',
+    description: '隣接するブロックのブロック点+1',
     symbol: '◎',
     isNegative: false,
     price: 4, // 隣接バフで安定
