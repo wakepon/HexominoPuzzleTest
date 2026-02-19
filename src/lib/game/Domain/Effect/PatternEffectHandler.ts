@@ -2,7 +2,7 @@
  * パターン効果計算ハンドラー（純粋関数）
  */
 
-import type { Board, ClearingCell, Piece } from '..'
+import type { Board, ClearingCell } from '..'
 import type { PatternId, RelicId } from '../Core/Id'
 import type { PatternEffectResult, ScoreBreakdown } from './PatternEffectTypes'
 import type { RelicEffectContext, RelicEffectResult } from './RelicEffectTypes'
@@ -169,24 +169,22 @@ export function rollLuckyMultiplier(
 // === combo効果 ===
 /**
  * comboボーナスを計算
- * @param comboCount 現在のコンボ回数（1から始まる）
- * @returns ボーナス値（1回目=0, 2回目=2, 3回目=4, ...）
+ * 同時消去されたcomboブロック数に応じて指数的にブロック点ボーナス
+ * 1個:+1, 2個:+3, 3個:+7, ...（合計 2^n - 1）
  */
-export function calculateComboBonus(comboCount: number): number {
-  if (comboCount <= 1) return 0
-  return (comboCount - 1) * 2
-}
-
-/**
- * 配置したピースがcomboパターンを持つか判定
- */
-export function hasComboPattern(piece: Piece): boolean {
-  for (const blockData of piece.blocks.values()) {
-    if (blockData.pattern === ('combo' as PatternId)) {
-      return true
+export function calculateComboBonus(
+  board: Board,
+  cellsToRemove: readonly ClearingCell[]
+): number {
+  let comboCount = 0
+  for (const cell of cellsToRemove) {
+    const boardCell = board[cell.row][cell.col]
+    if (boardCell.pattern === ('combo' as PatternId)) {
+      comboCount++
     }
   }
-  return false
+  if (comboCount === 0) return 0
+  return Math.pow(2, comboCount) - 1
 }
 
 // === 統合計算 ===
@@ -277,7 +275,6 @@ export function calculateScoreBreakdown(
   board: Board,
   cellsToRemove: readonly ClearingCell[],
   linesCleared: number,
-  comboCount: number,
   relicContext: RelicEffectContext | null = null,
   luckyRandom: () => number = Math.random,
   relicDisplayOrder: readonly RelicId[] = [],
@@ -316,8 +313,8 @@ export function calculateScoreBreakdown(
     : linesCleared
   const baseScore = totalBlocks * effectiveLinesCleared
 
-  // comboボーナス
-  const comboBonus = calculateComboBonus(comboCount)
+  // comboボーナス（同時消去されたcomboブロック数から計算）
+  const comboBonus = calculateComboBonus(board, cellsToRemove)
 
   // lucky効果（列点として扱う）
   const luckyMultiplier = rollLuckyMultiplier(board, cellsToRemove, luckyRandom)

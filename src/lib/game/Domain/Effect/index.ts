@@ -35,7 +35,6 @@ export {
 export type {
   PatternEffectResult,
   ScoreBreakdown,
-  ComboState,
 } from './PatternEffectTypes'
 export {
   calculateEnhancedBonus,
@@ -43,7 +42,6 @@ export {
   calculateMossBonus,
   rollLuckyMultiplier,
   calculateComboBonus,
-  hasComboPattern,
   calculatePatternEffects,
   calculateScoreBreakdown,
 } from './PatternEffectHandler'

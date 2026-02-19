@@ -108,7 +108,6 @@ export function calculateScore(completedLines: CompletedLines): number {
  * パターン効果、シール効果、レリック効果を考慮したスコアを計算
  * @param board 現在のボード状態
  * @param completedLines 完成したライン情報
- * @param comboCount 現在のコンボ回数
  * @param relicContext レリック効果コンテキスト（null可）
  * @param luckyRandom 乱数生成関数（テスト用に注入可能）
  * @returns スコア計算の詳細内訳
@@ -116,7 +115,6 @@ export function calculateScore(completedLines: CompletedLines): number {
 export function calculateScoreWithEffects(
   board: Board,
   completedLines: CompletedLines,
-  comboCount: number,
   relicContext: RelicEffectContext | null = null,
   luckyRandom: () => number = Math.random,
   relicDisplayOrder: readonly RelicId[] = []
@@ -168,7 +166,6 @@ export function calculateScoreWithEffects(
     board,
     cellsToRemove,
     totalLines,
-    comboCount,
     relicContext,
     luckyRandom,
     relicDisplayOrder,

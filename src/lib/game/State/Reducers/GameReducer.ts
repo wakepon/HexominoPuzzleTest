@@ -47,7 +47,7 @@ import {
   clearLines,
   calculateScoreWithEffects,
 } from '../../Services/LineService'
-import { hasComboPattern, calculateScoreBreakdown } from '../../Domain/Effect/PatternEffectHandler'
+import { calculateScoreBreakdown } from '../../Domain/Effect/PatternEffectHandler'
 import {
   getActivatedRelicsFromScoreBreakdown,
   hasRelic,
@@ -405,7 +405,6 @@ function tryVolcanoActivation(
   state: GameState,
   resolved: { finalSlots: PieceSlot[]; finalDeck: DeckState; phase: ReturnType<typeof determinePhase> },
   newBoard: Board,
-  comboCount: number,
   newRelicMultiplierState: RelicMultiplierState
 ): PlacementResult | null {
   if (
@@ -440,7 +439,6 @@ function tryVolcanoActivation(
     newBoard,
     filledCells,
     GRID_SIZE,
-    0,
     volcanoRelicContext,
     Math.random,
     state.player.relicDisplayOrder
@@ -488,7 +486,6 @@ function tryVolcanoActivation(
       dragState: initialDragState,
       deck: resolved.finalDeck,
       phase: volcanoPhase,
-      comboCount,
       relicMultiplierState: newRelicMultiplierState,
       clearingAnimation: clearAnim,
       relicActivationAnimation: volcanoRelicAnim,
@@ -514,8 +511,7 @@ function processPiecePlacement(
   piece: Piece,
   boardPos: { x: number; y: number },
   newSlots: PieceSlot[],
-  newDeck: DeckState,
-  comboCount: number
+  newDeck: DeckState
 ): PlacementResult {
   // ピース配置（chargeインクリメントは得点計算後に行う）
   const newBoard = placePieceOnBoard(state.board, piece, boardPos)
@@ -603,7 +599,6 @@ function processPiecePlacement(
     const scoreBreakdown = calculateScoreWithEffects(
       newBoard,
       completedLines,
-      comboCount,
       relicContext,
       Math.random,
       state.player.relicDisplayOrder
@@ -672,7 +667,6 @@ function processPiecePlacement(
         deck: finalDeck,
         phase: shouldDefer ? 'playing' : newPhase,
         pendingPhase: shouldDefer ? newPhase : null,
-        comboCount,
         relicMultiplierState: {
           ...newRelicMultiplierState,
           copyRelicState: updatedCopyState,
@@ -703,7 +697,7 @@ function processPiecePlacement(
 
   // 火山レリック発動判定
   const volcanoResult = tryVolcanoActivation(
-    state, resolved, newBoard, comboCount, newRelicMultiplierState
+    state, resolved, newBoard, newRelicMultiplierState
   )
   if (volcanoResult) {
     return volcanoResult
@@ -721,7 +715,6 @@ function processPiecePlacement(
       dragState: initialDragState,
       deck: resolved.finalDeck,
       phase: resolved.phase,
-      comboCount,
       relicMultiplierState: {
         ...newRelicMultiplierState,
         copyRelicState: updatedCopyStateNoLine,
@@ -823,7 +816,6 @@ function createNextRoundState(currentState: GameState): GameState {
     player: currentState.player,
     targetScore,
     shopState: null,
-    comboCount: 0,
     relicMultiplierState: {
       ...INITIAL_RELIC_MULTIPLIER_STATE,
       // コピーレリック: カウンターリセットだがtargetは維持
@@ -931,9 +923,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         ) {
           const newDeck: DeckState = { ...state.deck, stockSlot2: null }
           const newSlots = [...state.pieceSlots]
-          const newComboCount = hasComboPattern(stock2Piece) ? state.comboCount + 1 : 0
 
-          const result = processPiecePlacement(state, stock2Piece, boardPos2, newSlots, newDeck, newComboCount)
+          const result = processPiecePlacement(state, stock2Piece, boardPos2, newSlots, newDeck)
           return result.newState
         }
 
@@ -958,9 +949,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           // ストックをクリアした新しいデッキを作成
           const newDeck: DeckState = { ...state.deck, stockSlot: null }
           const newSlots = [...state.pieceSlots]
-          const newComboCount = hasComboPattern(stockPiece) ? state.comboCount + 1 : 0
 
-          const result = processPiecePlacement(state, stockPiece, boardPos, newSlots, newDeck, newComboCount)
+          const result = processPiecePlacement(state, stockPiece, boardPos, newSlots, newDeck)
           return result.newState
         }
 
@@ -992,9 +982,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         const newSlots = state.pieceSlots.map((s, i) =>
           i === slotIndex ? { ...s, piece: null } : s
         )
-        const newComboCount = hasComboPattern(slot.piece) ? state.comboCount + 1 : 0
 
-        const result = processPiecePlacement(state, slot.piece, boardPos, newSlots, state.deck, newComboCount)
+        const result = processPiecePlacement(state, slot.piece, boardPos, newSlots, state.deck)
         return result.newState
       }
 
@@ -1012,11 +1001,6 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       if (!canPlacePiece(state.board, slot.piece.shape, action.position, getPiecePattern(slot.piece))) {
         return state
       }
-
-      // comboCount更新（配置したピースがcomboパターンを持つか）
-      const newComboCount = hasComboPattern(slot.piece)
-        ? state.comboCount + 1
-        : 0
 
       // ピース配置（chargeインクリメントは配置処理後に行う）
       const newBoard = placePieceOnBoard(state.board, slot.piece, action.position)
@@ -1041,7 +1025,6 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         pieceSlots: finalSlots,
         deck: finalDeck,
         phase: newPhase,
-        comboCount: newComboCount,
       }
     }
 

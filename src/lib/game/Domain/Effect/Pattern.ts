@@ -57,10 +57,10 @@ export const PATTERN_DEFINITIONS: Record<PatternType, PatternDefinition> = {
     id: 'combo' as PatternId,
     type: 'combo',
     name: 'コンボブロック',
-    description: '連続配置でボーナススコア',
+    description: '同時に消えるほどボーナス増加',
     symbol: 'C',
     isNegative: false,
-    price: 3, // 連続配置が必要で条件付き
+    price: 4, // 同時消去でブロック点ボーナス
   },
   aura: {
     id: 'aura' as PatternId,
@@ -133,6 +133,7 @@ export const getPatternDefinition = (
 export const SHOP_AVAILABLE_PATTERNS: PatternType[] = [
   'enhanced',
   'lucky',
+  'combo',
   'aura',
   'moss',
   'feather',

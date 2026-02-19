@@ -99,7 +99,7 @@ interface SavedGameState {
   readonly targetScore: number
   readonly phase: GamePhase
   readonly roundInfo: RoundInfo
-  readonly comboCount: number
+  readonly comboCount?: number // 旧データ互換（現在は未使用）
 
   // プレイヤー関連
   readonly player: {
@@ -234,7 +234,6 @@ function serializeState(state: GameState): SavedGameState {
     targetScore: state.targetScore,
     phase: state.phase,
     roundInfo: state.roundInfo,
-    comboCount: state.comboCount,
     player: {
       gold: state.player.gold,
       ownedRelics: state.player.ownedRelics,
@@ -353,7 +352,6 @@ function isValidSavedState(saved: unknown): saved is SavedGameState {
     typeof s.score !== 'number' ||
     typeof s.targetScore !== 'number' ||
     typeof s.phase !== 'string' ||
-    typeof s.comboCount !== 'number' ||
     !s.roundInfo ||
     !s.player ||
     !s.deck ||
@@ -488,7 +486,6 @@ export function restoreGameState(
     },
     targetScore: saved.targetScore,
     shopState: deserializeShopState(saved.shopState),
-    comboCount: saved.comboCount,
     // マイグレーション対応: 古いセーブデータにはrelicMultiplierStateがない
     relicMultiplierState: {
       nobiTakenokoMultiplier: saved.relicMultiplierState?.nobiTakenokoMultiplier ?? INITIAL_RELIC_MULTIPLIER_STATE.nobiTakenokoMultiplier,

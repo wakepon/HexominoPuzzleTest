@@ -109,7 +109,6 @@ function createNewGameState(): GameState {
     player: createInitialPlayerState(ROUND_CONFIG.initialGold),
     targetScore: calculateTargetScore(initialRound),
     shopState: null,
-    comboCount: 0,
     relicMultiplierState: INITIAL_RELIC_MULTIPLIER_STATE,
     scriptRelicLines: null,
     deckViewOpen: false,

@@ -63,11 +63,3 @@ export interface ScoreBreakdown {
   readonly linePoints: number // 列点(B): ライン数×lucky×乗算レリック
   readonly finalScore: number // 最終スコア = Math.floor(A × B)
 }
-
-/**
- * コンボ状態
- */
-export interface ComboState {
-  readonly count: number // 現在のコンボ回数
-  readonly lastPatternWasCombo: boolean // 直前がcomboパターンだったか
-}
