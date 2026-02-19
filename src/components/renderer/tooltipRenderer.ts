@@ -3,8 +3,21 @@
  */
 
 import type { TooltipState } from '../../lib/game/Domain/Tooltip'
-import { TOOLTIP_STYLE, MULTIPLIER_HIGHLIGHT_COLOR } from '../../lib/game/Data/Constants'
+import {
+  TOOLTIP_STYLE,
+  MULTIPLIER_HIGHLIGHT_COLOR,
+  BLOCK_POINT_HIGHLIGHT_COLOR,
+  COLUMN_POINT_ADD_HIGHLIGHT_COLOR,
+} from '../../lib/game/Data/Constants'
 import { drawTextWithMultiplierHighlight } from './TextHighlightUtils'
+import type { HighlightRule } from './TextHighlightUtils'
+
+/** ツールチップ説明文のハイライトルール */
+const TOOLTIP_HIGHLIGHT_RULES: HighlightRule[] = [
+  { pattern: /ブロック点\+\d+/, color: BLOCK_POINT_HIGHLIGHT_COLOR, bold: true },
+  { pattern: /列点\+[\d.]+/, color: COLUMN_POINT_ADD_HIGHLIGHT_COLOR, bold: true },
+  { pattern: /×(?:\d+(?:\.\d+)?|\S+)/, color: MULTIPLIER_HIGHLIGHT_COLOR, bold: true },
+]
 
 /**
  * テキストを最大幅で折り返す
@@ -190,7 +203,8 @@ export function renderTooltip(
         x + padding,
         textY,
         descColor,
-        MULTIPLIER_HIGHLIGHT_COLOR
+        MULTIPLIER_HIGHLIGHT_COLOR,
+        TOOLTIP_HIGHLIGHT_RULES
       )
       textY += descFontSize * lineHeight
     }

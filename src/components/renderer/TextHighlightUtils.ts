@@ -1,11 +1,17 @@
 /**
- * テキスト内の「×N」パターンを検出し、その部分だけ指定色で描画するユーティリティ
+ * テキスト内の特定パターンを検出し、パターンごとに異なる色・太字で描画するユーティリティ
  */
 
+/** ハイライトルール定義 */
+export interface HighlightRule {
+  pattern: RegExp
+  color: string
+  bold: boolean
+}
+
 /**
- * テキスト内の「×N」パターンを検出し、その部分だけ指定色で描画する
- * ×の後に数値（整数・小数）またはテキスト（揃った列数 等）が続くパターンを検出
- * パターンがなければ通常のfillTextと同じ動作
+ * テキスト内の複数パターンを検出し、それぞれのスタイルで描画する
+ * マッチしない部分は normalColor で通常描画
  */
 export function drawTextWithMultiplierHighlight(
   ctx: CanvasRenderingContext2D,
@@ -13,47 +19,68 @@ export function drawTextWithMultiplierHighlight(
   x: number,
   y: number,
   normalColor: string,
-  highlightColor: string
+  highlightColor: string,
+  highlightRules?: HighlightRule[]
 ): void {
-  // ×N パターンを検出（×の後に数値または日本語テキストが続く）
-  // 複数のパターンがある場合は最初の1つのみハイライト
-  const pattern = /×(?:\d+(?:\.\d+)?|\S+)/
-  const match = text.match(pattern)
+  // ルールが指定されていない場合は既存の×Nパターンのみ（後方互換）
+  const rules: HighlightRule[] = highlightRules ?? [
+    { pattern: /×(?:\d+(?:\.\d+)?|\S+)/, color: highlightColor, bold: true },
+  ]
 
-  if (!match || match.index === undefined) {
-    // パターンなし: 通常描画
-    ctx.fillStyle = normalColor
-    ctx.fillText(text, x, y)
-    return
+  // テキストを走査し、各位置でマッチを探す
+  const segments: Array<{ text: string; color: string; bold: boolean }> = []
+  let remaining = text
+
+  while (remaining.length > 0) {
+    // 全ルールから最も早い位置のマッチを探す
+    let earliestMatch: { index: number; length: number; rule: HighlightRule } | null = null
+
+    for (const rule of rules) {
+      const match = remaining.match(rule.pattern)
+      if (match && match.index !== undefined) {
+        if (earliestMatch === null || match.index < earliestMatch.index) {
+          earliestMatch = { index: match.index, length: match[0].length, rule }
+        }
+      }
+    }
+
+    if (earliestMatch === null) {
+      // マッチなし: 残り全体を通常色で追加
+      segments.push({ text: remaining, color: normalColor, bold: false })
+      break
+    }
+
+    // マッチ前のテキストを通常色で追加
+    if (earliestMatch.index > 0) {
+      segments.push({ text: remaining.slice(0, earliestMatch.index), color: normalColor, bold: false })
+    }
+
+    // マッチ部分をハイライト色で追加
+    segments.push({
+      text: remaining.slice(earliestMatch.index, earliestMatch.index + earliestMatch.length),
+      color: earliestMatch.rule.color,
+      bold: earliestMatch.rule.bold,
+    })
+
+    remaining = remaining.slice(earliestMatch.index + earliestMatch.length)
   }
 
-  const matchStart = match.index
-  const matchEnd = matchStart + match[0].length
-
-  // ×の前のテキスト
-  const beforeText = text.slice(0, matchStart)
-  // ×N部分
-  const highlightText = text.slice(matchStart, matchEnd)
-  // ×Nの後のテキスト
-  const afterText = text.slice(matchEnd)
+  // セグメントを描画
+  const baseFont = ctx.font
+  // 現在のフォントからサイズとファミリーを抽出
+  const fontMatch = baseFont.match(/(?:bold\s+)?(\d+)px\s+(.+)/)
+  const fontSize = fontMatch ? fontMatch[1] : '11'
+  const fontFamily = fontMatch ? fontMatch[2] : 'Arial, sans-serif'
 
   let currentX = x
 
-  // 前半を通常色で描画
-  if (beforeText) {
-    ctx.fillStyle = normalColor
-    ctx.fillText(beforeText, currentX, y)
-    currentX += ctx.measureText(beforeText).width
+  for (const segment of segments) {
+    ctx.fillStyle = segment.color
+    ctx.font = segment.bold ? `bold ${fontSize}px ${fontFamily}` : `${fontSize}px ${fontFamily}`
+    ctx.fillText(segment.text, currentX, y)
+    currentX += ctx.measureText(segment.text).width
   }
 
-  // ×N部分を赤色で描画
-  ctx.fillStyle = highlightColor
-  ctx.fillText(highlightText, currentX, y)
-  currentX += ctx.measureText(highlightText).width
-
-  // 後半を通常色で描画
-  if (afterText) {
-    ctx.fillStyle = normalColor
-    ctx.fillText(afterText, currentX, y)
-  }
+  // フォントを元に戻す
+  ctx.font = baseFont
 }

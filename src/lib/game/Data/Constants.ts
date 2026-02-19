@@ -14,8 +14,10 @@ export const SLOT_COUNT = 3
 // レリック所持上限
 export const MAX_RELIC_SLOTS = 5
 
-// 乗算ハイライト色（×N部分を赤字表示）
-export const MULTIPLIER_HIGHLIGHT_COLOR = '#FF4444'
+// ツールチップ説明文のハイライト色
+export const MULTIPLIER_HIGHLIGHT_COLOR = '#FF4444'       // 乗算（×N）: 赤
+export const BLOCK_POINT_HIGHLIGHT_COLOR = '#FFFFFF'       // ブロック点+N: 白
+export const COLUMN_POINT_ADD_HIGHLIGHT_COLOR = '#FFD700'  // 列点+N: 黄
 
 // 色定義（木目調）
 export const COLORS = {
