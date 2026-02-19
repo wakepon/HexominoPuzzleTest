@@ -233,30 +233,35 @@ export function buildFormulaSteps(
     }
   }
 
+  let effectiveLines = outerMultiplier
   for (const relicId of relicDisplayOrder) {
     if (isMultiplicativeRelic(relicId)) {
       const multiplier = getRelicMultiplier(relicId, breakdown)
       if (multiplier !== 1) {
+        const beforeLines = effectiveLines
+        effectiveLines *= multiplier
         currentScore = Math.floor(currentScore * multiplier)
         const def = getRelicDefinition(relicId)
         const label = def?.name ?? relicId
         steps.push({
           type: 'relic',
-          label: `${label} ×${formatNum(multiplier)}`,
-          formula: `${currentScore}`,
+          label: `${label} 列倍率×${formatNum(multiplier)}`,
+          formula: `${formatNum(beforeLines)}列 → ${formatNum(effectiveLines)}列`,
           relicId,
         })
       }
     }
     // コピーレリック: 対象レリックの直後にコピー分の乗算を追加
     if (relicId === breakdown.copyTargetRelicId && breakdown.copyMultiplier > 1) {
+      const beforeLines = effectiveLines
+      effectiveLines *= breakdown.copyMultiplier
       currentScore = Math.floor(currentScore * breakdown.copyMultiplier)
       const targetDef = getRelicDefinition(relicId)
       const targetName = targetDef?.name ?? relicId
       steps.push({
         type: 'relic',
-        label: `コピー (${targetName}) ×${formatNum(breakdown.copyMultiplier)}`,
-        formula: `${currentScore}`,
+        label: `コピー (${targetName}) 列倍率×${formatNum(breakdown.copyMultiplier)}`,
+        formula: `${formatNum(beforeLines)}列 → ${formatNum(effectiveLines)}列`,
         relicId: 'copy' as RelicId,
       })
     }

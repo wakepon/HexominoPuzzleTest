@@ -16,7 +16,7 @@ export const RELIC_EFFECT_VALUES = {
   SCRIPT_LINE_BONUS_SINGLE: 1,   // 台本: 1本揃い（ライン数+1）
   SCRIPT_LINE_BONUS_DOUBLE: 2,   // 台本: 2本同時揃い（ライン数+2）
   BANDAID_TRIGGER_COUNT: 3,      // 絆創膏: 発動に必要なハンド消費回数
-  TIMING_MULTIPLIER: 3,          // タイミング: スコア倍率
+  TIMING_MULTIPLIER: 3,          // タイミング: 列倍率×3
 } as const
 
 /**
@@ -70,7 +70,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     id: 'full_clear_bonus' as RelicId,
     type: 'full_clear_bonus',
     name: '全消しボーナス',
-    description: '盤面を全て空にした際にスコア倍率+5',
+    description: '盤面を全て空にした際に列倍率×5',
     rarity: 'common',
     price: 10,
     icon: '🏆',
@@ -133,7 +133,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     id: 'chain_master' as RelicId,
     type: 'chain_master',
     name: '連鎖の達人',
-    description: '複数行列を同時消しでスコア×1.5',
+    description: '複数行列を同時消しで列倍率×1.5',
     rarity: 'rare',
     price: 20,
     icon: '⛓️',
@@ -142,7 +142,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     id: 'single_line' as RelicId,
     type: 'single_line',
     name: 'シングルライン',
-    description: '1行または1列のみ消した時、スコア×3',
+    description: '1行または1列のみ消した時、列倍率×3',
     rarity: 'uncommon',
     price: 15,
     icon: '➖',
@@ -151,7 +151,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     id: 'takenoko' as RelicId,
     type: 'takenoko',
     name: 'タケノコ',
-    description: '縦列のみ揃った時、スコア×揃った列数',
+    description: '縦列のみ揃った時、列倍率×揃った列数',
     rarity: 'common',
     price: 10,
     icon: '🎋',
@@ -160,7 +160,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     id: 'kani' as RelicId,
     type: 'kani',
     name: 'カニ',
-    description: '横列のみ揃った時、スコア×揃った行数',
+    description: '横列のみ揃った時、列倍率×揃った行数',
     rarity: 'common',
     price: 10,
     icon: '🦀',
@@ -169,7 +169,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     id: 'rensha' as RelicId,
     type: 'rensha',
     name: '連射',
-    description: 'ライン揃うたびに倍率+1（揃わないとリセット）',
+    description: 'ライン揃うたびに列倍率+1（揃わないとリセット）',
     rarity: 'rare',
     price: 20,
     icon: '🔫',
@@ -178,7 +178,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     id: 'nobi_takenoko' as RelicId,
     type: 'nobi_takenoko',
     name: 'のびのびタケノコ',
-    description: '縦列のみ揃えるたびに倍率+0.5を加える（横列消しでリセット）初期値は倍率x1',
+    description: '縦列のみ揃えるたびに列倍率+0.5を加える（横列消しでリセット）初期値は列倍率×1',
     rarity: 'uncommon',
     price: 15,
     icon: '🌱',
@@ -187,7 +187,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     id: 'nobi_kani' as RelicId,
     type: 'nobi_kani',
     name: 'のびのびカニ',
-    description: '横列のみ揃えるたびに倍率+0.5を加える（縦列消しでリセット）初期値は倍率x1',
+    description: '横列のみ揃えるたびに列倍率+0.5を加える（縦列消しでリセット）初期値は列倍率×1',
     rarity: 'uncommon',
     price: 15,
     icon: '🦞',
@@ -232,7 +232,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     id: 'timing' as RelicId,
     type: 'timing',
     name: 'タイミング',
-    description: '残りハンド数が3で割り切れるとき、スコア×3',
+    description: '残りハンド数が3で割り切れるとき、列倍率×3',
     rarity: 'uncommon',
     price: 15,
     icon: '⌛',

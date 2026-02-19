@@ -372,7 +372,7 @@ export function getActivatedRelics(
   if (result.activations.chainMasterActive) {
     activated.push({
       relicId: 'chain_master' as RelicId,
-      bonusValue: '×1.5',
+      bonusValue: '列倍率×1.5',
     })
   }
 
@@ -386,7 +386,7 @@ export function getActivatedRelics(
   if (result.activations.fullClearActive) {
     activated.push({
       relicId: 'full_clear_bonus' as RelicId,
-      bonusValue: `×${result.fullClearMultiplier}`,
+      bonusValue: `列倍率×${result.fullClearMultiplier}`,
     })
   }
 
@@ -394,7 +394,7 @@ export function getActivatedRelics(
   if (result.activations.singleLineActive) {
     activated.push({
       relicId: 'single_line' as RelicId,
-      bonusValue: `×${RELIC_EFFECT_VALUES.SINGLE_LINE_MULTIPLIER}`,
+      bonusValue: `列倍率×${RELIC_EFFECT_VALUES.SINGLE_LINE_MULTIPLIER}`,
     })
   }
 
@@ -402,7 +402,7 @@ export function getActivatedRelics(
   if (result.activations.takenokoActive) {
     activated.push({
       relicId: 'takenoko' as RelicId,
-      bonusValue: `×${result.takenokoMultiplier}`,
+      bonusValue: `列倍率×${result.takenokoMultiplier}`,
     })
   }
 
@@ -410,7 +410,7 @@ export function getActivatedRelics(
   if (result.activations.kaniActive) {
     activated.push({
       relicId: 'kani' as RelicId,
-      bonusValue: `×${result.kaniMultiplier}`,
+      bonusValue: `列倍率×${result.kaniMultiplier}`,
     })
   }
 
@@ -418,7 +418,7 @@ export function getActivatedRelics(
   if (result.activations.renshaActive) {
     activated.push({
       relicId: 'rensha' as RelicId,
-      bonusValue: `×${result.renshaMultiplier}`,
+      bonusValue: `列倍率×${result.renshaMultiplier}`,
     })
   }
 
@@ -426,7 +426,7 @@ export function getActivatedRelics(
   if (result.activations.nobiTakenokoActive) {
     activated.push({
       relicId: 'nobi_takenoko' as RelicId,
-      bonusValue: `×${result.nobiTakenokoMultiplier}`,
+      bonusValue: `列倍率×${result.nobiTakenokoMultiplier}`,
     })
   }
 
@@ -434,7 +434,7 @@ export function getActivatedRelics(
   if (result.activations.nobiKaniActive) {
     activated.push({
       relicId: 'nobi_kani' as RelicId,
-      bonusValue: `×${result.nobiKaniMultiplier}`,
+      bonusValue: `列倍率×${result.nobiKaniMultiplier}`,
     })
   }
 
@@ -450,7 +450,7 @@ export function getActivatedRelics(
   if (result.activations.timingActive) {
     activated.push({
       relicId: 'timing' as RelicId,
-      bonusValue: `×${result.timingMultiplier}`,
+      bonusValue: `列倍率×${result.timingMultiplier}`,
     })
   }
 
@@ -459,7 +459,7 @@ export function getActivatedRelics(
     if (result.copyMultiplier > 1) {
       activated.push({
         relicId: 'copy' as RelicId,
-        bonusValue: `×${Number.isInteger(result.copyMultiplier) ? result.copyMultiplier : result.copyMultiplier.toFixed(1)}`,
+        bonusValue: `列倍率×${Number.isInteger(result.copyMultiplier) ? result.copyMultiplier : result.copyMultiplier.toFixed(1)}`,
       })
     } else if (result.copyLineBonus > 0) {
       activated.push({
@@ -525,7 +525,7 @@ export function getActivatedRelicsFromScoreBreakdown(scoreBreakdown: {
   if (scoreBreakdown.chainMasterMultiplier > 1) {
     activated.push({
       relicId: 'chain_master' as RelicId,
-      bonusValue: '×1.5',
+      bonusValue: '列倍率×1.5',
     })
   }
 
@@ -539,7 +539,7 @@ export function getActivatedRelicsFromScoreBreakdown(scoreBreakdown: {
   if (scoreBreakdown.fullClearMultiplier > 1) {
     activated.push({
       relicId: 'full_clear_bonus' as RelicId,
-      bonusValue: `×${scoreBreakdown.fullClearMultiplier}`,
+      bonusValue: `列倍率×${scoreBreakdown.fullClearMultiplier}`,
     })
   }
 
@@ -547,7 +547,7 @@ export function getActivatedRelicsFromScoreBreakdown(scoreBreakdown: {
   if (scoreBreakdown.singleLineMultiplier && scoreBreakdown.singleLineMultiplier > 1) {
     activated.push({
       relicId: 'single_line' as RelicId,
-      bonusValue: `×${RELIC_EFFECT_VALUES.SINGLE_LINE_MULTIPLIER}`,
+      bonusValue: `列倍率×${RELIC_EFFECT_VALUES.SINGLE_LINE_MULTIPLIER}`,
     })
   }
 
@@ -555,7 +555,7 @@ export function getActivatedRelicsFromScoreBreakdown(scoreBreakdown: {
   if (scoreBreakdown.takenokoMultiplier && scoreBreakdown.takenokoMultiplier > 1) {
     activated.push({
       relicId: 'takenoko' as RelicId,
-      bonusValue: `×${scoreBreakdown.takenokoMultiplier}`,
+      bonusValue: `列倍率×${scoreBreakdown.takenokoMultiplier}`,
     })
   }
 
@@ -563,7 +563,7 @@ export function getActivatedRelicsFromScoreBreakdown(scoreBreakdown: {
   if (scoreBreakdown.kaniMultiplier && scoreBreakdown.kaniMultiplier > 1) {
     activated.push({
       relicId: 'kani' as RelicId,
-      bonusValue: `×${scoreBreakdown.kaniMultiplier}`,
+      bonusValue: `列倍率×${scoreBreakdown.kaniMultiplier}`,
     })
   }
 
@@ -571,7 +571,7 @@ export function getActivatedRelicsFromScoreBreakdown(scoreBreakdown: {
   if (scoreBreakdown.renshaMultiplier && scoreBreakdown.renshaMultiplier > 1) {
     activated.push({
       relicId: 'rensha' as RelicId,
-      bonusValue: `×${scoreBreakdown.renshaMultiplier}`,
+      bonusValue: `列倍率×${scoreBreakdown.renshaMultiplier}`,
     })
   }
 
@@ -579,7 +579,7 @@ export function getActivatedRelicsFromScoreBreakdown(scoreBreakdown: {
   if (scoreBreakdown.nobiTakenokoMultiplier && scoreBreakdown.nobiTakenokoMultiplier > 1) {
     activated.push({
       relicId: 'nobi_takenoko' as RelicId,
-      bonusValue: `×${scoreBreakdown.nobiTakenokoMultiplier}`,
+      bonusValue: `列倍率×${scoreBreakdown.nobiTakenokoMultiplier}`,
     })
   }
 
@@ -587,7 +587,7 @@ export function getActivatedRelicsFromScoreBreakdown(scoreBreakdown: {
   if (scoreBreakdown.nobiKaniMultiplier && scoreBreakdown.nobiKaniMultiplier > 1) {
     activated.push({
       relicId: 'nobi_kani' as RelicId,
-      bonusValue: `×${scoreBreakdown.nobiKaniMultiplier}`,
+      bonusValue: `列倍率×${scoreBreakdown.nobiKaniMultiplier}`,
     })
   }
 
@@ -603,7 +603,7 @@ export function getActivatedRelicsFromScoreBreakdown(scoreBreakdown: {
   if (scoreBreakdown.timingMultiplier && scoreBreakdown.timingMultiplier > 1) {
     activated.push({
       relicId: 'timing' as RelicId,
-      bonusValue: `×${scoreBreakdown.timingMultiplier}`,
+      bonusValue: `列倍率×${scoreBreakdown.timingMultiplier}`,
     })
   }
 
@@ -613,7 +613,7 @@ export function getActivatedRelicsFromScoreBreakdown(scoreBreakdown: {
       const m = scoreBreakdown.copyMultiplier
       activated.push({
         relicId: 'copy' as RelicId,
-        bonusValue: `×${Number.isInteger(m) ? m : m.toFixed(1)}`,
+        bonusValue: `列倍率×${Number.isInteger(m) ? m : m.toFixed(1)}`,
       })
     } else if (scoreBreakdown.copyLineBonus && scoreBreakdown.copyLineBonus > 0) {
       activated.push({
