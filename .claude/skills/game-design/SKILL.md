@@ -76,7 +76,7 @@ Explore agent を使って、検討対象に関連する自ゲームのシステ
 
 ### Step 5: 結果の保存
 
-分析結果を `Spec/DesignNotes/` に Markdown で保存する。
+分析結果を `Spec/DesignNotesForHuman/` に Markdown で保存する。
 
 **ファイル名**: 検討対象を端的に表す英語名（例: `PackMechanic.md`, `ScoreBalance.md`, `NewRelicDesign.md`）
 
