@@ -300,7 +300,7 @@ export function calculateScoreBreakdown(
 
   // 合計ブロック数（パターン効果 + multiシール効果 + アローシール効果、chargeブロック基礎分除外）
   const totalBlocks =
-    baseBlocks - chargeBlockCount + enhancedBonus + auraBonus + mossBonus + chargeBonus + multiBonus + arrowBonus
+    baseBlocks - chargeBlockCount + enhancedBonus + auraBonus + chargeBonus + multiBonus + arrowBonus
 
   // レリック効果を計算
   const relicEffects = relicContext
@@ -384,7 +384,7 @@ export function calculateScoreBreakdown(
   blockPoints += comboBonus
 
   // B (列点): linesCleared × luckyMultiplier → レリック(台本加算・乗算)
-  let linePoints = linesCleared * luckyMultiplier
+  let linePoints = linesCleared * luckyMultiplier + mossBonus
 
   // relicDisplayOrder順に台本加算・乗算レリックをBに適用
   for (const relicId of effectiveOrder) {

@@ -109,16 +109,6 @@ export function buildFormulaSteps(
     })
   }
 
-  if (breakdown.mossBonus > 0) {
-    a += breakdown.mossBonus
-    steps.push({
-      type: 'pattern',
-      label: 'モス',
-      formula: buildABFormula(a, b),
-      relicId: null,
-    })
-  }
-
   if (breakdown.chargeBonus > 0) {
     a += breakdown.chargeBonus
     steps.push({
@@ -209,6 +199,17 @@ export function buildFormulaSteps(
     steps.push({
       type: 'pattern',
       label: 'ラッキー ×2!',
+      formula: buildABFormula(a, b),
+      relicId: null,
+    })
+  }
+
+  // === 6.5. moss → Bに加算 ===
+  if (breakdown.mossBonus > 0) {
+    b += breakdown.mossBonus
+    steps.push({
+      type: 'pattern',
+      label: 'モス',
       formula: buildABFormula(a, b),
       relicId: null,
     })

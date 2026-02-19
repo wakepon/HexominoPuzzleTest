@@ -75,7 +75,7 @@ export const PATTERN_DEFINITIONS: Record<PatternType, PatternDefinition> = {
     id: 'moss' as PatternId,
     type: 'moss',
     name: '苔ブロック',
-    description: 'フィールド端と接している辺の数だけスコア加算',
+    description: 'フィールド端と接している辺の数だけ列点+1',
     symbol: 'M',
     isNegative: false,
     price: 3, // 端配置が必要で条件付き
