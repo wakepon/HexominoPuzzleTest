@@ -5,12 +5,6 @@
 // グリッドサイズ
 export const GRID_SIZE = 6
 
-// 基本セルサイズ（レスポンシブで調整される）
-export const BASE_CELL_SIZE = 50
-
-// スロット数
-export const SLOT_COUNT = 3
-
 // レリック所持上限
 export const MAX_RELIC_SLOTS = 5
 
@@ -112,17 +106,6 @@ export const CLEAR_ANIMATION = {
   effectLabelRise: 40,           // 効果ラベルの上昇距離（px）
 }
 
-// スコア表示設定
-export const SCORE_STYLE = {
-  fontSize: 24,
-  fontFamily: 'Arial, sans-serif',
-  fontWeight: 'bold',
-  color: '#FFFFFF',
-  shadowColor: '#000000',
-  shadowBlur: 4,
-  paddingTop: 15,
-}
-
 // HDレイアウト用ステータスパネルスタイル
 export const HD_STATUS_PANEL_STYLE = {
   // 目標セクション
@@ -183,47 +166,12 @@ export const DECK_CONFIG = {
   ] as const,
 }
 
-// 残りハンド表示設定
-export const HANDS_STYLE = {
-  fontSize: 20,
-  fontFamily: 'Arial, sans-serif',
-  fontWeight: 'bold',
-  color: '#FFFFFF',
-  shadowColor: '#000000',
-  shadowBlur: 4,
-  paddingRight: 20,
-  paddingTop: 15,
-}
-
 // ラウンド設定
 export const ROUND_CONFIG = {
   initialGold: 5,              // 初期ゴールド
   maxRound: 24,                // 最終ラウンド
   initialTargetScore: 20,      // 初期目標スコア
   targetScoreIncrement: 10,    // ラウンドごとの目標スコア増加量
-}
-
-// ゴールド表示スタイル
-export const GOLD_STYLE = {
-  fontSize: 20,
-  fontFamily: 'Arial, sans-serif',
-  fontWeight: 'bold',
-  color: '#FFD700',            // ゴールド色
-  shadowColor: '#000000',
-  shadowBlur: 4,
-  paddingLeft: 20,
-  paddingTop: 15,
-}
-
-// ラウンド表示スタイル
-export const ROUND_STYLE = {
-  fontSize: 18,
-  fontFamily: 'Arial, sans-serif',
-  fontWeight: 'bold',
-  color: '#FFFFFF',
-  shadowColor: '#000000',
-  shadowBlur: 4,
-  paddingTop: 45,
 }
 
 // ラウンドクリア演出

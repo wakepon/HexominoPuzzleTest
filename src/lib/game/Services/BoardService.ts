@@ -2,7 +2,7 @@
  * ボード操作サービス
  */
 
-import type { Board, Cell, Position, Piece, PieceShape } from '../Domain'
+import type { Board, Cell, Position, Piece } from '../Domain'
 import type { PatternId, BlockSetId } from '../Domain/Core/Id'
 import type { RandomGenerator } from '../Utils/Random'
 import { BlockDataMapUtils } from '../Domain/Piece/BlockData'
@@ -65,52 +65,6 @@ export function placePieceOnBoard(
   }
 
   return newBoard
-}
-
-/**
- * 形状のみでボードに配置する（後方互換用、blockSetId/pattern/sealはnull）
- *
- * @deprecated Piece版のplacePieceOnBoardを使用してください
- */
-export function placePieceShapeOnBoard(
-  board: Board,
-  shape: PieceShape,
-  position: Position
-): Board {
-  const newBoard: Cell[][] = board.map((row) => row.map((cell) => ({ ...cell })))
-
-  for (let shapeY = 0; shapeY < shape.length; shapeY++) {
-    for (let shapeX = 0; shapeX < shape[shapeY].length; shapeX++) {
-      if (shape[shapeY][shapeX]) {
-        const boardX = position.x + shapeX
-        const boardY = position.y + shapeY
-        newBoard[boardY][boardX] = {
-          filled: true,
-          blockSetId: null,
-          pattern: null,
-          seal: null,
-          chargeValue: 0,
-        }
-      }
-    }
-  }
-
-  return newBoard
-}
-
-/**
- * ボードの特定位置のセルを取得
- */
-export function getCell(board: Board, position: Position): Cell | null {
-  if (
-    position.x < 0 ||
-    position.x >= GRID_SIZE ||
-    position.y < 0 ||
-    position.y >= GRID_SIZE
-  ) {
-    return null
-  }
-  return board[position.y][position.x]
 }
 
 /**

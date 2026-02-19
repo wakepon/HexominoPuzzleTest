@@ -4,10 +4,11 @@ import {
   selectMinoFromCategory,
   generatePieceSet,
   DEFAULT_WEIGHTS,
-} from './pieceGenerator'
-import { SeededRandom } from './random'
-import { MINOS_BY_CATEGORY, ALL_MINOS, MINO_COUNTS } from './minoDefinitions'
-import { CategoryWeights, MinoCategory } from './types'
+} from '../Services/PieceService'
+import { SeededRandom } from '../Utils/Random'
+import { MINOS_BY_CATEGORY, ALL_MINOS, MINO_COUNTS } from '../Data/MinoDefinitions'
+import type { CategoryWeights } from '../Services/PieceService'
+import type { MinoCategory } from '../Domain'
 
 describe('minoDefinitions', () => {
   describe('カテゴリ別ミノ数', () => {

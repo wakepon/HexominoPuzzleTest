@@ -122,6 +122,7 @@
       "Read(./**/*.pem)",
       "Read(./**/*.key)",
       "Read(~/.ssh/**)",
+      "Read(./Spec/DesignNotesForHuman/**)",
 
       "Bash(rm -rf /)",
       "Bash(rm -rf ~)",
