@@ -3,10 +3,11 @@ import {
   findCompletedLines,
   calculateScore,
   getCellsToRemove,
-  clearLines
-} from './lineLogic'
-import { createEmptyBoard } from './Services/BoardService'
-import { Board, CompletedLines, Cell } from './types'
+  clearLines,
+} from '../Services/LineService'
+import { createEmptyBoard } from '../Services/BoardService'
+import type { Board, Cell } from '../Domain'
+import type { CompletedLines } from '../Services/LineService'
 
 // テスト用ヘルパー関数: 埋まったセルを作成
 function createFilledCell(): Cell {
