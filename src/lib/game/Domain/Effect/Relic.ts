@@ -50,6 +50,7 @@ export type RelicType =
   | 'snowball'          // 雪だるま
   | 'muscle'            // 筋肉
   | 'gardener'          // 庭師
+  | 'collector'         // 収集家
 
 /**
  * レリック定義
@@ -382,6 +383,15 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     rarity: 'uncommon',
     price: 15,
     icon: '🌻',
+  },
+  collector: {
+    id: 'collector' as RelicId,
+    type: 'collector',
+    name: '収集家',
+    description: 'ラウンド中に消去した異なるパターン種類1種につき列点+0.5を累積',
+    rarity: 'uncommon',
+    price: 15,
+    icon: '🎪',
   },
 }
 

@@ -579,10 +579,18 @@ function processPiecePlacement(
     const clearedPatternBlockCount = cells.reduce(
       (count, c) => count + (newBoard[c.row][c.col].pattern ? 1 : 0), 0
     )
+    // 消去セル内の異なるパターン種類を取得（collector等で使用）
+    const clearedPatternTypes = Array.from(
+      new Set(
+        cells
+          .map(c => newBoard[c.row][c.col].pattern)
+          .filter((p): p is string => p !== null)
+      )
+    )
     const newRelicMultiplierState = dispatchRelicStateEvent(
       state.player.ownedRelics,
       preUpdatedMultState,
-      { type: 'lines_cleared', totalLines, rowLines: completedLines.rows.length, colLines: completedLines.columns.length, patternBlockCount: clearedPatternBlockCount }
+      { type: 'lines_cleared', totalLines, rowLines: completedLines.rows.length, colLines: completedLines.columns.length, patternBlockCount: clearedPatternBlockCount, clearedPatternTypes }
     )
 
     // 得点計算後にchargeValueをインクリメント（配置したピース自身は除外）
@@ -622,7 +630,7 @@ function processPiecePlacement(
   const newRelicMultiplierState = dispatchRelicStateEvent(
     state.player.ownedRelics,
     afterHandState,
-    { type: 'lines_cleared', totalLines: 0, rowLines: 0, colLines: 0, patternBlockCount: 0 }
+    { type: 'lines_cleared', totalLines: 0, rowLines: 0, colLines: 0, patternBlockCount: 0, clearedPatternTypes: [] }
   )
 
   // 配置不可チェック＆リドロー

@@ -135,6 +135,8 @@ interface SavedGameState {
     readonly snowballBonus?: number
     readonly muscleAccumulatedBonus?: number
     readonly gardenerAccumulatedBonus?: number
+    readonly collectorCollectedPatterns?: readonly string[]
+    readonly collectorAccumulatedBonus?: number
     readonly copyRelicState?: {
       readonly targetRelicId: string | null
       readonly bandaidCounter: number
@@ -148,6 +150,8 @@ interface SavedGameState {
       readonly snowballBonus?: number
       readonly muscleAccumulatedBonus?: number
       readonly gardenerAccumulatedBonus?: number
+      readonly collectorCollectedPatterns?: readonly string[]
+      readonly collectorAccumulatedBonus?: number
       // マイグレーション: 古いセーブデータにはtimingCounter/timingBonusActiveがある
       readonly timingCounter?: number
       readonly timingBonusActive?: boolean
@@ -502,6 +506,8 @@ export function restoreGameState(
       snowballBonus: saved.relicMultiplierState?.snowballBonus ?? INITIAL_RELIC_MULTIPLIER_STATE.snowballBonus,
       muscleAccumulatedBonus: saved.relicMultiplierState?.muscleAccumulatedBonus ?? INITIAL_RELIC_MULTIPLIER_STATE.muscleAccumulatedBonus,
       gardenerAccumulatedBonus: saved.relicMultiplierState?.gardenerAccumulatedBonus ?? INITIAL_RELIC_MULTIPLIER_STATE.gardenerAccumulatedBonus,
+      collectorCollectedPatterns: saved.relicMultiplierState?.collectorCollectedPatterns ?? INITIAL_RELIC_MULTIPLIER_STATE.collectorCollectedPatterns,
+      collectorAccumulatedBonus: saved.relicMultiplierState?.collectorAccumulatedBonus ?? INITIAL_RELIC_MULTIPLIER_STATE.collectorAccumulatedBonus,
       // copyRelicStateのマイグレーション（timingCounter/timingBonusActiveを除外）
       copyRelicState: saved.relicMultiplierState?.copyRelicState
         ? {
@@ -517,6 +523,8 @@ export function restoreGameState(
             snowballBonus: saved.relicMultiplierState.copyRelicState.snowballBonus ?? 0,
             muscleAccumulatedBonus: saved.relicMultiplierState.copyRelicState.muscleAccumulatedBonus ?? 0,
             gardenerAccumulatedBonus: saved.relicMultiplierState.copyRelicState.gardenerAccumulatedBonus ?? 0,
+            collectorCollectedPatterns: saved.relicMultiplierState.copyRelicState.collectorCollectedPatterns ?? [],
+            collectorAccumulatedBonus: saved.relicMultiplierState.copyRelicState.collectorAccumulatedBonus ?? 0,
           }
         : null,
     },
