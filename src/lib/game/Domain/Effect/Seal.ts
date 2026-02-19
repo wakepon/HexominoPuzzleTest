@@ -45,7 +45,7 @@ export const SEAL_DEFINITIONS: Record<SealType, SealDefinition> = {
     id: 'score' as SealId,
     type: 'score',
     name: 'スコアシール',
-    description: 'このブロックが消えると+5点',
+    description: 'ブロック点+5',
     symbol: '+5',
     preventsClearing: false,
     price: 2, // 固定+5点
