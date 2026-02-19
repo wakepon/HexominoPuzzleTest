@@ -19,17 +19,11 @@ export { SEAL_DEFINITIONS, getSealDefinition, SHOP_AVAILABLE_SEALS } from './Sea
 
 // レリック
 export type { RelicRarity, RelicType, RelicDefinition } from './Relic'
-export { RELIC_DEFINITIONS, getRelicDefinition, RELIC_EFFECT_VALUES } from './Relic'
+export { RELIC_DEFINITIONS, getRelicDefinition } from './Relic'
 
 // レリック状態
 export type { RelicMultiplierState } from './RelicState'
-export {
-  INITIAL_RELIC_MULTIPLIER_STATE,
-  updateRenshaMultiplier,
-  updateNobiTakenokoMultiplier,
-  updateNobiKaniMultiplier,
-  resetAllMultipliers,
-} from './RelicState'
+export { INITIAL_RELIC_MULTIPLIER_STATE } from './RelicState'
 
 // パターン効果
 export type {
@@ -63,14 +57,15 @@ export { generateScriptLines } from './ScriptRelicState'
 // レリック効果
 export type {
   RelicEffectContext,
-  RelicActivationState,
-  RelicEffectResult,
   ActivatedRelicInfo,
 } from './RelicEffectTypes'
 export {
-  checkRelicActivations,
-  calculateRelicEffects,
-  getActivatedRelics,
-  applyRelicEffectsToScore,
   getActivatedRelicsFromScoreBreakdown,
 } from './RelicEffectHandler'
+
+// レリックモジュールレジストリ
+export type { RelicModule, RelicContext, RelicActivation, ScoreEffectType } from './Relics/RelicModule'
+export { getRelicModule, getAllRelicModules, getRelicDefinitionFromRegistry } from './Relics/RelicRegistry'
+export { initializeRelicRegistry } from './Relics/index'
+export { evaluateRelicEffects, evaluateCopyRelicEffect } from './Relics/RelicEffectEngine'
+export { dispatchRelicStateEvent, dispatchOnPiecePlaced } from './Relics/RelicStateDispatcher'

@@ -4,20 +4,7 @@
 
 import type { RelicId } from '../Core/Id'
 
-/**
- * レリック効果の数値定数
- */
-export const RELIC_EFFECT_VALUES = {
-  CHAIN_MASTER_MULTIPLIER: 1.5,
-  FULL_CLEAR_MULTIPLIER: 5,
-  SINGLE_LINE_MULTIPLIER: 3,     // シングルライン: ×3
-  RENSHA_INCREMENT: 1,           // 連射: +1ずつ
-  NOBI_INCREMENT: 0.5,           // のびのび系: +0.5ずつ
-  SCRIPT_LINE_BONUS_SINGLE: 1,   // 台本: 1本揃い（ライン数+1）
-  SCRIPT_LINE_BONUS_DOUBLE: 2,   // 台本: 2本同時揃い（ライン数+2）
-  BANDAID_TRIGGER_COUNT: 3,      // 絆創膏: 発動に必要なハンド消費回数
-  TIMING_MULTIPLIER: 3,          // タイミング: 列点×3
-} as const
+// 効果の数値定数は各レリックモジュール (Relics/*.ts) に移行済み
 
 /**
  * レリックのレアリティ
