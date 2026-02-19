@@ -35,6 +35,16 @@ export type RelicType =
   | 'bandaid'           // 絆創膏
   | 'timing'            // タイミング
   | 'copy'              // コピー
+  | 'anchor'            // アンカー
+  | 'crown'             // 王冠
+  | 'stamp'             // スタンプ
+  | 'compass'           // コンパス
+  | 'featherweight'     // 軽量級
+  | 'heavyweight'       // 重量級
+  | 'meteor'            // 流星
+  | 'symmetry'          // シンメトリー
+  | 'crescent'          // 三日月
+  | 'last_stand'        // ラストスタンド
 
 /**
  * レリック定義
@@ -232,6 +242,96 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     rarity: 'epic',
     price: 25,
     icon: '🪞',
+  },
+  anchor: {
+    id: 'anchor' as RelicId,
+    type: 'anchor',
+    name: 'アンカー',
+    description: 'ラウンド中の最初のライン消去時、各ブロック点+5',
+    rarity: 'common',
+    price: 10,
+    icon: '⚓',
+  },
+  crown: {
+    id: 'crown' as RelicId,
+    type: 'crown',
+    name: '王冠',
+    description: 'ライン消去時、消去セルのパターン付きブロック1個につきブロック点+2',
+    rarity: 'uncommon',
+    price: 15,
+    icon: '👑',
+  },
+  stamp: {
+    id: 'stamp' as RelicId,
+    type: 'stamp',
+    name: 'スタンプ',
+    description: 'ライン消去時、消去セルのシール付きブロック1個につきブロック点+5',
+    rarity: 'uncommon',
+    price: 15,
+    icon: '📬',
+  },
+  compass: {
+    id: 'compass' as RelicId,
+    type: 'compass',
+    name: 'コンパス',
+    description: '行と列を同時に消した時、各ブロック点+3',
+    rarity: 'uncommon',
+    price: 15,
+    icon: '🧭',
+  },
+  featherweight: {
+    id: 'featherweight' as RelicId,
+    type: 'featherweight',
+    name: '軽量級',
+    description: '2ブロック以下のピース配置でライン消去時、各ブロック点+4',
+    rarity: 'common',
+    price: 10,
+    icon: '🪶',
+  },
+  heavyweight: {
+    id: 'heavyweight' as RelicId,
+    type: 'heavyweight',
+    name: '重量級',
+    description: '5ブロック以上のピース配置でライン消去時、各ブロック点+3',
+    rarity: 'common',
+    price: 10,
+    icon: '🏋️',
+  },
+  meteor: {
+    id: 'meteor' as RelicId,
+    type: 'meteor',
+    name: '流星',
+    description: '3ライン以上同時消しで列点×2',
+    rarity: 'rare',
+    price: 20,
+    icon: '☄️',
+  },
+  symmetry: {
+    id: 'symmetry' as RelicId,
+    type: 'symmetry',
+    name: 'シンメトリー',
+    description: '消去した行数と列数が同数の時、列点×2',
+    rarity: 'uncommon',
+    price: 15,
+    icon: '⚖️',
+  },
+  crescent: {
+    id: 'crescent' as RelicId,
+    type: 'crescent',
+    name: '三日月',
+    description: '残りハンド数が奇数の時、列点×1.5',
+    rarity: 'uncommon',
+    price: 15,
+    icon: '🌙',
+  },
+  last_stand: {
+    id: 'last_stand' as RelicId,
+    type: 'last_stand',
+    name: 'ラストスタンド',
+    description: '残りハンド数が2以下の時、列点×4',
+    rarity: 'rare',
+    price: 20,
+    icon: '🔥',
   },
 }
 

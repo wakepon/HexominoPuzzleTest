@@ -44,6 +44,8 @@ export interface RelicContext {
   readonly completedCols: readonly number[]
   readonly scriptRelicLines: ScriptRelicLines | null
   readonly remainingHands: number
+  readonly patternBlockCount: number  // 消去セル内のパターン付きブロック数
+  readonly sealBlockCount: number     // 消去セル内のシール付きブロック数
 
   /**
    * このレリック自身の累積状態

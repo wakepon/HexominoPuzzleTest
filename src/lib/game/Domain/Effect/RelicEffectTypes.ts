@@ -22,6 +22,8 @@ export interface RelicEffectContext {
   readonly scriptRelicLines: ScriptRelicLines | null  // 台本レリックの指定ライン
   readonly copyRelicState?: CopyRelicState | null  // コピーレリック状態（オプショナル）
   readonly remainingHands: number  // 残りハンド数（タイミングレリック判定用）
+  readonly patternBlockCount: number  // 消去セル内のパターン付きブロック数
+  readonly sealBlockCount: number     // 消去セル内のシール付きブロック数
 }
 
 /**

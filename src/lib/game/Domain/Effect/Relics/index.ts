@@ -53,6 +53,16 @@ import { volcanoRelic } from './Volcano'
 import { handStockRelic } from './HandStock'
 import { copyRelic } from './Copy'
 import { createSizeBonusRelic } from './SizeBonusFactory'
+import { anchorRelic } from './Anchor'
+import { crownRelic } from './Crown'
+import { stampRelic } from './Stamp'
+import { compassRelic } from './Compass'
+import { featherweightRelic } from './Featherweight'
+import { heavyweightRelic } from './Heavyweight'
+import { meteorRelic } from './Meteor'
+import { symmetryRelic } from './Symmetry'
+import { crescentRelic } from './Crescent'
+import { lastStandRelic } from './LastStand'
 
 /**
  * 全レリックモジュールの配列
@@ -83,6 +93,18 @@ const allModules: readonly RelicModule[] = [
   volcanoRelic,
   handStockRelic,
   copyRelic,
+  // 加算系
+  anchorRelic,
+  crownRelic,
+  stampRelic,
+  compassRelic,
+  featherweightRelic,
+  heavyweightRelic,
+  // 乗算系（追加）
+  meteorRelic,
+  symmetryRelic,
+  crescentRelic,
+  lastStandRelic,
 ]
 
 /**

@@ -372,6 +372,7 @@ function tryVolcanoActivation(
   const { sortedCells: filledCells, totalDuration: volcanoClearDuration } = createSequentialClearingCells(rawFilledCells, newBoard)
 
   // RelicEffectContext を構築（火山は全消去なので全行+全列=12ライン扱い）
+  // patternBlockCount/sealBlockCountは calculateScoreBreakdown 内で board から計算されるため、ここでは0初期値
   const volcanoRelicContext: RelicEffectContext = {
     ownedRelics: state.player.ownedRelics,
     totalLines: GRID_SIZE * 2,
@@ -385,6 +386,8 @@ function tryVolcanoActivation(
     scriptRelicLines: null,
     copyRelicState: newRelicMultiplierState.copyRelicState,
     remainingHands: resolved.finalDeck.remainingHands,
+    patternBlockCount: 0,
+    sealBlockCount: 0,
   }
 
   // スコア計算（linesCleared=GRID_SIZE で他レリック倍率も適用）
@@ -521,6 +524,7 @@ function processPiecePlacement(
     )
 
     // レリック効果コンテキストを作成
+    // patternBlockCount/sealBlockCountは calculateScoreBreakdown 内で board から計算されるため、ここでは0初期値
     const relicContext: RelicEffectContext = {
       ownedRelics: state.player.ownedRelics,
       totalLines,
@@ -534,6 +538,8 @@ function processPiecePlacement(
       scriptRelicLines: state.scriptRelicLines,
       copyRelicState: preUpdatedMultState.copyRelicState,
       remainingHands: finalDeck.remainingHands,
+      patternBlockCount: 0,
+      sealBlockCount: 0,
     }
 
     const scoreBreakdown = calculateScoreWithEffects(

@@ -33,6 +33,8 @@ export function evaluateRelicEffects(
     readonly completedCols: readonly number[]
     readonly scriptRelicLines: ScriptRelicLines | null
     readonly remainingHands: number
+    readonly patternBlockCount: number
+    readonly sealBlockCount: number
   },
   relicMultiplierState: RelicMultiplierState
 ): ReadonlyMap<string, RelicActivation> {
@@ -75,6 +77,8 @@ export function evaluateCopyRelicEffect(
     readonly completedCols: readonly number[]
     readonly scriptRelicLines: ScriptRelicLines | null
     readonly remainingHands: number
+    readonly patternBlockCount: number
+    readonly sealBlockCount: number
   },
   relicMultiplierState: RelicMultiplierState
 ): { multiplier: number; bonus: number; lineBonus: number } {

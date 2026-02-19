@@ -265,6 +265,15 @@ export function calculateScoreBreakdown(
   let copyLineBonus = 0
 
   if (relicContext) {
+    // boardから patternBlockCount と sealBlockCount を計算
+    let patternBlockCount = 0
+    let sealBlockCount = 0
+    for (const cell of cellsToRemove) {
+      const boardCell = board[cell.row][cell.col]
+      if (boardCell.pattern) patternBlockCount++
+      if (boardCell.seal) sealBlockCount++
+    }
+
     // 全所持レリックの発動判定
     const activations = evaluateRelicEffects(
       relicContext.ownedRelics,
@@ -278,6 +287,8 @@ export function calculateScoreBreakdown(
         completedCols: relicContext.completedCols,
         scriptRelicLines: relicContext.scriptRelicLines,
         remainingHands: relicContext.remainingHands,
+        patternBlockCount,
+        sealBlockCount,
       },
       relicContext.relicMultiplierState
     )
@@ -317,6 +328,8 @@ export function calculateScoreBreakdown(
             completedCols: relicContext.completedCols,
             scriptRelicLines: relicContext.scriptRelicLines,
             remainingHands: relicContext.remainingHands,
+            patternBlockCount,
+            sealBlockCount,
           },
           relicContext.relicMultiplierState
         )

@@ -127,6 +127,8 @@ function createDefaultRelicContext(
     completedCols: [],
     scriptRelicLines: null,
     remainingHands: 5,
+    patternBlockCount: 0,
+    sealBlockCount: 0,
     ...overrides,
   }
 }

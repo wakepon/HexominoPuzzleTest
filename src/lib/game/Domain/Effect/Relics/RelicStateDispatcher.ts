@@ -37,6 +37,8 @@ export function extractRelicState(
       return { multiplier: legacy.nobiKaniMultiplier }
     case 'bandaid':
       return { counter: legacy.bandaidCounter, shouldTrigger: false }
+    case 'anchor':
+      return { hasClearedInRound: legacy.anchorHasClearedInRound }
     default:
       return null
   }
@@ -60,6 +62,8 @@ function applyRelicState(
       return { ...legacy, nobiKaniMultiplier: (newState as { multiplier: number }).multiplier }
     case 'bandaid':
       return { ...legacy, bandaidCounter: (newState as { counter: number }).counter }
+    case 'anchor':
+      return { ...legacy, anchorHasClearedInRound: (newState as { hasClearedInRound: boolean }).hasClearedInRound }
     default:
       return legacy
   }
@@ -81,6 +85,8 @@ export function extractCopyRelicState(
       return { multiplier: copyState.nobiKaniMultiplier }
     case 'bandaid':
       return { counter: copyState.bandaidCounter, shouldTrigger: false }
+    case 'anchor':
+      return { hasClearedInRound: copyState.anchorHasClearedInRound }
     default:
       return null
   }
@@ -104,6 +110,8 @@ function applyCopyRelicState(
       return { ...copyState, nobiKaniMultiplier: (newState as { multiplier: number }).multiplier }
     case 'bandaid':
       return { ...copyState, bandaidCounter: (newState as { counter: number }).counter }
+    case 'anchor':
+      return { ...copyState, anchorHasClearedInRound: (newState as { hasClearedInRound: boolean }).hasClearedInRound }
     default:
       return copyState
   }
