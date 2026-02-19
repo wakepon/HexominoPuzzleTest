@@ -102,7 +102,7 @@ export const PATTERN_DEFINITIONS: Record<PatternType, PatternDefinition> = {
     id: 'charge' as PatternId,
     type: 'charge',
     name: 'チャージブロック',
-    description: '配置後、他のブロックが置かれるたびにスコア+0.5',
+    description: '他のブロックが置かれるたび、このブロックのブロック点+1',
     symbol: '⚡',
     isNegative: false,
     price: 3,
