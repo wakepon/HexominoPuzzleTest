@@ -53,6 +53,7 @@ import {
   hasRelic,
 } from '../../Domain/Effect/RelicEffectHandler'
 import { getRelicModule } from '../../Domain/Effect/Relics/RelicRegistry'
+import { TREASURE_HUNTER_GOLD_BONUS } from '../../Domain/Effect/Relics/TreasureHunter'
 import {
   INITIAL_RELIC_MULTIPLIER_STATE,
   createInitialCopyRelicState,
@@ -401,7 +402,11 @@ function tryVolcanoActivation(
   )
 
   const newScore = state.score + volcanoBreakdown.finalScore
-  const goldGain = volcanoBreakdown.goldCount
+  let goldGain = volcanoBreakdown.goldCount
+  // treasure_hunter レリック: ゴールドシール数分の追加ゴールド
+  if (hasRelic(state.player.ownedRelics, 'treasure_hunter') && volcanoBreakdown.goldCount > 0) {
+    goldGain += volcanoBreakdown.goldCount * TREASURE_HUNTER_GOLD_BONUS
+  }
   const newPlayer = addGold(state.player, goldGain)
   const volcanoPhase = determinePhase(newScore, state.targetScore, 0)
 
@@ -551,7 +556,11 @@ function processPiecePlacement(
     )
     const scoreGain = scoreBreakdown.finalScore
     const newScore = state.score + scoreGain
-    const goldGain = scoreBreakdown.goldCount
+    let goldGain = scoreBreakdown.goldCount
+    // treasure_hunter レリック: ゴールドシール数分の追加ゴールド
+    if (hasRelic(state.player.ownedRelics, 'treasure_hunter') && scoreBreakdown.goldCount > 0) {
+      goldGain += scoreBreakdown.goldCount * TREASURE_HUNTER_GOLD_BONUS
+    }
     const newPlayer = addGold(state.player, goldGain)
     const newPhase = determinePhase(newScore, state.targetScore, finalDeck.remainingHands)
 

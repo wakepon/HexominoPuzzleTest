@@ -52,6 +52,7 @@ export type RelicType =
   | 'gardener'          // 庭師
   | 'collector'         // 収集家
   | 'merchant'          // 商人
+  | 'treasure_hunter'   // トレジャーハンター
 
 /**
  * レリック定義
@@ -402,6 +403,15 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     rarity: 'uncommon',
     price: 15,
     icon: '🏪',
+  },
+  treasure_hunter: {
+    id: 'treasure_hunter' as RelicId,
+    type: 'treasure_hunter',
+    name: 'トレジャーハンター',
+    description: 'ゴールドシール（G）付きブロック消去時、追加で+1G',
+    rarity: 'common',
+    price: 10,
+    icon: '💎',
   },
 }
 

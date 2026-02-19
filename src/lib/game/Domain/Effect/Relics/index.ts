@@ -70,6 +70,7 @@ import { muscleRelic } from './Muscle'
 import { gardenerRelic } from './Gardener'
 import { collectorRelic } from './Collector'
 import { merchantRelic } from './Merchant'
+import { treasureHunterRelic } from './TreasureHunter'
 
 /**
  * 全レリックモジュールの配列
@@ -126,6 +127,8 @@ const allModules: readonly RelicModule[] = [
   collectorRelic,
   // 非スコア系（商人）
   merchantRelic,
+  // 非スコア系（トレジャーハンター）
+  treasureHunterRelic,
 ]
 
 /**
