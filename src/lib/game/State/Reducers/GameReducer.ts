@@ -540,7 +540,7 @@ function processPiecePlacement(
   if (totalLines > 0) {
     // 石シールを除いた消去対象セルを取得し、順次消去用にソート＋ディレイ割り当て
     const rawCells = getCellsToRemoveWithFilter(newBoard, completedLines)
-    const { sortedCells: cells, totalDuration: clearDuration } = createSequentialClearingCells(rawCells, newBoard)
+    const { sortedCells: cells, totalDuration: clearDuration } = createSequentialClearingCells(rawCells, newBoard, completedLines)
 
     emitLinesCompleted(
       completedLines.rows,
