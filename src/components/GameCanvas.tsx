@@ -243,10 +243,15 @@ export function GameCanvas({
       copyLinkRelics
     )
 
-    // ボード描画（消去アニメーション中のセルは除外）
-    const clearingCells = state.clearingAnimation?.isAnimating
-      ? state.clearingAnimation.cells
-      : null
+    // ボード描画（消去アニメーション中の開始済みセルのみ除外）
+    const clearingCells = (() => {
+      if (!state.clearingAnimation?.isAnimating) return null
+      const animElapsed = Date.now() - state.clearingAnimation.startTime
+      return state.clearingAnimation.cells.filter(cell => {
+        const cellDelay = cell.delay ?? 0
+        return animElapsed >= cellDelay
+      })
+    })()
     renderBoard(ctx, state.board, layout, clearingCells)
 
     // 台本レリックのマーカー描画

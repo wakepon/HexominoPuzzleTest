@@ -90,6 +90,7 @@ import { calculateRelicSellPrice } from '../../Services/ShopPriceCalculator'
 import { getPiecePattern, createPieceWithPattern, createPiece } from '../../Services/PieceService'
 import { DefaultRandom } from '../../Utils/Random'
 import { CLEAR_ANIMATION, RELIC_EFFECT_STYLE, GRID_SIZE, MAX_RELIC_SLOTS } from '../../Data/Constants'
+import { createSequentialClearingCells } from '../../Services/ClearingCellService'
 import type { Amulet } from '../../Domain/Effect/Amulet'
 import { AMULET_DEFINITIONS, MAX_AMULET_STOCK } from '../../Domain/Effect/Amulet'
 import type { AmuletModalState } from '../../Domain/Effect/AmuletModalState'
@@ -415,8 +416,9 @@ function tryVolcanoActivation(
     return null
   }
 
-  const filledCells = getAllFilledCells(newBoard)
-  if (filledCells.length === 0) return null
+  const rawFilledCells = getAllFilledCells(newBoard)
+  if (rawFilledCells.length === 0) return null
+  const { sortedCells: filledCells, totalDuration: volcanoClearDuration } = createSequentialClearingCells(rawFilledCells, newBoard)
 
   // RelicEffectContext を構築（火山は全消去なので全行+全列=12ライン扱い）
   const volcanoRelicContext: RelicEffectContext = {
@@ -454,7 +456,8 @@ function tryVolcanoActivation(
     isAnimating: true as const,
     cells: filledCells,
     startTime: Date.now(),
-    duration: CLEAR_ANIMATION.duration,
+    duration: volcanoClearDuration,
+    perCellDuration: CLEAR_ANIMATION.perCellDuration,
   }
 
   // レリック発動アニメーション（火山 + 他の発動レリック）
@@ -535,8 +538,9 @@ function processPiecePlacement(
   const totalLines = completedLines.rows.length + completedLines.columns.length
 
   if (totalLines > 0) {
-    // 石シールを除いた消去対象セルを取得
-    const cells = getCellsToRemoveWithFilter(newBoard, completedLines)
+    // 石シールを除いた消去対象セルを取得し、順次消去用にソート＋ディレイ割り当て
+    const rawCells = getCellsToRemoveWithFilter(newBoard, completedLines)
+    const { sortedCells: cells, totalDuration: clearDuration } = createSequentialClearingCells(rawCells, newBoard)
 
     emitLinesCompleted(
       completedLines.rows,
@@ -658,7 +662,8 @@ function processPiecePlacement(
           isAnimating: true,
           cells,
           startTime: Date.now(),
-          duration: CLEAR_ANIMATION.duration,
+          duration: clearDuration,
+          perCellDuration: CLEAR_ANIMATION.perCellDuration,
         },
         relicActivationAnimation: relicAnimation,
         scoreAnimation: scoreAnim,
