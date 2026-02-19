@@ -3,7 +3,8 @@
  */
 
 import type { TooltipState } from '../../lib/game/Domain/Tooltip'
-import { TOOLTIP_STYLE } from '../../lib/game/Data/Constants'
+import { TOOLTIP_STYLE, MULTIPLIER_HIGHLIGHT_COLOR } from '../../lib/game/Data/Constants'
+import { drawTextWithMultiplierHighlight } from './TextHighlightUtils'
 
 /**
  * テキストを最大幅で折り返す
@@ -181,10 +182,16 @@ export function renderTooltip(
 
     // 説明文
     ctx.font = `${descFontSize}px ${fontFamily}`
-    ctx.fillStyle = descColor
 
     for (const line of block.descLines) {
-      ctx.fillText(line, x + padding, textY)
+      drawTextWithMultiplierHighlight(
+        ctx,
+        line,
+        x + padding,
+        textY,
+        descColor,
+        MULTIPLIER_HIGHLIGHT_COLOR
+      )
       textY += descFontSize * lineHeight
     }
 

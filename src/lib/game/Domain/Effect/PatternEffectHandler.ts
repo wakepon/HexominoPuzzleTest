@@ -319,7 +319,7 @@ export function calculateScoreBreakdown(
   // comboボーナス
   const comboBonus = calculateComboBonus(comboCount)
 
-  // lucky効果（列倍率として扱う）
+  // lucky効果（列点として扱う）
   const luckyMultiplier = rollLuckyMultiplier(board, cellsToRemove, luckyRandom)
 
   const {

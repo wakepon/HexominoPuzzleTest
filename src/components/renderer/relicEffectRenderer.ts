@@ -5,7 +5,8 @@
 import type { RelicActivationAnimationState } from '../../lib/game/Domain/Animation/AnimationState'
 import type { CanvasLayout } from '../../lib/game/Domain/Canvas/CanvasLayout'
 import { getRelicDefinition } from '../../lib/game/Domain/Effect/Relic'
-import { RELIC_EFFECT_STYLE } from '../../lib/game/Data/Constants'
+import { RELIC_EFFECT_STYLE, MULTIPLIER_HIGHLIGHT_COLOR } from '../../lib/game/Data/Constants'
+import { drawTextWithMultiplierHighlight } from './TextHighlightUtils'
 
 /**
  * レリック発動エフェクトを描画
@@ -94,12 +95,18 @@ export function renderRelicEffect(
 
     // ボーナス値
     ctx.font = `bold ${style.bonusFontSize}px ${style.fontFamily}`
-    ctx.fillStyle = style.bonusColor
     const bonusText =
       typeof relic.bonusValue === 'number'
         ? `+${relic.bonusValue}`
         : relic.bonusValue
-    ctx.fillText(bonusText, popupX + style.nameOffsetX, popupY + style.bonusOffsetY)
+    drawTextWithMultiplierHighlight(
+      ctx,
+      bonusText,
+      popupX + style.nameOffsetX,
+      popupY + style.bonusOffsetY,
+      style.bonusColor,
+      MULTIPLIER_HIGHLIGHT_COLOR
+    )
 
     ctx.restore()
 

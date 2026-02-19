@@ -243,7 +243,7 @@ export function buildFormulaSteps(
       })
     }
 
-    // 乗算レリック: B列倍率（X列 → Y列 形式）
+    // 乗算レリック: B列点（X列 → Y列 形式）
     if (isMultiplicativeRelic(relicId)) {
       const multiplier = getRelicMultiplier(relicId, breakdown)
       if (multiplier !== 1) {
@@ -253,7 +253,7 @@ export function buildFormulaSteps(
         const label = def?.name ?? relicId
         steps.push({
           type: 'relic',
-          label: `${label} 列倍率×${formatNum(multiplier)}`,
+          label: `${label} 列点×${formatNum(multiplier)}`,
           formula: `${formatNum(beforeLines)}列 → ${formatNum(effectiveLines)}列`,
           relicId,
         })
@@ -267,7 +267,7 @@ export function buildFormulaSteps(
       const targetName = targetDef?.name ?? relicId
       steps.push({
         type: 'relic',
-        label: `コピー (${targetName}) 列倍率×${formatNum(breakdown.copyMultiplier)}`,
+        label: `コピー (${targetName}) 列点×${formatNum(breakdown.copyMultiplier)}`,
         formula: `${formatNum(beforeLines)}列 → ${formatNum(effectiveLines)}列`,
         relicId: 'copy' as RelicId,
       })
