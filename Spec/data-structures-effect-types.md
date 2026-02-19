@@ -78,20 +78,23 @@ interface ScoreBreakdown {
   readonly chainMasterMultiplier: number
   readonly sizeBonusTotal: number
   readonly sizeBonusRelicId: RelicId | null
-  readonly fullClearBonus: number
+  readonly fullClearMultiplier: number   // 全消し倍率（1 or 5）
   readonly relicBonusTotal: number
   readonly singleLineMultiplier: number
   readonly takenokoMultiplier: number
   readonly kaniMultiplier: number
-  readonly renshaMultiplier: number
-  readonly nobiTakenokoMultiplier: number
-  readonly nobiKaniMultiplier: number
-  readonly scriptBonus: number
-  readonly timingMultiplier: number
+  readonly renshaMultiplier: number        // 連射倍率（累積、初期1.0、+1ずつ増加）
+  readonly nobiTakenokoMultiplier: number  // のびのびタケノコ倍率（累積、初期1.0、+0.5ずつ増加）
+  readonly nobiKaniMultiplier: number      // のびのびカニ倍率（累積、初期1.0、+0.5ずつ増加）
+  readonly scriptLineBonus: number         // 台本ライン数ボーナス（0, 1, or 2）
+  readonly timingMultiplier: number        // タイミング倍率（1 or 3）
   readonly copyTargetRelicId: RelicId | null
   readonly copyMultiplier: number
   readonly copyBonus: number
-  readonly finalScore: number          // 最終スコア
+  readonly copyLineBonus: number           // コピーによるライン数加算（台本コピー時、0, 1, or 2）
+  readonly blockPoints: number             // ブロック点(A): パターン+シール+加算レリック+コンボ
+  readonly linePoints: number              // 列点(B): ライン数×lucky+moss×乗算レリック
+  readonly finalScore: number              // 最終スコア = Math.floor(A × B)
 }
 ```
 
@@ -99,7 +102,9 @@ interface ScoreBreakdown {
 - `baseBlocks`: 基本消去ブロック数
 - `totalBlocks`: 合計ブロック数（乗算対象）
 - `linesCleared`: 消去ライン数
-- `baseScore`: 基本スコア（totalBlocks × linesCleared）
+- `scriptLineBonus`: 台本レリック効果によるライン数加算
+- `copyLineBonus`: コピーレリックによるライン数加算
+- `baseScore`: 基本スコア（totalBlocks × (linesCleared + scriptLineBonus + copyLineBonus)）
 - `finalScore`: 最終スコア
 - `goldCount`: ゴールドシール数（スコアには影響せず、ゴールド獲得計算に使用）
 
@@ -122,6 +127,7 @@ interface RelicEffectContext {
   readonly completedCols: readonly number[]
   readonly scriptRelicLines: ScriptRelicLines | null
   readonly copyRelicState?: CopyRelicState | null
+  readonly remainingHands: number              // 残りハンド数（タイミングレリック判定用）
 }
 ```
 
@@ -182,19 +188,20 @@ interface RelicEffectResult {
   readonly activations: RelicActivationState
   readonly chainMasterMultiplier: number
   readonly sizeBonusTotal: number
-  readonly fullClearBonus: number
+  readonly fullClearMultiplier: number         // 全消し倍率（1 or 5）
   readonly totalRelicBonus: number            // 加算ボーナス合計
-  readonly singleLineMultiplier: number
-  readonly takenokoMultiplier: number
-  readonly kaniMultiplier: number
-  readonly renshaMultiplier: number
-  readonly nobiTakenokoMultiplier: number
-  readonly nobiKaniMultiplier: number
-  readonly scriptBonus: number
-  readonly timingMultiplier: number
-  readonly copyTargetRelicId: RelicId | null
-  readonly copyMultiplier: number
-  readonly copyBonus: number
+  readonly singleLineMultiplier: number    // シングルライン倍率（1 or 3）
+  readonly takenokoMultiplier: number      // タケノコ倍率（消去列数、発動時は1以上）
+  readonly kaniMultiplier: number          // カニ倍率（消去行数、発動時は1以上）
+  readonly renshaMultiplier: number        // 連射倍率（累積、初期1.0、+1ずつ増加）
+  readonly nobiTakenokoMultiplier: number  // のびのびタケノコ倍率（累積、初期1.0、+0.5ずつ増加）
+  readonly nobiKaniMultiplier: number      // のびのびカニ倍率（累積、初期1.0、+0.5ずつ増加）
+  readonly scriptLineBonus: number         // 台本ライン数ボーナス（0, 1, or 2）
+  readonly timingMultiplier: number        // タイミング倍率（1 or 3）
+  readonly copyTargetRelicId: RelicId | null // コピー対象のレリックID
+  readonly copyMultiplier: number          // コピーによる乗算倍率（1=無効）
+  readonly copyBonus: number               // コピーによる加算ボーナス（0=無効）
+  readonly copyLineBonus: number           // コピーによるライン数加算（台本コピー時、0, 1, or 2）
 }
 ```
 
@@ -290,4 +297,7 @@ interface ScoreAnimationState {
 
 ## 更新履歴
 
+- 2026-02-19: RelicEffectResultの各倍率プロパティにコメント追加（初期値、増分、発動条件を明記）。タイミング倍率（1 or 3）を追記
+- 2026-02-19: ScoreBreakdown型に `blockPoints`/`linePoints` 追加、`fullClearBonus` → `fullClearMultiplier` に修正。RelicEffectResult型も同様に修正。RelicEffectContextに `remainingHands` 追加
+- 2026-02-18: ScoreBreakdown型とRelicEffectResult型に `scriptLineBonus` と `copyLineBonus` を追加（台本レリック効果のライン数加算方式への変更に対応）
 - 2026-02-17: data-structures.md から分割して新規作成

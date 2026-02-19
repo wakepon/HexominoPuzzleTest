@@ -1,4 +1,5 @@
 import type { ActivatedRelicInfo } from '../Effect/RelicEffectTypes'
+import type { PatternId, SealId } from '../Core/Id'
 
 /**
  * 消去対象セル
@@ -11,6 +12,11 @@ export interface ClearingCell {
   // 新しいコード用エイリアス
   readonly row: number
   readonly col: number
+  // 順次消去用（オプショナル）
+  readonly delay?: number
+  readonly pattern?: PatternId | null
+  readonly seal?: SealId | null
+  readonly chargeValue?: number
 }
 
 /**
@@ -20,7 +26,8 @@ export interface ClearingAnimationState {
   readonly isAnimating: boolean
   readonly cells: readonly ClearingCell[]
   readonly startTime: number
-  readonly duration: number
+  readonly duration: number           // 全体の所要時間（スタガード込み）
+  readonly perCellDuration: number    // 各セルのアニメーション時間
 }
 
 /**
@@ -28,12 +35,14 @@ export interface ClearingAnimationState {
  */
 export const createClearingAnimation = (
   cells: readonly ClearingCell[],
-  duration: number
+  duration: number,
+  perCellDuration: number = duration
 ): ClearingAnimationState => ({
   isAnimating: true,
   cells,
   startTime: Date.now(),
   duration,
+  perCellDuration,
 })
 
 /**

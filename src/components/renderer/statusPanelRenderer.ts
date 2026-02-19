@@ -24,11 +24,9 @@ interface StatusPanelData {
   roundInfo: RoundInfo
   remainingHands: number
   bandaidCountdown: number | null
-  timingCountdown: number | null
   timingBonusActive: boolean
   pendingPhase: GamePhase | null
   scoreAnimation: ScoreAnimationState | null
-  copyTimingCountdown: number | null
   copyBandaidCountdown: number | null
   amuletStock: readonly Amulet[]
 }
@@ -172,30 +170,23 @@ export function renderStatusPanel(
     ctx.fillText(`🩹${data.bandaidCountdown}`, padding + 240, bottomY + 25)
   }
 
-  // タイミングカウントダウン表示
-  if (data.timingCountdown !== null) {
+  // タイミングボーナス表示（残りハンド数が3の倍数のとき）
+  if (data.timingBonusActive) {
     ctx.font = `${style.fontWeight} ${style.handFontSize}px ${style.fontFamily}`
-    ctx.fillStyle = data.timingBonusActive ? '#FFD700' : '#AAAAAA'
+    ctx.fillStyle = '#FFD700'
     const timingX = data.bandaidCountdown !== null ? padding + 310 : padding + 240
-    ctx.fillText(`⌛${data.timingCountdown}`, timingX, bottomY + 25)
+    ctx.fillText('⌛×3', timingX, bottomY + 25)
   }
 
   // コピーレリック用カウントダウン表示
   let copyCounterX = padding + 240
   if (data.bandaidCountdown !== null) copyCounterX += 70
-  if (data.timingCountdown !== null) copyCounterX += 70
+  if (data.timingBonusActive) copyCounterX += 70
 
   if (data.copyBandaidCountdown !== null) {
     ctx.font = `${style.fontWeight} ${style.handFontSize}px ${style.fontFamily}`
     ctx.fillStyle = '#9370DB'
     ctx.fillText(`🪞🩹${data.copyBandaidCountdown}`, copyCounterX, bottomY + 25)
-    copyCounterX += 80
-  }
-
-  if (data.copyTimingCountdown !== null) {
-    ctx.font = `${style.fontWeight} ${style.handFontSize}px ${style.fontFamily}`
-    ctx.fillStyle = '#9370DB'
-    ctx.fillText(`🪞⌛${data.copyTimingCountdown}`, copyCounterX, bottomY + 25)
   }
 
   // === 護符ストックセクション ===

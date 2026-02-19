@@ -108,7 +108,6 @@ export function calculateScore(completedLines: CompletedLines): number {
  * パターン効果、シール効果、レリック効果を考慮したスコアを計算
  * @param board 現在のボード状態
  * @param completedLines 完成したライン情報
- * @param comboCount 現在のコンボ回数
  * @param relicContext レリック効果コンテキスト（null可）
  * @param luckyRandom 乱数生成関数（テスト用に注入可能）
  * @returns スコア計算の詳細内訳
@@ -116,7 +115,6 @@ export function calculateScore(completedLines: CompletedLines): number {
 export function calculateScoreWithEffects(
   board: Board,
   completedLines: CompletedLines,
-  comboCount: number,
   relicContext: RelicEffectContext | null = null,
   luckyRandom: () => number = Math.random,
   relicDisplayOrder: readonly RelicId[] = []
@@ -141,7 +139,7 @@ export function calculateScoreWithEffects(
       chainMasterMultiplier: 1,
       sizeBonusTotal: 0,
       sizeBonusRelicId: null,
-      fullClearBonus: 0,
+      fullClearMultiplier: 1,
       relicBonusTotal: 0,
       singleLineMultiplier: 1,
       takenokoMultiplier: 1,
@@ -149,11 +147,14 @@ export function calculateScoreWithEffects(
       renshaMultiplier: 1,
       nobiTakenokoMultiplier: 1,
       nobiKaniMultiplier: 1,
-      scriptBonus: 0,
+      scriptLineBonus: 0,
       timingMultiplier: 1,
       copyTargetRelicId: null,
       copyMultiplier: 1,
       copyBonus: 0,
+      copyLineBonus: 0,
+      blockPoints: 0,
+      linePoints: 0,
       finalScore: 0,
     }
   }
@@ -165,7 +166,6 @@ export function calculateScoreWithEffects(
     board,
     cellsToRemove,
     totalLines,
-    comboCount,
     relicContext,
     luckyRandom,
     relicDisplayOrder,

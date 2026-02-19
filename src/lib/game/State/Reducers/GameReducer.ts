@@ -47,7 +47,7 @@ import {
   clearLines,
   calculateScoreWithEffects,
 } from '../../Services/LineService'
-import { hasComboPattern, calculateScoreBreakdown } from '../../Domain/Effect/PatternEffectHandler'
+import { calculateScoreBreakdown } from '../../Domain/Effect/PatternEffectHandler'
 import {
   getActivatedRelicsFromScoreBreakdown,
   hasRelic,
@@ -58,7 +58,6 @@ import {
   updateNobiTakenokoMultiplier,
   updateNobiKaniMultiplier,
   updateBandaidCounter,
-  updateTimingCounter,
   createInitialCopyRelicState,
 } from '../../Domain/Effect/RelicState'
 import type { CopyRelicState } from '../../Domain/Effect/RelicState'
@@ -91,6 +90,7 @@ import { calculateRelicSellPrice } from '../../Services/ShopPriceCalculator'
 import { getPiecePattern, createPieceWithPattern, createPiece } from '../../Services/PieceService'
 import { DefaultRandom } from '../../Utils/Random'
 import { CLEAR_ANIMATION, RELIC_EFFECT_STYLE, GRID_SIZE, MAX_RELIC_SLOTS } from '../../Data/Constants'
+import { createSequentialClearingCells } from '../../Services/ClearingCellService'
 import type { Amulet } from '../../Domain/Effect/Amulet'
 import { AMULET_DEFINITIONS, MAX_AMULET_STOCK } from '../../Domain/Effect/Amulet'
 import type { AmuletModalState } from '../../Domain/Effect/AmuletModalState'
@@ -111,25 +111,13 @@ import { generateScriptLines } from '../../Domain/Effect/ScriptRelicState'
 function updateRelicMultipliers(
   currentState: RelicMultiplierState,
   ownedRelics: readonly RelicId[],
-  totalLines: number,
-  rowLines: number,
-  colLines: number
+  totalLines: number
 ): RelicMultiplierState {
   let newState = currentState
 
   // 2-D: 連射倍率の更新
   if (hasRelic(ownedRelics, 'rensha')) {
     newState = updateRenshaMultiplier(newState, totalLines)
-  }
-
-  // 2-E: のびのびタケノコ倍率の更新
-  if (hasRelic(ownedRelics, 'nobi_takenoko')) {
-    newState = updateNobiTakenokoMultiplier(newState, rowLines, colLines)
-  }
-
-  // 2-F: のびのびカニ倍率の更新
-  if (hasRelic(ownedRelics, 'nobi_kani')) {
-    newState = updateNobiKaniMultiplier(newState, rowLines, colLines)
   }
 
   return newState
@@ -141,27 +129,12 @@ function updateRelicMultipliers(
 function updateCopyRelicCounters(
   copyState: CopyRelicState | null,
   handConsumed: boolean,
-  totalLines: number,
-  rowLines: number,
-  colLines: number
+  totalLines: number
 ): CopyRelicState | null {
   if (!copyState || !copyState.targetRelicId) return copyState
 
   const targetType = copyState.targetRelicId as string
   let updated = copyState
-
-  // タイミングカウンター
-  if (targetType === 'timing') {
-    if (handConsumed) {
-      if (updated.timingBonusActive) {
-        updated = { ...updated, timingCounter: 0, timingBonusActive: false }
-      } else {
-        const newCounter = updated.timingCounter + 1
-        const bonusPending = newCounter >= 2 // TIMING_TRIGGER_COUNT - 1
-        updated = { ...updated, timingCounter: newCounter, timingBonusActive: bonusPending }
-      }
-    }
-  }
 
   // 絆創膏カウンター
   if (targetType === 'bandaid' && handConsumed) {
@@ -179,24 +152,6 @@ function updateCopyRelicCounters(
       updated = { ...updated, renshaMultiplier: 1.0 }
     } else {
       updated = { ...updated, renshaMultiplier: updated.renshaMultiplier + RELIC_EFFECT_VALUES.RENSHA_INCREMENT }
-    }
-  }
-
-  // のびのびタケノコカウンター
-  if (targetType === 'nobi_takenoko') {
-    if (rowLines > 0) {
-      updated = { ...updated, nobiTakenokoMultiplier: 1.0 }
-    } else if (colLines > 0) {
-      updated = { ...updated, nobiTakenokoMultiplier: updated.nobiTakenokoMultiplier + 0.5 }
-    }
-  }
-
-  // のびのびカニカウンター
-  if (targetType === 'nobi_kani') {
-    if (colLines > 0) {
-      updated = { ...updated, nobiKaniMultiplier: 1.0 }
-    } else if (rowLines > 0) {
-      updated = { ...updated, nobiKaniMultiplier: updated.nobiKaniMultiplier + 0.5 }
     }
   }
 
@@ -293,10 +248,11 @@ function buildScoreBonuses(breakdown: ScoreBreakdown): ScoreBonus[] {
       amount: breakdown.sizeBonusTotal,
     })
   }
-  if (breakdown.fullClearBonus > 0) {
+  if (breakdown.fullClearMultiplier > 1) {
     bonuses.push({
       source: 'relic:full_clear_bonus',
-      amount: breakdown.fullClearBonus,
+      amount: 0,
+      multiplier: breakdown.fullClearMultiplier,
     })
   }
   if (breakdown.timingMultiplier > 1) {
@@ -450,7 +406,6 @@ function tryVolcanoActivation(
   state: GameState,
   resolved: { finalSlots: PieceSlot[]; finalDeck: DeckState; phase: ReturnType<typeof determinePhase> },
   newBoard: Board,
-  comboCount: number,
   newRelicMultiplierState: RelicMultiplierState
 ): PlacementResult | null {
   if (
@@ -461,16 +416,32 @@ function tryVolcanoActivation(
     return null
   }
 
-  const filledCells = getAllFilledCells(newBoard)
-  if (filledCells.length === 0) return null
+  const rawFilledCells = getAllFilledCells(newBoard)
+  if (rawFilledCells.length === 0) return null
+  const { sortedCells: filledCells, totalDuration: volcanoClearDuration } = createSequentialClearingCells(rawFilledCells, newBoard)
 
-  // スコア計算（linesCleared=VOLCANO_MULTIPLIER でブロック数×5）
+  // RelicEffectContext を構築（火山は全消去なので全行+全列=12ライン扱い）
+  const volcanoRelicContext: RelicEffectContext = {
+    ownedRelics: state.player.ownedRelics,
+    totalLines: GRID_SIZE * 2,
+    rowLines: GRID_SIZE,
+    colLines: GRID_SIZE,
+    placedBlockSize: 0,
+    isBoardEmptyAfterClear: true,
+    relicMultiplierState: newRelicMultiplierState,
+    completedRows: Array.from({ length: GRID_SIZE }, (_, i) => i),
+    completedCols: Array.from({ length: GRID_SIZE }, (_, i) => i),
+    scriptRelicLines: null,
+    copyRelicState: newRelicMultiplierState.copyRelicState,
+    remainingHands: resolved.finalDeck.remainingHands,
+  }
+
+  // スコア計算（linesCleared=GRID_SIZE で他レリック倍率も適用）
   const volcanoBreakdown = calculateScoreBreakdown(
     newBoard,
     filledCells,
-    RELIC_EFFECT_VALUES.VOLCANO_MULTIPLIER,
-    0,
-    null,
+    GRID_SIZE,
+    volcanoRelicContext,
     Math.random,
     state.player.relicDisplayOrder
   )
@@ -485,15 +456,20 @@ function tryVolcanoActivation(
     isAnimating: true as const,
     cells: filledCells,
     startTime: Date.now(),
-    duration: CLEAR_ANIMATION.duration,
+    duration: volcanoClearDuration,
+    perCellDuration: CLEAR_ANIMATION.perCellDuration,
   }
 
-  // レリック発動アニメーション（火山）
+  // レリック発動アニメーション（火山 + 他の発動レリック）
+  const otherActivatedRelics = getActivatedRelicsFromScoreBreakdown(volcanoBreakdown)
   const volcanoRelicAnim = createRelicActivationAnimation(
-    [{
-      relicId: 'volcano' as RelicId,
-      bonusValue: `+${volcanoBreakdown.finalScore}`,
-    }],
+    [
+      {
+        relicId: 'volcano' as RelicId,
+        bonusValue: `+${volcanoBreakdown.finalScore}`,
+      },
+      ...otherActivatedRelics,
+    ],
     RELIC_EFFECT_STYLE.duration
   )
 
@@ -513,7 +489,6 @@ function tryVolcanoActivation(
       dragState: initialDragState,
       deck: resolved.finalDeck,
       phase: volcanoPhase,
-      comboCount,
       relicMultiplierState: newRelicMultiplierState,
       clearingAnimation: clearAnim,
       relicActivationAnimation: volcanoRelicAnim,
@@ -539,8 +514,7 @@ function processPiecePlacement(
   piece: Piece,
   boardPos: { x: number; y: number },
   newSlots: PieceSlot[],
-  newDeck: DeckState,
-  comboCount: number
+  newDeck: DeckState
 ): PlacementResult {
   // ピース配置（chargeインクリメントは得点計算後に行う）
   const newBoard = placePieceOnBoard(state.board, piece, boardPos)
@@ -556,12 +530,6 @@ function processPiecePlacement(
       ? updateBandaidCounter(state.relicMultiplierState, handConsumed)
       : { newState: state.relicMultiplierState, shouldTrigger: false }
 
-  // タイミングカウンター更新（ハンド消費時のみ）
-  const { newState: timingUpdatedState, bonusApplies: timingBonusApplies } =
-    hasRelic(state.player.ownedRelics, 'timing')
-      ? updateTimingCounter(updatedMultState, handConsumed)
-      : { newState: updatedMultState, bonusApplies: false }
-
   // 配置後の状態を計算
   const { finalSlots, finalDeck } = handlePlacement(newSlots, newDeck, isNohand, bandaidTrigger, state.roundInfo)
 
@@ -570,8 +538,9 @@ function processPiecePlacement(
   const totalLines = completedLines.rows.length + completedLines.columns.length
 
   if (totalLines > 0) {
-    // 石シールを除いた消去対象セルを取得
-    const cells = getCellsToRemoveWithFilter(newBoard, completedLines)
+    // 石シールを除いた消去対象セルを取得し、順次消去用にソート＋ディレイ割り当て
+    const rawCells = getCellsToRemoveWithFilter(newBoard, completedLines)
+    const { sortedCells: cells, totalDuration: clearDuration } = createSequentialClearingCells(rawCells, newBoard, completedLines)
 
     emitLinesCompleted(
       completedLines.rows,
@@ -585,20 +554,37 @@ function processPiecePlacement(
     // 消去後の盤面を先に計算（全消し判定用）
     const boardAfterClear = clearLines(newBoard, cells)
 
-    // レリック効果コンテキストを作成
-    // relicContextには「今回ボーナスが適用されるか」のフラグを渡す
-    const relicContextMultState = {
-      ...timingUpdatedState,
-      timingBonusActive: timingBonusApplies,
+    // のびのび倍率をスコア計算前に更新（初回から効果を出すため）
+    let preUpdatedMultState = updatedMultState
+    if (hasRelic(state.player.ownedRelics, 'nobi_takenoko')) {
+      preUpdatedMultState = updateNobiTakenokoMultiplier(preUpdatedMultState, completedLines.rows.length, completedLines.columns.length)
     }
-    // コピーレリックのタイミングボーナス判定（独自カウンター）
-    const copyState = timingUpdatedState.copyRelicState
-    const copyTimingBonusApplies = copyState?.targetRelicId === ('timing' as RelicId)
-      ? copyState.timingBonusActive : false
-    const relicContextCopyState = copyState && copyTimingBonusApplies
-      ? { ...copyState, timingBonusActive: true }
-      : copyState
+    if (hasRelic(state.player.ownedRelics, 'nobi_kani')) {
+      preUpdatedMultState = updateNobiKaniMultiplier(preUpdatedMultState, completedLines.rows.length, completedLines.columns.length)
+    }
 
+    // コピーレリックののびのび倍率も事前更新
+    let preUpdatedCopyState = preUpdatedMultState.copyRelicState
+    if (preUpdatedCopyState && preUpdatedCopyState.targetRelicId) {
+      const targetType = preUpdatedCopyState.targetRelicId as string
+      if (targetType === 'nobi_takenoko') {
+        if (completedLines.rows.length > 0) {
+          preUpdatedCopyState = { ...preUpdatedCopyState, nobiTakenokoMultiplier: 1.0 }
+        } else if (completedLines.columns.length > 0) {
+          preUpdatedCopyState = { ...preUpdatedCopyState, nobiTakenokoMultiplier: preUpdatedCopyState.nobiTakenokoMultiplier + 0.5 }
+        }
+      }
+      if (targetType === 'nobi_kani') {
+        if (completedLines.columns.length > 0) {
+          preUpdatedCopyState = { ...preUpdatedCopyState, nobiKaniMultiplier: 1.0 }
+        } else if (completedLines.rows.length > 0) {
+          preUpdatedCopyState = { ...preUpdatedCopyState, nobiKaniMultiplier: preUpdatedCopyState.nobiKaniMultiplier + 0.5 }
+        }
+      }
+      preUpdatedMultState = { ...preUpdatedMultState, copyRelicState: preUpdatedCopyState }
+    }
+
+    // レリック効果コンテキストを作成
     const relicContext: RelicEffectContext = {
       ownedRelics: state.player.ownedRelics,
       totalLines,
@@ -606,17 +592,17 @@ function processPiecePlacement(
       colLines: completedLines.columns.length,
       placedBlockSize: getPieceBlockCount(piece),
       isBoardEmptyAfterClear: isBoardEmpty(boardAfterClear),
-      relicMultiplierState: relicContextMultState,
+      relicMultiplierState: preUpdatedMultState,
       completedRows: completedLines.rows,
       completedCols: completedLines.columns,
       scriptRelicLines: state.scriptRelicLines,
-      copyRelicState: relicContextCopyState,
+      copyRelicState: preUpdatedCopyState,
+      remainingHands: finalDeck.remainingHands,
     }
 
     const scoreBreakdown = calculateScoreWithEffects(
       newBoard,
       completedLines,
-      comboCount,
       relicContext,
       Math.random,
       state.player.relicDisplayOrder
@@ -647,20 +633,16 @@ function processPiecePlacement(
       : null
 
     const newRelicMultiplierState = updateRelicMultipliers(
-      timingUpdatedState,
+      preUpdatedMultState,
       state.player.ownedRelics,
-      totalLines,
-      completedLines.rows.length,
-      completedLines.columns.length
+      totalLines
     )
 
     // コピーレリックカウンター更新
     const updatedCopyState = updateCopyRelicCounters(
       newRelicMultiplierState.copyRelicState,
       handConsumed,
-      totalLines,
-      completedLines.rows.length,
-      completedLines.columns.length
+      totalLines
     )
 
     // 得点計算後にchargeValueをインクリメント（配置したピース自身は除外）
@@ -680,7 +662,8 @@ function processPiecePlacement(
           isAnimating: true,
           cells,
           startTime: Date.now(),
-          duration: CLEAR_ANIMATION.duration,
+          duration: clearDuration,
+          perCellDuration: CLEAR_ANIMATION.perCellDuration,
         },
         relicActivationAnimation: relicAnimation,
         scoreAnimation: scoreAnim,
@@ -689,7 +672,6 @@ function processPiecePlacement(
         deck: finalDeck,
         phase: shouldDefer ? 'playing' : newPhase,
         pendingPhase: shouldDefer ? newPhase : null,
-        comboCount,
         relicMultiplierState: {
           ...newRelicMultiplierState,
           copyRelicState: updatedCopyState,
@@ -701,10 +683,8 @@ function processPiecePlacement(
 
   // ライン消去なし
   const newRelicMultiplierState = updateRelicMultipliers(
-    timingUpdatedState,
+    updatedMultState,
     state.player.ownedRelics,
-    0,
-    0,
     0
   )
 
@@ -712,8 +692,6 @@ function processPiecePlacement(
   const updatedCopyStateNoLine = updateCopyRelicCounters(
     newRelicMultiplierState.copyRelicState,
     handConsumed,
-    0,
-    0,
     0
   )
 
@@ -724,7 +702,7 @@ function processPiecePlacement(
 
   // 火山レリック発動判定
   const volcanoResult = tryVolcanoActivation(
-    state, resolved, newBoard, comboCount, newRelicMultiplierState
+    state, resolved, newBoard, newRelicMultiplierState
   )
   if (volcanoResult) {
     return volcanoResult
@@ -742,7 +720,6 @@ function processPiecePlacement(
       dragState: initialDragState,
       deck: resolved.finalDeck,
       phase: resolved.phase,
-      comboCount,
       relicMultiplierState: {
         ...newRelicMultiplierState,
         copyRelicState: updatedCopyStateNoLine,
@@ -844,7 +821,6 @@ function createNextRoundState(currentState: GameState): GameState {
     player: currentState.player,
     targetScore,
     shopState: null,
-    comboCount: 0,
     relicMultiplierState: {
       ...INITIAL_RELIC_MULTIPLIER_STATE,
       // コピーレリック: カウンターリセットだがtargetは維持
@@ -952,9 +928,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         ) {
           const newDeck: DeckState = { ...state.deck, stockSlot2: null }
           const newSlots = [...state.pieceSlots]
-          const newComboCount = hasComboPattern(stock2Piece) ? state.comboCount + 1 : 0
 
-          const result = processPiecePlacement(state, stock2Piece, boardPos2, newSlots, newDeck, newComboCount)
+          const result = processPiecePlacement(state, stock2Piece, boardPos2, newSlots, newDeck)
           return result.newState
         }
 
@@ -979,9 +954,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           // ストックをクリアした新しいデッキを作成
           const newDeck: DeckState = { ...state.deck, stockSlot: null }
           const newSlots = [...state.pieceSlots]
-          const newComboCount = hasComboPattern(stockPiece) ? state.comboCount + 1 : 0
 
-          const result = processPiecePlacement(state, stockPiece, boardPos, newSlots, newDeck, newComboCount)
+          const result = processPiecePlacement(state, stockPiece, boardPos, newSlots, newDeck)
           return result.newState
         }
 
@@ -1013,9 +987,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         const newSlots = state.pieceSlots.map((s, i) =>
           i === slotIndex ? { ...s, piece: null } : s
         )
-        const newComboCount = hasComboPattern(slot.piece) ? state.comboCount + 1 : 0
 
-        const result = processPiecePlacement(state, slot.piece, boardPos, newSlots, state.deck, newComboCount)
+        const result = processPiecePlacement(state, slot.piece, boardPos, newSlots, state.deck)
         return result.newState
       }
 
@@ -1033,11 +1006,6 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       if (!canPlacePiece(state.board, slot.piece.shape, action.position, getPiecePattern(slot.piece))) {
         return state
       }
-
-      // comboCount更新（配置したピースがcomboパターンを持つか）
-      const newComboCount = hasComboPattern(slot.piece)
-        ? state.comboCount + 1
-        : 0
 
       // ピース配置（chargeインクリメントは配置処理後に行う）
       const newBoard = placePieceOnBoard(state.board, slot.piece, action.position)
@@ -1062,7 +1030,6 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         pieceSlots: finalSlots,
         deck: finalDeck,
         phase: newPhase,
-        comboCount: newComboCount,
       }
     }
 

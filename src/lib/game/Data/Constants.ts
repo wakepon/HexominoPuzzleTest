@@ -14,6 +14,11 @@ export const SLOT_COUNT = 3
 // レリック所持上限
 export const MAX_RELIC_SLOTS = 5
 
+// ツールチップ説明文のハイライト色
+export const MULTIPLIER_HIGHLIGHT_COLOR = '#FF4444'       // 乗算（×N）: 赤
+export const BLOCK_POINT_HIGHLIGHT_COLOR = '#FFFFFF'       // ブロック点+N: 白
+export const COLUMN_POINT_ADD_HIGHLIGHT_COLOR = '#FFD700'  // 列点+N: 黄
+
 // 色定義（木目調）
 export const COLORS = {
   // ボード関連
@@ -92,11 +97,19 @@ export const CELL_STYLE = {
 
 // 消去アニメーション設定
 export const CLEAR_ANIMATION = {
-  duration: 500,                 // アニメーション時間（ms）
+  // セルごとのアニメーション時間（ms）
+  perCellDuration: 400,
+  // スタガード設定
+  maxTotalDuration: 1500,        // 全体の最大所要時間（ms）
+  minStaggerDelay: 50,           // セル間の最小ディレイ（ms）
+  maxStaggerDelay: 120,          // セル間の最大ディレイ（ms）
+  // ビジュアルパラメータ
   maxRotation: Math.PI,          // 最大回転角度（180度）
   maxRise: 30,                   // 最大上昇距離（px）
   initialScale: 1.0,             // 初期スケール
   finalScale: 0,                 // 最終スケール
+  // 効果ラベル表示パラメータ
+  effectLabelRise: 40,           // 効果ラベルの上昇距離（px）
 }
 
 // スコア表示設定

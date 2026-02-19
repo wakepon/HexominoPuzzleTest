@@ -116,8 +116,8 @@ export function checkRelicActivations(
     scriptActive: scriptMatchCount > 0,
     scriptMatchCount,
 
-    // タイミング: ボーナスタイミング中かつライン消去あり
-    timingActive: hasRelic(ownedRelics, 'timing') && relicMultiplierState.timingBonusActive && totalLines > 0,
+    // タイミング: 残りハンド数が3で割り切れるときかつライン消去あり
+    timingActive: hasRelic(ownedRelics, 'timing') && context.remainingHands % 3 === 0 && totalLines > 0,
     timingMultiplier: RELIC_EFFECT_VALUES.TIMING_MULTIPLIER,
   }
 }
@@ -134,12 +134,13 @@ export function calculateRelicEffects(
   const chainMasterMultiplier = activations.chainMasterActive
     ? RELIC_EFFECT_VALUES.CHAIN_MASTER_MULTIPLIER
     : 1.0
+  // 仮値1をフラグとして設定（実際の値はPatternEffectHandlerで消去ブロック数に上書き）
   const sizeBonusTotal = activations.sizeBonusActiveRelicId !== null
-    ? RELIC_EFFECT_VALUES.SIZE_BONUS_SCORE
+    ? 1
     : 0
-  const fullClearBonus = activations.fullClearActive
-    ? RELIC_EFFECT_VALUES.FULL_CLEAR_BONUS
-    : 0
+  const fullClearMultiplier = activations.fullClearActive
+    ? RELIC_EFFECT_VALUES.FULL_CLEAR_MULTIPLIER
+    : 1
 
   // 2-A: シングルライン倍率
   const singleLineMultiplier = activations.singleLineActive
@@ -176,25 +177,25 @@ export function calculateRelicEffects(
     ? activations.timingMultiplier
     : 1
 
-  // 台本ボーナス: 2本同時=60, 1本=20, 0本=0
-  const scriptBonus = activations.scriptMatchCount === 2
-    ? RELIC_EFFECT_VALUES.SCRIPT_BONUS_DOUBLE
+  // 台本ライン数ボーナス: 2本同時=+2, 1本=+1, 0本=0
+  const scriptLineBonus = activations.scriptMatchCount === 2
+    ? RELIC_EFFECT_VALUES.SCRIPT_LINE_BONUS_DOUBLE
     : activations.scriptMatchCount === 1
-      ? RELIC_EFFECT_VALUES.SCRIPT_BONUS_SINGLE
+      ? RELIC_EFFECT_VALUES.SCRIPT_LINE_BONUS_SINGLE
       : 0
 
   // コピーレリック効果計算
   const copyResult = calculateCopyRelicEffects(context, {
     chainMasterMultiplier,
     sizeBonusTotal,
-    fullClearBonus,
+    fullClearMultiplier,
     singleLineMultiplier,
     takenokoMultiplier,
     kaniMultiplier,
     renshaMultiplier,
     nobiTakenokoMultiplier,
     nobiKaniMultiplier,
-    scriptBonus,
+    scriptLineBonus,
     timingMultiplier,
     activations,
   })
@@ -203,19 +204,20 @@ export function calculateRelicEffects(
     activations,
     chainMasterMultiplier,
     sizeBonusTotal,
-    fullClearBonus,
-    totalRelicBonus: sizeBonusTotal + fullClearBonus + scriptBonus + copyResult.copyBonus,
+    fullClearMultiplier,
+    totalRelicBonus: sizeBonusTotal + copyResult.copyBonus,
     singleLineMultiplier,
     takenokoMultiplier,
     kaniMultiplier,
     renshaMultiplier,
     nobiTakenokoMultiplier,
     nobiKaniMultiplier,
-    scriptBonus,
+    scriptLineBonus,
     timingMultiplier,
     copyTargetRelicId: copyResult.copyTargetRelicId,
     copyMultiplier: copyResult.copyMultiplier,
     copyBonus: copyResult.copyBonus,
+    copyLineBonus: copyResult.copyLineBonus,
   }
 }
 
@@ -264,11 +266,14 @@ function getCopyMultiplierForTarget(
       return 1
     }
     case 'timing': {
-      // コピー独自カウンター
-      if (copyState.timingBonusActive && context.totalLines > 0)
+      // 残りハンド数が3で割り切れるときかつライン消去あり
+      if (context.remainingHands % 3 === 0 && context.totalLines > 0)
         return RELIC_EFFECT_VALUES.TIMING_MULTIPLIER
       return 1
     }
+    case 'full_clear_bonus':
+      return originalEffects.activations.fullClearActive
+        ? RELIC_EFFECT_VALUES.FULL_CLEAR_MULTIPLIER : 1
     default:
       return 1
   }
@@ -281,8 +286,6 @@ function getCopyBonusForTarget(
   targetRelicType: string,
   originalEffects: {
     sizeBonusTotal: number
-    fullClearBonus: number
-    scriptBonus: number
     activations: RelicActivationState
   }
 ): number {
@@ -290,11 +293,24 @@ function getCopyBonusForTarget(
     case 'size_bonus_1': case 'size_bonus_2': case 'size_bonus_3':
     case 'size_bonus_4': case 'size_bonus_5': case 'size_bonus_6':
       return originalEffects.sizeBonusTotal
-    case 'full_clear_bonus':
-      return originalEffects.fullClearBonus
+    default:
+      return 0
+  }
+}
+
+/**
+ * コピーレリック効果のライン数加算ボーナスを取得（台本コピー用）
+ */
+function getCopyLineBonusForTarget(
+  targetRelicType: string,
+  originalEffects: {
+    scriptLineBonus: number
+  }
+): number {
+  switch (targetRelicType) {
     case 'script':
-      // 台本コピー: 指定ラインは増やさず、ボーナスのみ2重
-      return originalEffects.scriptBonus
+      // 台本コピー: 同じライン数ボーナスを加算
+      return originalEffects.scriptLineBonus
     default:
       return 0
   }
@@ -308,21 +324,21 @@ function calculateCopyRelicEffects(
   originalEffects: {
     chainMasterMultiplier: number
     sizeBonusTotal: number
-    fullClearBonus: number
+    fullClearMultiplier: number
     singleLineMultiplier: number
     takenokoMultiplier: number
     kaniMultiplier: number
     renshaMultiplier: number
     nobiTakenokoMultiplier: number
     nobiKaniMultiplier: number
-    scriptBonus: number
+    scriptLineBonus: number
     timingMultiplier: number
     activations: RelicActivationState
   }
-): { copyTargetRelicId: RelicId | null; copyMultiplier: number; copyBonus: number } {
+): { copyTargetRelicId: RelicId | null; copyMultiplier: number; copyBonus: number; copyLineBonus: number } {
   const copyState = context.copyRelicState
   if (!copyState || !copyState.targetRelicId) {
-    return { copyTargetRelicId: null, copyMultiplier: 1, copyBonus: 0 }
+    return { copyTargetRelicId: null, copyMultiplier: 1, copyBonus: 0, copyLineBonus: 0 }
   }
 
   const targetType = copyState.targetRelicId as string
@@ -333,10 +349,14 @@ function calculateCopyRelicEffects(
   // 加算レリックのコピー
   const copyBonus = getCopyBonusForTarget(targetType, originalEffects)
 
+  // ライン数加算レリックのコピー（台本）
+  const copyLineBonus = getCopyLineBonusForTarget(targetType, originalEffects)
+
   return {
     copyTargetRelicId: copyState.targetRelicId,
     copyMultiplier,
     copyBonus,
+    copyLineBonus,
   }
 }
 
@@ -352,7 +372,7 @@ export function getActivatedRelics(
   if (result.activations.chainMasterActive) {
     activated.push({
       relicId: 'chain_master' as RelicId,
-      bonusValue: '×1.5',
+      bonusValue: '列点×1.5',
     })
   }
 
@@ -366,7 +386,7 @@ export function getActivatedRelics(
   if (result.activations.fullClearActive) {
     activated.push({
       relicId: 'full_clear_bonus' as RelicId,
-      bonusValue: result.fullClearBonus,
+      bonusValue: `列点×${result.fullClearMultiplier}`,
     })
   }
 
@@ -374,7 +394,7 @@ export function getActivatedRelics(
   if (result.activations.singleLineActive) {
     activated.push({
       relicId: 'single_line' as RelicId,
-      bonusValue: `×${RELIC_EFFECT_VALUES.SINGLE_LINE_MULTIPLIER}`,
+      bonusValue: `列点×${RELIC_EFFECT_VALUES.SINGLE_LINE_MULTIPLIER}`,
     })
   }
 
@@ -382,7 +402,7 @@ export function getActivatedRelics(
   if (result.activations.takenokoActive) {
     activated.push({
       relicId: 'takenoko' as RelicId,
-      bonusValue: `×${result.takenokoMultiplier}`,
+      bonusValue: `列点×${result.takenokoMultiplier}`,
     })
   }
 
@@ -390,7 +410,7 @@ export function getActivatedRelics(
   if (result.activations.kaniActive) {
     activated.push({
       relicId: 'kani' as RelicId,
-      bonusValue: `×${result.kaniMultiplier}`,
+      bonusValue: `列点×${result.kaniMultiplier}`,
     })
   }
 
@@ -398,7 +418,7 @@ export function getActivatedRelics(
   if (result.activations.renshaActive) {
     activated.push({
       relicId: 'rensha' as RelicId,
-      bonusValue: `×${result.renshaMultiplier}`,
+      bonusValue: `列点×${result.renshaMultiplier}`,
     })
   }
 
@@ -406,7 +426,7 @@ export function getActivatedRelics(
   if (result.activations.nobiTakenokoActive) {
     activated.push({
       relicId: 'nobi_takenoko' as RelicId,
-      bonusValue: `×${result.nobiTakenokoMultiplier}`,
+      bonusValue: `列点×${result.nobiTakenokoMultiplier}`,
     })
   }
 
@@ -414,7 +434,7 @@ export function getActivatedRelics(
   if (result.activations.nobiKaniActive) {
     activated.push({
       relicId: 'nobi_kani' as RelicId,
-      bonusValue: `×${result.nobiKaniMultiplier}`,
+      bonusValue: `列点×${result.nobiKaniMultiplier}`,
     })
   }
 
@@ -422,7 +442,7 @@ export function getActivatedRelics(
   if (result.activations.scriptActive) {
     activated.push({
       relicId: 'script' as RelicId,
-      bonusValue: result.scriptBonus,
+      bonusValue: `+${result.scriptLineBonus}列`,
     })
   }
 
@@ -430,7 +450,7 @@ export function getActivatedRelics(
   if (result.activations.timingActive) {
     activated.push({
       relicId: 'timing' as RelicId,
-      bonusValue: `×${result.timingMultiplier}`,
+      bonusValue: `列点×${result.timingMultiplier}`,
     })
   }
 
@@ -439,7 +459,12 @@ export function getActivatedRelics(
     if (result.copyMultiplier > 1) {
       activated.push({
         relicId: 'copy' as RelicId,
-        bonusValue: `×${Number.isInteger(result.copyMultiplier) ? result.copyMultiplier : result.copyMultiplier.toFixed(1)}`,
+        bonusValue: `列点×${Number.isInteger(result.copyMultiplier) ? result.copyMultiplier : result.copyMultiplier.toFixed(1)}`,
+      })
+    } else if (result.copyLineBonus > 0) {
+      activated.push({
+        relicId: 'copy' as RelicId,
+        bonusValue: `+${result.copyLineBonus}列`,
       })
     } else if (result.copyBonus > 0) {
       activated.push({
@@ -454,7 +479,7 @@ export function getActivatedRelics(
 
 /**
  * レリック効果をスコアに適用
- * 適用順序: 基本スコア → 連鎖の達人(×1.5) → サイズボーナス(+20) → 全消しボーナス(+20)
+ * 適用順序: 基本スコア → 乗算レリック（連鎖の達人、全消し等） → 加算レリック（サイズボーナス、台本）
  */
 export function applyRelicEffectsToScore(
   baseScore: number,
@@ -463,14 +488,11 @@ export function applyRelicEffectsToScore(
   // 連鎖の達人: ×1.5（切り捨て）
   let score = Math.floor(baseScore * relicEffects.chainMasterMultiplier)
 
-  // サイズボーナス: +20
+  // 全消し倍率（他の乗算レリックと同じ扱い）
+  score = Math.floor(score * relicEffects.fullClearMultiplier)
+
+  // サイズボーナス: 消去ブロック数（PatternEffectHandlerで計算済み）
   score += relicEffects.sizeBonusTotal
-
-  // 全消しボーナス: +20
-  score += relicEffects.fullClearBonus
-
-  // 台本ボーナス
-  score += relicEffects.scriptBonus
 
   return score
 }
@@ -483,18 +505,19 @@ export function getActivatedRelicsFromScoreBreakdown(scoreBreakdown: {
   readonly chainMasterMultiplier: number
   readonly sizeBonusTotal: number
   readonly sizeBonusRelicId: RelicId | null
-  readonly fullClearBonus: number
+  readonly fullClearMultiplier: number
   readonly singleLineMultiplier?: number
   readonly takenokoMultiplier?: number
   readonly kaniMultiplier?: number
   readonly renshaMultiplier?: number
   readonly nobiTakenokoMultiplier?: number
   readonly nobiKaniMultiplier?: number
-  readonly scriptBonus?: number
+  readonly scriptLineBonus?: number
   readonly timingMultiplier?: number
   readonly copyTargetRelicId?: RelicId | null
   readonly copyMultiplier?: number
   readonly copyBonus?: number
+  readonly copyLineBonus?: number
 }): ActivatedRelicInfo[] {
   const activated: ActivatedRelicInfo[] = []
 
@@ -502,7 +525,7 @@ export function getActivatedRelicsFromScoreBreakdown(scoreBreakdown: {
   if (scoreBreakdown.chainMasterMultiplier > 1) {
     activated.push({
       relicId: 'chain_master' as RelicId,
-      bonusValue: '×1.5',
+      bonusValue: '列点×1.5',
     })
   }
 
@@ -513,10 +536,10 @@ export function getActivatedRelicsFromScoreBreakdown(scoreBreakdown: {
     })
   }
 
-  if (scoreBreakdown.fullClearBonus > 0) {
+  if (scoreBreakdown.fullClearMultiplier > 1) {
     activated.push({
       relicId: 'full_clear_bonus' as RelicId,
-      bonusValue: scoreBreakdown.fullClearBonus,
+      bonusValue: `列点×${scoreBreakdown.fullClearMultiplier}`,
     })
   }
 
@@ -524,7 +547,7 @@ export function getActivatedRelicsFromScoreBreakdown(scoreBreakdown: {
   if (scoreBreakdown.singleLineMultiplier && scoreBreakdown.singleLineMultiplier > 1) {
     activated.push({
       relicId: 'single_line' as RelicId,
-      bonusValue: `×${RELIC_EFFECT_VALUES.SINGLE_LINE_MULTIPLIER}`,
+      bonusValue: `列点×${RELIC_EFFECT_VALUES.SINGLE_LINE_MULTIPLIER}`,
     })
   }
 
@@ -532,7 +555,7 @@ export function getActivatedRelicsFromScoreBreakdown(scoreBreakdown: {
   if (scoreBreakdown.takenokoMultiplier && scoreBreakdown.takenokoMultiplier > 1) {
     activated.push({
       relicId: 'takenoko' as RelicId,
-      bonusValue: `×${scoreBreakdown.takenokoMultiplier}`,
+      bonusValue: `列点×${scoreBreakdown.takenokoMultiplier}`,
     })
   }
 
@@ -540,7 +563,7 @@ export function getActivatedRelicsFromScoreBreakdown(scoreBreakdown: {
   if (scoreBreakdown.kaniMultiplier && scoreBreakdown.kaniMultiplier > 1) {
     activated.push({
       relicId: 'kani' as RelicId,
-      bonusValue: `×${scoreBreakdown.kaniMultiplier}`,
+      bonusValue: `列点×${scoreBreakdown.kaniMultiplier}`,
     })
   }
 
@@ -548,7 +571,7 @@ export function getActivatedRelicsFromScoreBreakdown(scoreBreakdown: {
   if (scoreBreakdown.renshaMultiplier && scoreBreakdown.renshaMultiplier > 1) {
     activated.push({
       relicId: 'rensha' as RelicId,
-      bonusValue: `×${scoreBreakdown.renshaMultiplier}`,
+      bonusValue: `列点×${scoreBreakdown.renshaMultiplier}`,
     })
   }
 
@@ -556,7 +579,7 @@ export function getActivatedRelicsFromScoreBreakdown(scoreBreakdown: {
   if (scoreBreakdown.nobiTakenokoMultiplier && scoreBreakdown.nobiTakenokoMultiplier > 1) {
     activated.push({
       relicId: 'nobi_takenoko' as RelicId,
-      bonusValue: `×${scoreBreakdown.nobiTakenokoMultiplier}`,
+      bonusValue: `列点×${scoreBreakdown.nobiTakenokoMultiplier}`,
     })
   }
 
@@ -564,15 +587,15 @@ export function getActivatedRelicsFromScoreBreakdown(scoreBreakdown: {
   if (scoreBreakdown.nobiKaniMultiplier && scoreBreakdown.nobiKaniMultiplier > 1) {
     activated.push({
       relicId: 'nobi_kani' as RelicId,
-      bonusValue: `×${scoreBreakdown.nobiKaniMultiplier}`,
+      bonusValue: `列点×${scoreBreakdown.nobiKaniMultiplier}`,
     })
   }
 
   // 台本
-  if (scoreBreakdown.scriptBonus && scoreBreakdown.scriptBonus > 0) {
+  if (scoreBreakdown.scriptLineBonus && scoreBreakdown.scriptLineBonus > 0) {
     activated.push({
       relicId: 'script' as RelicId,
-      bonusValue: scoreBreakdown.scriptBonus,
+      bonusValue: `+${scoreBreakdown.scriptLineBonus}列`,
     })
   }
 
@@ -580,7 +603,7 @@ export function getActivatedRelicsFromScoreBreakdown(scoreBreakdown: {
   if (scoreBreakdown.timingMultiplier && scoreBreakdown.timingMultiplier > 1) {
     activated.push({
       relicId: 'timing' as RelicId,
-      bonusValue: `×${scoreBreakdown.timingMultiplier}`,
+      bonusValue: `列点×${scoreBreakdown.timingMultiplier}`,
     })
   }
 
@@ -590,7 +613,12 @@ export function getActivatedRelicsFromScoreBreakdown(scoreBreakdown: {
       const m = scoreBreakdown.copyMultiplier
       activated.push({
         relicId: 'copy' as RelicId,
-        bonusValue: `×${Number.isInteger(m) ? m : m.toFixed(1)}`,
+        bonusValue: `列点×${Number.isInteger(m) ? m : m.toFixed(1)}`,
+      })
+    } else if (scoreBreakdown.copyLineBonus && scoreBreakdown.copyLineBonus > 0) {
+      activated.push({
+        relicId: 'copy' as RelicId,
+        bonusValue: `+${scoreBreakdown.copyLineBonus}列`,
       })
     } else if (scoreBreakdown.copyBonus && scoreBreakdown.copyBonus > 0) {
       activated.push({

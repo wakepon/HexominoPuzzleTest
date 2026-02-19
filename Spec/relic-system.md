@@ -53,61 +53,58 @@
 
 | type | name | rarity | price | icon | description |
 |------|------|--------|-------|------|-------------|
-| `full_clear_bonus` | 全消しボーナス | common | 低価格 | 🏆 | 盤面を全て空にするとスコア加算 |
-| `size_bonus_1` | 1サイズボーナス | common | 低価格 | 1️⃣ | 1ブロックのピースでライン消去時にスコア加算 |
-| `size_bonus_2` | 2サイズボーナス | common | 低価格 | 2️⃣ | 2ブロックのピースでライン消去時にスコア加算 |
-| `size_bonus_3` | 3サイズボーナス | common | 低価格 | 3️⃣ | 3ブロックのピースでライン消去時にスコア加算 |
-| `size_bonus_4` | 4サイズボーナス | common | 低価格 | 4️⃣ | 4ブロックのピースでライン消去時にスコア加算 |
-| `size_bonus_5` | 5サイズボーナス | common | 低価格 | 5️⃣ | 5ブロックのピースでライン消去時にスコア加算 |
-| `size_bonus_6` | 6サイズボーナス | common | 低価格 | 6️⃣ | 6ブロックのピースでライン消去時にスコア加算 |
-| `chain_master` | 連鎖の達人 | rare | 中価格 | ⛓️ | 複数行列を同時消しでスコア倍率増加 |
-| `single_line` | シングルライン | uncommon | 中価格 | ➖ | 1行または1列のみ消した時、スコア倍率増加 |
-| `takenoko` | タケノコ | common | 低価格 | 🎋 | 縦列のみ揃った時、スコア×揃った列数 |
-| `kani` | カニ | common | 低価格 | 🦀 | 横列のみ揃った時、スコア×揃った行数 |
-| `rensha` | 連射 | rare | 中価格 | 🔫 | ライン消去ごとにスコア倍率が累積加算（消去なしでリセット） |
-| `nobi_takenoko` | のびのびタケノコ | uncommon | 中価格 | 🌱 | 縦列のみ揃えるたびに倍率累積加算（横列消去でリセット） |
-| `nobi_kani` | のびのびカニ | uncommon | 中価格 | 🦞 | 横列のみ揃えるたびに倍率累積加算（縦列消去でリセット） |
-| `hand_stock` | 手札ストック | epic | 高価格 | 📦 | ストック枠が出現し、ブロックを1つ保管可能 |
-| `script` | 台本 | uncommon | 中価格 | 📜 | ラウンド開始時に指定ラインが2本出現。揃えるとスコア加算（2本同時でボーナス増加） |
-| `volcano` | 火山 | uncommon | 中価格 | 🌋 | ラウンド中にブロックが消えなかった場合、ハンド0で全消去（ブロック数に応じたスコア加算） |
-| `bandaid` | 絆創膏 | rare | 中価格 | 🩹 | 一定ハンド消費ごとにノーハンド付きモノミノが手札に追加 |
-| `timing` | タイミング | uncommon | 中価格 | ⌛ | 一定ハンドに1回、スコア倍率増加 |
-| `copy` | コピー | epic | 高価格 | 🪞 | 1つ上のレリックの効果をコピー |
+| `full_clear_bonus` | 全消しボーナス | common | 10G | 🏆 | 盤面を全て空にした際に列点×5 |
+| `size_bonus_1` | 1サイズボーナス | common | 10G | 1️⃣ | 1ブロックのピースでライン消去時、各ブロック点を+1 |
+| `size_bonus_2` | 2サイズボーナス | common | 10G | 2️⃣ | 2ブロックのピースでライン消去時、各ブロック点を+1 |
+| `size_bonus_3` | 3サイズボーナス | common | 10G | 3️⃣ | 3ブロックのピースでライン消去時、各ブロック点を+1 |
+| `size_bonus_4` | 4サイズボーナス | common | 10G | 4️⃣ | 4ブロックのピースでライン消去時、各ブロック点を+1 |
+| `size_bonus_5` | 5サイズボーナス | common | 10G | 5️⃣ | 5ブロックのピースでライン消去時、各ブロック点を+1 |
+| `size_bonus_6` | 6サイズボーナス | common | 10G | 6️⃣ | 6ブロックのピースでライン消去時、各ブロック点を+1 |
+| `chain_master` | 連鎖の達人 | rare | 20G | ⛓️ | 複数行列を同時消しで列点×1.5 |
+| `single_line` | シングルライン | uncommon | 15G | ➖ | 1行または1列のみ消した時、列点×3 |
+| `takenoko` | タケノコ | common | 10G | 🎋 | 縦列のみ揃った時、列点×揃った列数 |
+| `kani` | カニ | common | 10G | 🦀 | 横列のみ揃った時、列点×揃った行数 |
+| `rensha` | 連射 | rare | 20G | 🔫 | ライン揃うたびに列点+1（揃わないとリセット） |
+| `nobi_takenoko` | のびのびタケノコ | uncommon | 15G | 🌱 | 縦列のみ揃えるたびに列点+0.5を加える（横列消しでリセット）初期値は列点×1 |
+| `nobi_kani` | のびのびカニ | uncommon | 15G | 🦞 | 横列のみ揃えるたびに列点+0.5を加える（縦列消しでリセット）初期値は列点×1 |
+| `hand_stock` | 手札ストック | epic | 25G | 📦 | ストック枠が出現し、ブロックを1つ保管可能 |
+| `script` | 台本 | uncommon | 15G | 📜 | ラウンド開始時に指定ラインが2本出現。揃えた際の列数+1、2本同時で+2 |
+| `volcano` | 火山 | uncommon | 15G | 🌋 | ラウンド中にブロックが消えなかった場合、ハンド0で全消去（ブロック数×フィールド最大列数） |
+| `bandaid` | 絆創膏 | rare | 20G | 🩹 | 3ハンド消費ごとにノーハンド付きモノミノが手札に追加 |
+| `timing` | タイミング | uncommon | 15G | ⌛ | 残りハンド数が3で割り切れるとき、列点×3 |
+| `copy` | コピー | epic | 25G | 🪞 | 1つ上のレリックの効果をコピー |
 
 ## RELIC_EFFECT_VALUES（効果値定数）
 
 `src/lib/game/Domain/Effect/Relic.ts` の `RELIC_EFFECT_VALUES` に定義された定数。
 
-| 定数名 | 用途 |
-|--------|------|
-| `CHAIN_MASTER_MULTIPLIER` | 連鎖の達人の倍率 |
-| `SIZE_BONUS_SCORE` | サイズボーナス系の加算スコア |
-| `FULL_CLEAR_BONUS` | 全消しボーナスの加算スコア |
-| `SINGLE_LINE_MULTIPLIER` | シングルラインの倍率 |
-| `RENSHA_INCREMENT` | 連射1回あたりの倍率加算量 |
-| `NOBI_INCREMENT` | のびのび系1回あたりの倍率加算量 |
-| `SCRIPT_BONUS_SINGLE` | 台本: 指定ライン1本揃い時の加算スコア |
-| `SCRIPT_BONUS_DOUBLE` | 台本: 指定ライン2本同時揃い時の加算スコア |
-| `VOLCANO_MULTIPLIER` | 火山: 消去ブロック数に掛ける倍率 |
-| `BANDAID_TRIGGER_COUNT` | 絆創膏: 発動に必要なハンド消費回数 |
-| `TIMING_TRIGGER_COUNT` | タイミング: 発動に必要なハンド消費回数 |
-| `TIMING_MULTIPLIER` | タイミングの倍率 |
+| 定数名 | 値 | 用途 |
+|--------|-----|------|
+| `CHAIN_MASTER_MULTIPLIER` | 1.5 | 連鎖の達人の列倍率 |
+| `FULL_CLEAR_MULTIPLIER` | 5 | 全消しボーナスの列倍率 |
+| `SINGLE_LINE_MULTIPLIER` | 3 | シングルラインの列倍率 |
+| `RENSHA_INCREMENT` | 1 | 連射1回あたりの累積倍率加算量 |
+| `NOBI_INCREMENT` | 0.5 | のびのび系1回あたりの累積倍率加算量 |
+| `SCRIPT_LINE_BONUS_SINGLE` | 1 | 台本: 指定ライン1本揃い時のライン数加算 |
+| `SCRIPT_LINE_BONUS_DOUBLE` | 2 | 台本: 指定ライン2本同時揃い時のライン数加算 |
+| `BANDAID_TRIGGER_COUNT` | 3 | 絆創膏: 発動に必要なハンド消費回数 |
+| `TIMING_MULTIPLIER` | 3 | タイミングの列倍率 |
 
 ## レリック効果の発動条件
 
 | type | 発動条件 | 効果種別 |
 |------|----------|----------|
-| `full_clear_bonus` | ライン消去後に盤面が完全に空 | 加算 |
-| `size_bonus_1〜6` | 対応するブロック数のピース配置でライン消去 | 加算 |
-| `chain_master` | 消去ライン数が2以上 | 乗算 |
-| `single_line` | 消去ライン数がちょうど1 | 乗算 |
-| `takenoko` | 縦列のみ消去（行消去なし、列消去1以上） | 乗算（消去列数） |
-| `kani` | 横列のみ消去（列消去なし、行消去1以上） | 乗算（消去行数） |
-| `rensha` | ライン消去あり | 乗算（累積倍率） |
-| `nobi_takenoko` | 縦列のみ消去 | 乗算（累積倍率） |
-| `nobi_kani` | 横列のみ消去 | 乗算（累積倍率） |
-| `script` | 台本で指定された行/列が揃った | 加算 |
-| `timing` | ボーナス待機状態かつライン消去あり | 乗算 |
+| `full_clear_bonus` | ライン消去後に盤面が完全に空 | 乗算（列点×5） |
+| `size_bonus_1〜6` | 対応するブロック数のピース配置でライン消去 | 加算（ブロック点+消去ブロック数） |
+| `chain_master` | 消去ライン数が2以上 | 乗算（列点×1.5） |
+| `single_line` | 消去ライン数がちょうど1 | 乗算（列点×3） |
+| `takenoko` | 縦列のみ消去（行消去なし、列消去1以上） | 乗算（列点×消去列数） |
+| `kani` | 横列のみ消去（列消去なし、行消去1以上） | 乗算（列点×消去行数） |
+| `rensha` | ライン消去あり | 乗算（列点×累積倍率、+1ずつ増加） |
+| `nobi_takenoko` | 縦列のみ消去 | 乗算（列点×累積倍率、+0.5ずつ増加） |
+| `nobi_kani` | 横列のみ消去 | 乗算（列点×累積倍率、+0.5ずつ増加） |
+| `script` | 台本で指定された行/列が揃った | ライン数加算（+1または+2） |
+| `timing` | 残りハンド数が3で割り切れる、かつライン消去あり | 乗算（列点×3） |
 | `copy` | コピー対象レリックの発動条件に準ずる | 乗算または加算 |
 
 ### タケノコ・カニの相互排他性
@@ -115,27 +112,28 @@
 - `takenoko`（縦列のみ）と `kani`（横列のみ）は同時発動しない
 - 縦列と横列が混在する消去では両方とも発動しない
 
-## スコア計算の適用順序
+## スコア計算の適用順序（A×B方式）
 
-最終スコアは以下の順序で計算される。
+最終スコアは **ブロック点(A) × 列点(B)** で計算される。
 
 ```
-1. 基本スコア = 総消去ブロック数 × 消去ライン数
-2. コンボボーナス（加算）
-3. lucky効果（乗算）
-4. シールスコアボーナス（加算）
-   ↓ ここまでが scoreBeforeRelics
-5. 乗算レリック（relicDisplayOrder の並び順に適用、各ステップで切り捨て）
-   - chain_master / single_line / takenoko / kani / nobi_takenoko / nobi_kani / rensha / timing
-   - copy（コピー対象レリックの直後に適用）
-   ↓ ここまでが scoreAfterRelicMultipliers
-6. 加算レリック（乗算後に一括加算）
-   - sizeBonusTotal（サイズボーナス）
-   - fullClearBonus（全消しボーナス）
-   - scriptBonus（台本ボーナス）
-   - copyBonus（コピー加算ボーナス）
-   ↓ 最終スコア (finalScore)
+ブロック点(A):
+  totalBlocks + sealScoreBonus
+  + 加算レリック（sizeBonusTotal, copyBonus）（relicDisplayOrder順）
+  + comboBonus
+
+列点(B):
+  linesCleared × luckyMultiplier + mossBonus
+  + 台本レリック加算（scriptLineBonus, copyLineBonus）
+  × 乗算レリック（relicDisplayOrder順、切り捨てなし）
+    chain_master / single_line / takenoko / kani / nobi_takenoko
+    / nobi_kani / rensha / timing / full_clear_bonus
+  × copy（コピー対象レリックの直後に適用）
+
+最終スコア = Math.floor(A × B)
 ```
+
+詳細は [game-mechanics.md](./game-mechanics.md) を参照。
 
 ### 乗算レリックの適用順序
 
@@ -146,7 +144,7 @@
 chain_master → single_line → takenoko → kani → nobi_takenoko → nobi_kani → rensha → timing
 ```
 
-各乗算ステップでは `Math.floor`（切り捨て）が適用される。
+各乗算ステップでは切り捨てなしで列点(B)に乗算される。最終的に `Math.floor(A × B)` で切り捨てが行われる。
 
 ### コピーレリックの乗算タイミング
 
@@ -170,7 +168,12 @@ chain_master → single_line → takenoko → kani → nobi_takenoko → nobi_ka
 - `rensha`, `nobi_takenoko`, `nobi_kani`, `timing`
 
 **加算系レリック**（ボーナス値をそのままコピー）:
-- `size_bonus_1〜6`, `full_clear_bonus`, `script`
+- `size_bonus_1〜6`
+
+※ `full_clear_bonus` は乗算系レリック（列点×5）のため、乗算系としてコピーされる。
+
+**ライン数加算系レリック**（ライン数ボーナスをそのままコピー）:
+- `script`
 
 ### コピーレリックの独自カウンター（2スロット目のストック）
 
@@ -236,11 +239,9 @@ interface RelicMultiplierState {
 
 ### タイミング（timing）の状態遷移
 
-- ハンド消費のたびにカウンターが+1される
-- カウンターが `TIMING_TRIGGER_COUNT - 1` に達するとボーナス待機状態（`timingBonusActive: true`）になる
-- ボーナス待機状態でハンド消費すると: 倍率がスコアに適用され、カウンターと待機状態がリセットされる
-- ノーハンドで消費した場合はカウンターが進まず、ボーナス待機状態が維持される
-- `getTimingCountdown` で発動まであと何ハンドかを取得可能
+- 発動条件: 残りハンド数が3で割り切れる、かつライン消去あり
+- 判定は消去時に行われ、残りハンド数（`remainingHands`）が `% 3 === 0` の場合に発動
+- 発動時は列点に×3の倍率が適用される
 
 ## 台本レリック（script）の仕組み
 
@@ -259,20 +260,27 @@ interface ScriptRelicLines {
 }
 ```
 
-### 発動時のスコア加算
+### 発動時のライン数加算
 
-- 指定ライン1本揃い: `SCRIPT_BONUS_SINGLE` を加算
-- 指定ライン2本同時揃い: `SCRIPT_BONUS_DOUBLE` を加算
+- 指定ライン1本揃い: `SCRIPT_LINE_BONUS_SINGLE`（+1）をライン数に加算
+- 指定ライン2本同時揃い: `SCRIPT_LINE_BONUS_DOUBLE`（+2）をライン数に加算
+- 加算されたライン数は列点(B)の計算に使用される
 
-### コピー時の台本ボーナス
+### コピー時の台本効果
 
-コピーレリックが台本をコピーした場合、指定ラインの本数は増加せず、スコアボーナスのみが重複して加算される。
+コピーレリックが台本をコピーした場合、指定ラインの本数は増加せず、ライン数加算のみが重複して適用される。
 
 ## 火山レリック（volcano）の仕組み
 
 - ラウンド中に一切ブロックが消えなかった場合に発動
 - ハンドが0になった時（または残り手札がなくなった時）に全消去を実行
-- 消去したブロック数に `VOLCANO_MULTIPLIER` を掛けた値がスコアに加算される
+- スコア計算: 消去ブロック数 × `GRID_SIZE`（フィールド最大列数=6）を基本スコアとする
+- 他レリックのスコア倍率効果も適用される（全6行+全6列=12ライン消去扱い）
+  - 連鎖の達人: totalLines=12 ≥ 2 → 発動（×1.5）
+  - 全消しボーナス: 全消去で常に盤面が空 → 発動（×5）
+  - タイミング: カウンター次第で発動（×2）
+  - シングルライン/タケノコ/カニ: 条件に合致しないため発動しない
+  - 台本/サイズボーナス: 無効化（scriptRelicLines=null, placedBlockSize=0）
 
 ## 手札ストック（hand_stock）の仕組み
 
@@ -382,6 +390,8 @@ interface PlayerState {
 
 ## 更新履歴
 
+- 2026-02-19: レリック定義テーブルのdescriptionをコードに合わせて更新。具体的な価格（10G/15G/20G/25G）を記載。タイミングレリックの判定条件を「残りハンド数が3で割り切れる」に修正
+- 2026-02-19: A×B方式スコア計算に基づき更新。full_clear_bonus→乗算レリック（列点×5）、RELIC_EFFECT_VALUES定数値追記、rensha増分+1
 - 2026-02-17: コードに基づいて全面書き直し（全レリック一覧・RELIC_EFFECT_VALUES定数・スコア適用順序・コピーレリック・台本・火山・絆創膏・タイミング・状態管理・ショップルールを追加）
 - 2026-02-17: レリック中心設計を反映（所持上限5枠、売却機能、レアリティ価格帯、カテゴリ拡充計画200〜300種、護符システム追加）
 - 2026-02-06: 初版作成（JSVersionSpecから移植）

@@ -34,9 +34,9 @@ export interface ScoreBreakdown {
   readonly goldCount: number // goldシール数（スコアには影響しないがReducerで使用）
   // レリック効果
   readonly chainMasterMultiplier: number // 連鎖の達人倍率（1.0 or 1.5）
-  readonly sizeBonusTotal: number // サイズボーナス（0 or 20）
+  readonly sizeBonusTotal: number // サイズボーナス（消去ブロック数 or 0）
   readonly sizeBonusRelicId: RelicId | null // 発動したサイズボーナスレリックID
-  readonly fullClearBonus: number // 全消しボーナス（0 or 20）
+  readonly fullClearMultiplier: number // 全消し倍率（1 or 5）
   readonly relicBonusTotal: number // レリック加算ボーナス合計
   // 2-A: シングルライン
   readonly singleLineMultiplier: number // シングルライン倍率（1 or 3）
@@ -51,20 +51,15 @@ export interface ScoreBreakdown {
   // 2-F: のびのびカニ
   readonly nobiKaniMultiplier: number // のびのびカニ倍率（累積、1.0から+0.5ずつ増加）
   // 台本
-  readonly scriptBonus: number // 台本ボーナス（0, 20, or 60）
+  readonly scriptLineBonus: number // 台本ライン数ボーナス（0, 1, or 2）
   // タイミング
-  readonly timingMultiplier: number // タイミング倍率（1 or 2）
+  readonly timingMultiplier: number // タイミング倍率（1 or 3）
   // コピーレリック
   readonly copyTargetRelicId: RelicId | null // コピー対象のレリックID
   readonly copyMultiplier: number // コピーによる乗算倍率（1=無効）
   readonly copyBonus: number // コピーによる加算ボーナス（0=無効）
-  readonly finalScore: number // 最終スコア
-}
-
-/**
- * コンボ状態
- */
-export interface ComboState {
-  readonly count: number // 現在のコンボ回数
-  readonly lastPatternWasCombo: boolean // 直前がcomboパターンだったか
+  readonly copyLineBonus: number // コピーによるライン数加算（台本コピー時、0, 1, or 2）
+  readonly blockPoints: number // ブロック点(A): パターン+シール+加算レリック+コンボ
+  readonly linePoints: number // 列点(B): ライン数×lucky×乗算レリック
+  readonly finalScore: number // 最終スコア = Math.floor(A × B)
 }

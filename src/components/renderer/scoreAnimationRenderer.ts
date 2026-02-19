@@ -7,6 +7,8 @@
 
 import type { ScoreAnimationState } from '../../lib/game/Domain/Animation/ScoreAnimationState'
 import { SCORE_ANIMATION } from '../../lib/game/Domain/Animation/ScoreAnimationState'
+import { MULTIPLIER_HIGHLIGHT_COLOR } from '../../lib/game/Data/Constants'
+import { drawTextWithMultiplierHighlight } from './TextHighlightUtils'
 
 /** 早送りボタンの領域 */
 export interface FastForwardButtonArea {
@@ -79,12 +81,18 @@ export function renderScoreAnimation(
   } else {
     // ラベル
     ctx.font = 'bold 13px Arial, sans-serif'
-    ctx.fillStyle = '#AAAAAA'
     ctx.textAlign = 'left'
     ctx.textBaseline = 'top'
     ctx.shadowColor = '#000000'
     ctx.shadowBlur = 2
-    ctx.fillText(step.label, panelX, formulaY)
+    drawTextWithMultiplierHighlight(
+      ctx,
+      step.label,
+      panelX,
+      formulaY,
+      '#AAAAAA',
+      MULTIPLIER_HIGHLIGHT_COLOR
+    )
 
     // 式文字列
     const formulaWidth = ctx.measureText(step.formula).width

@@ -21,6 +21,7 @@ export interface RelicEffectContext {
   readonly completedCols: readonly number[]  // 揃った列のインデックス
   readonly scriptRelicLines: ScriptRelicLines | null  // 台本レリックの指定ライン
   readonly copyRelicState?: CopyRelicState | null  // コピーレリック状態（オプショナル）
+  readonly remainingHands: number  // 残りハンド数（タイミングレリック判定用）
 }
 
 /**
@@ -61,7 +62,7 @@ export interface RelicActivationState {
 
   // タイミング
   readonly timingActive: boolean // タイミングボーナス中
-  readonly timingMultiplier: number // 1 or 2
+  readonly timingMultiplier: number // 1 or 3
 }
 
 /**
@@ -72,9 +73,9 @@ export interface RelicEffectResult {
 
   // 既存レリック
   readonly chainMasterMultiplier: number // 1.0 or 1.5
-  readonly sizeBonusTotal: number // 0 or 20
-  readonly fullClearBonus: number // 0 or 20
-  readonly totalRelicBonus: number // 加算ボーナス合計（サイズボーナス + 全消し）
+  readonly sizeBonusTotal: number // 0 or 1（フラグ。実際の値はPatternEffectHandlerで消去ブロック数に上書き）
+  readonly fullClearMultiplier: number // 1 or 5
+  readonly totalRelicBonus: number // 加算ボーナス合計（サイズボーナス等）
 
   // 2-A: シングルライン倍率
   readonly singleLineMultiplier: number // 1 or 3
@@ -94,16 +95,17 @@ export interface RelicEffectResult {
   // 2-F: のびのびカニ倍率
   readonly nobiKaniMultiplier: number // 累積倍率（発動しなければ1.0）
 
-  // 台本ボーナス
-  readonly scriptBonus: number // 0, 20, or 60
+  // 台本ライン数ボーナス
+  readonly scriptLineBonus: number // 0, 1, or 2
 
   // タイミング倍率
-  readonly timingMultiplier: number // 1 or 2
+  readonly timingMultiplier: number // 1 or 3
 
   // コピーレリック
   readonly copyTargetRelicId: RelicId | null // コピー対象のレリックID
   readonly copyMultiplier: number // コピーによる乗算倍率（1=無効）
   readonly copyBonus: number // コピーによる加算ボーナス（0=無効）
+  readonly copyLineBonus: number // コピーによるライン数加算（台本コピー時、0, 1, or 2）
 }
 
 /**
