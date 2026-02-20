@@ -54,6 +54,7 @@ export type RelicType =
   | 'merchant'          // 商人
   | 'treasure_hunter'   // トレジャーハンター
   | 'cross'             // 十字
+  | 'midas'             // ミダス
 
 /**
  * レリック定義
@@ -422,6 +423,15 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     rarity: 'rare',
     price: 20,
     icon: '✝️',
+  },
+  midas: {
+    id: 'midas' as RelicId,
+    type: 'midas',
+    name: 'ミダス',
+    description: '全消し時に+5G獲得',
+    rarity: 'uncommon',
+    price: 15,
+    icon: '✨',
   },
 }
 

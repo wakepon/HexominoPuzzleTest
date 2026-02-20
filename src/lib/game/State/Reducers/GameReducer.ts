@@ -54,6 +54,7 @@ import {
 } from '../../Domain/Effect/RelicEffectHandler'
 import { getRelicModule } from '../../Domain/Effect/Relics/RelicRegistry'
 import { TREASURE_HUNTER_GOLD_BONUS } from '../../Domain/Effect/Relics/TreasureHunter'
+import { MIDAS_GOLD_BONUS } from '../../Domain/Effect/Relics/Midas'
 import {
   INITIAL_RELIC_MULTIPLIER_STATE,
   createInitialCopyRelicState,
@@ -407,6 +408,10 @@ function tryVolcanoActivation(
   if (hasRelic(state.player.ownedRelics, 'treasure_hunter') && volcanoBreakdown.goldCount > 0) {
     goldGain += volcanoBreakdown.goldCount * TREASURE_HUNTER_GOLD_BONUS
   }
+  // midas レリック: 火山は全消去なので常に+5G
+  if (hasRelic(state.player.ownedRelics, 'midas')) {
+    goldGain += MIDAS_GOLD_BONUS
+  }
   const newPlayer = addGold(state.player, goldGain)
   const volcanoPhase = determinePhase(newScore, state.targetScore, 0)
 
@@ -560,6 +565,10 @@ function processPiecePlacement(
     // treasure_hunter レリック: ゴールドシール数分の追加ゴールド
     if (hasRelic(state.player.ownedRelics, 'treasure_hunter') && scoreBreakdown.goldCount > 0) {
       goldGain += scoreBreakdown.goldCount * TREASURE_HUNTER_GOLD_BONUS
+    }
+    // midas レリック: 全消し時に+5G
+    if (hasRelic(state.player.ownedRelics, 'midas') && isBoardEmpty(boardAfterClear)) {
+      goldGain += MIDAS_GOLD_BONUS
     }
     const newPlayer = addGold(state.player, goldGain)
     const newPhase = determinePhase(newScore, state.targetScore, finalDeck.remainingHands)

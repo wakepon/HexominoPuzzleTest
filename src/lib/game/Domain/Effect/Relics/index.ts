@@ -72,6 +72,7 @@ import { collectorRelic } from './Collector'
 import { merchantRelic } from './Merchant'
 import { treasureHunterRelic } from './TreasureHunter'
 import { crossRelic } from './Cross'
+import { midasRelic } from './Midas'
 
 /**
  * 全レリックモジュールの配列
@@ -132,6 +133,8 @@ const allModules: readonly RelicModule[] = [
   treasureHunterRelic,
   // 加算系（十字）
   crossRelic,
+  // 非スコア系（ミダス）
+  midasRelic,
 ]
 
 /**
