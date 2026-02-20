@@ -81,6 +81,7 @@ import { minimalistRelic } from './Minimalist'
 import { overloadRelic } from './Overload'
 import { alchemistRelic } from './Alchemist'
 import { orchestraRelic } from './Orchestra'
+import { amplifierRelic } from './Amplifier'
 
 /**
  * 全レリックモジュールの配列
@@ -159,6 +160,8 @@ const allModules: readonly RelicModule[] = [
   alchemistRelic,
   // 乗算系（オーケストラ）
   orchestraRelic,
+  // 非スコア系（アンプリファイア）
+  amplifierRelic,
 ]
 
 /**

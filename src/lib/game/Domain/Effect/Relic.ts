@@ -63,6 +63,7 @@ export type RelicType =
   | 'overload'          // 過負荷
   | 'alchemist'         // 錬金術師
   | 'orchestra'         // オーケストラ
+  | 'amplifier'         // アンプリファイア
 
 /**
  * レリック定義
@@ -512,6 +513,15 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     rarity: 'uncommon',
     price: 15,
     icon: '🎵',
+  },
+  amplifier: {
+    id: 'amplifier' as RelicId,
+    type: 'amplifier',
+    name: 'アンプリファイア',
+    description: 'enhancedパターン（★）のブロック点ボーナスを+2から+5に強化',
+    rarity: 'epic',
+    price: 25,
+    icon: '🔊',
   },
 }
 

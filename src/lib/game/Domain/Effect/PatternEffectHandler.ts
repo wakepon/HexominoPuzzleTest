@@ -12,6 +12,7 @@ import { GRID_SIZE } from '../../Data/Constants'
 import { getRelicModule } from './Relics/RelicRegistry'
 import { evaluateRelicEffects, evaluateCopyRelicEffect } from './Relics/RelicEffectEngine'
 import { isCopyRelicInactive } from './CopyRelicResolver'
+import { AMPLIFIED_ENHANCED_BONUS } from './Relics/Amplifier'
 
 /**
  * 隣接セルの位置（上下左右）
@@ -55,18 +56,20 @@ function countEdgeContacts(row: number, col: number): number {
 // === enhanced効果 ===
 /**
  * enhanced効果を計算
- * enhanced付きセルの数 × 2 を返す（乗算対象に加算）
+ * enhanced付きセルの数 × bonusPerBlock を返す（乗算対象に加算）
+ * デフォルトは +2、amplifier所持時は +5
  */
 export function calculateEnhancedBonus(
   board: Board,
-  cellsToRemove: readonly ClearingCell[]
+  cellsToRemove: readonly ClearingCell[],
+  bonusPerBlock: number = 2
 ): number {
   let bonus = 0
   for (const cell of cellsToRemove) {
     const boardCell = board[cell.row][cell.col]
     if (boardCell.pattern === ('enhanced' as PatternId)) {
       const multiplier = boardCell.seal === ('multi' as SealId) ? 2 : 1
-      bonus += 2 * multiplier
+      bonus += bonusPerBlock * multiplier
     }
   }
   return bonus
@@ -206,10 +209,11 @@ export function calculateComboBonus(
  */
 export function calculatePatternEffects(
   board: Board,
-  cellsToRemove: readonly ClearingCell[]
+  cellsToRemove: readonly ClearingCell[],
+  enhancedBonusPerBlock: number = 2
 ): PatternEffectResult {
   return {
-    enhancedBonus: calculateEnhancedBonus(board, cellsToRemove),
+    enhancedBonus: calculateEnhancedBonus(board, cellsToRemove, enhancedBonusPerBlock),
     auraBonus: calculateAuraBonus(board, cellsToRemove),
     mossBonus: calculateMossBonus(board, cellsToRemove),
     chargeBonus: calculateChargeBonus(board, cellsToRemove),
@@ -238,8 +242,12 @@ export function calculateScoreBreakdown(
     (c) => board[c.row][c.col].pattern === ('charge' as PatternId)
   ).length
 
+  // amplifier所持チェック → enhancedボーナス値決定
+  const hasAmplifier = relicContext?.ownedRelics.some(r => r === ('amplifier' as RelicId)) ?? false
+  const enhancedBonusPerBlock = hasAmplifier ? AMPLIFIED_ENHANCED_BONUS : 2
+
   // パターン効果を計算
-  const patternEffects = calculatePatternEffects(board, cellsToRemove)
+  const patternEffects = calculatePatternEffects(board, cellsToRemove, enhancedBonusPerBlock)
   const { enhancedBonus, auraBonus, mossBonus, chargeBonus } = patternEffects
 
   // シール効果を計算
