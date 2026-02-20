@@ -118,6 +118,14 @@ src/
 - `Domain/Effect/Relic.ts` - レリック追加時
 - `Domain/Effect/Pattern.ts` / `Seal.ts` - パターン/シール追加時
 
-# 詳細ドキュメント
-- [アーキテクチャ詳細](codemaps/architecture.md) - モジュール依存関係、Service関数一覧
-- [データモデル詳細](codemaps/data.md) - 型定義、Effect全種別、アクション一覧
+# Codemap 活用ルール
+
+## 詳細ドキュメント（codemap）
+- [アーキテクチャ詳細](codemaps/architecture.md) - モジュール依存関係、Service関数シグネチャ、Renderer一覧、Effect処理チェーン
+- [データモデル詳細](codemaps/data.md) - 完全な型定義、Effect全種別（52レリック含む）、全GameAction+パラメータ
+
+## 参照タイミング
+- **コード探索の前に**: Grep/Globで探す前に、まずCLAUDE.md内の情報で対象ファイルを特定できるか確認する。特定できない場合は関連するcodemapを先に読んでから探索する
+- **関数シグネチャが必要な時**: Service/Rendererの引数や戻り値を確認したい場合は `codemaps/architecture.md` を読む
+- **型定義・Effect仕様が必要な時**: 型の詳細やレリック/パターン/シールの効果仕様は `codemaps/data.md` を読む
+- **subagent起動時**: Explorer等のsubagentを起動する際は、タスクに関連するcodemapの該当セクションをプロンプトに含める
