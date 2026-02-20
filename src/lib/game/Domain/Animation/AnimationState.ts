@@ -1,5 +1,5 @@
 import type { ActivatedRelicInfo } from '../Effect/RelicEffectTypes'
-import type { PatternId, SealId } from '../Core/Id'
+import type { PatternId, SealId, BlessingId } from '../Core/Id'
 
 /**
  * 消去対象セル
@@ -17,6 +17,7 @@ export interface ClearingCell {
   readonly pattern?: PatternId | null
   readonly seal?: SealId | null
   readonly chargeValue?: number
+  readonly blockBlessing?: BlessingId | null
 }
 
 /**

@@ -77,6 +77,17 @@ export function buildFormulaSteps(
     })
   }
 
+  // === 2.5 加護効果 → Aが増加 ===
+  if (breakdown.blessingPowerBonus > 0) {
+    a += breakdown.blessingPowerBonus
+    steps.push({
+      type: 'blessing',
+      label: `力の加護 +${breakdown.blessingPowerBonus}`,
+      formula: buildABFormula(a, b),
+      relicId: null,
+    })
+  }
+
   // === 3. シール効果 ===
   // multiシール: Aに加算
   if (breakdown.multiBonus > 0) {
@@ -129,6 +140,17 @@ export function buildFormulaSteps(
     steps.push({
       type: 'pattern',
       label: 'ラッキー ×2!',
+      formula: buildABFormula(a, b),
+      relicId: null,
+    })
+  }
+
+  // === 5.5 加護効果 → Bが増加 ===
+  if (breakdown.blessingChainBonus > 0) {
+    b += breakdown.blessingChainBonus
+    steps.push({
+      type: 'blessing',
+      label: `連の加護 +${breakdown.blessingChainBonus}`,
       formula: buildABFormula(a, b),
       relicId: null,
     })

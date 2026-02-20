@@ -135,6 +135,9 @@ export function calculateScoreWithEffects(
       sizeBonusRelicId: null,
       copyTargetRelicId: null,
       relicBonusTotal: 0,
+      blessingPowerBonus: 0,
+      blessingGoldBonus: 0,
+      blessingChainBonus: 0,
       blockPoints: 0,
       linePoints: 0,
       finalScore: 0,
@@ -163,7 +166,7 @@ export function clearLines(board: Board, cellsToClear: readonly ClearingCell[]):
     row.map(cell => ({ ...cell }))
   )
 
-  // セルをクリア
+  // セルをクリア（加護は消去後もセルに残る）
   for (const { row, col } of cellsToClear) {
     newBoard[row][col] = {
       filled: false,
@@ -171,6 +174,9 @@ export function clearLines(board: Board, cellsToClear: readonly ClearingCell[]):
       pattern: null,
       seal: null,
       chargeValue: 0,
+      blessing: newBoard[row][col].blessing,
+      blessingLevel: newBoard[row][col].blessingLevel,
+      blockBlessing: null,
     }
   }
 

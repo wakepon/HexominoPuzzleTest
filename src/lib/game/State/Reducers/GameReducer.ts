@@ -97,6 +97,7 @@ import type { AmuletModalState } from '../../Domain/Effect/AmuletModalState'
 import { applyPatternAdd, applySealAdd, applyVanish, applySculpt, isShapeConnected } from '../../Services/AmuletEffectService'
 import { OBSTACLE_BLOCK_COUNT } from '../../Data/BossConditions'
 import { RELIC_DEFINITIONS } from '../../Domain/Effect/Relic'
+import { stampBlessingsOnBoard } from '../../Domain/Effect/BlessingEffectHandler'
 import { JESTER_SLOT_REDUCTION } from '../../Domain/Effect/Relics/Jester'
 import { getMinoById } from '../../Data/MinoDefinitions'
 import { saveGameState, clearGameState } from '../../Services/StorageService'
@@ -1098,7 +1099,14 @@ function gameReducerInner(state: GameState, action: GameAction): GameState {
     case 'ANIMATION/END_CLEAR': {
       if (!state.clearingAnimation) return state
 
-      const clearedBoard = clearLines(state.board, state.clearingAnimation.cells)
+      // 1. 加護スタンプ（ブロック消去前に実行）
+      const boardWithBlessings = stampBlessingsOnBoard(
+        state.board,
+        state.clearingAnimation.cells
+      )
+
+      // 2. ライン消去（加護は維持される）
+      const clearedBoard = clearLines(boardWithBlessings, state.clearingAnimation.cells)
 
       // イベント発火: ライン消去完了
       emitLinesCleared(

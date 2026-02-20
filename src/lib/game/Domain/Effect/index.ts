@@ -3,7 +3,7 @@
  */
 
 // 型
-export type { PatternId, SealId, RelicId } from './EffectTypes'
+export type { PatternId, SealId, RelicId, BlessingId } from './EffectTypes'
 
 // パターン
 export type { PatternType, PatternDefinition } from './Pattern'
@@ -16,6 +16,18 @@ export {
 // シール
 export type { SealType, SealDefinition } from './Seal'
 export { SEAL_DEFINITIONS, getSealDefinition, SHOP_AVAILABLE_SEALS } from './Seal'
+
+// 加護
+export type { BlessingType, BlessingDefinition } from './Blessing'
+export { BLESSING_DEFINITIONS, getBlessingDefinition, SHOP_AVAILABLE_BLESSINGS } from './Blessing'
+
+// 加護効果
+export type { BlessingScoreResult } from './BlessingEffectHandler'
+export {
+  calculateBlessingLevelUp,
+  stampBlessingsOnBoard,
+  calculateBlessingScoreEffects,
+} from './BlessingEffectHandler'
 
 // レリック
 export type { RelicRarity, RelicType, RelicDefinition } from './Relic'

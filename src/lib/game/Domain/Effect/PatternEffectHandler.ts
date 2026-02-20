@@ -7,6 +7,7 @@ import type { PatternId, RelicId, SealId } from '../Core/Id'
 import type { PatternEffectResult, ScoreBreakdown } from './PatternEffectTypes'
 import type { RelicEffectContext } from './RelicEffectTypes'
 import { calculateSealEffects } from './SealEffectHandler'
+import { calculateBlessingScoreEffects } from './BlessingEffectHandler'
 import { getRelicModule } from './Relics/RelicRegistry'
 import { evaluateRelicEffects, evaluateCopyRelicEffect } from './Relics/RelicEffectEngine'
 import { isCopyRelicInactive } from './CopyRelicResolver'
@@ -140,9 +141,13 @@ export function calculateScoreBreakdown(
   const sealEffects = calculateSealEffects(board, cellsToRemove, multiSealMultiplier)
   const { multiBonus, goldCount } = sealEffects
 
-  // 合計ブロック数（パターン効果 + multiシール効果、chargeブロック基礎分除外）
+  // 加護効果を計算
+  const blessingEffects = calculateBlessingScoreEffects(board, cellsToRemove)
+  const { powerBonus: blessingPowerBonus, goldBonus: blessingGoldBonus, chainBonus: blessingChainBonus } = blessingEffects
+
+  // 合計ブロック数（パターン効果 + multiシール効果 + 力の加護、chargeブロック基礎分除外）
   const totalBlocks =
-    baseBlocks - chargeBlockCount + enhancedBonus + chargeBonus + multiBonus
+    baseBlocks - chargeBlockCount + enhancedBonus + chargeBonus + multiBonus + blessingPowerBonus
 
   // lucky効果（列点として扱う）
   const luckyMultiplier = rollLuckyMultiplier(board, cellsToRemove, luckyRandom, multiSealMultiplier)
@@ -300,8 +305,8 @@ export function calculateScoreBreakdown(
     }
   }
 
-  // B (列点): linesCleared × luckyMultiplier → レリック(台本加算・乗算)
-  let linePoints = linesCleared * luckyMultiplier
+  // B (列点): linesCleared × luckyMultiplier + 連の加護 → レリック(台本加算・乗算)
+  let linePoints = linesCleared * luckyMultiplier + blessingChainBonus
 
   for (const relicId of effectiveOrder) {
     const module = getRelicModule(relicId)
@@ -350,11 +355,14 @@ export function calculateScoreBreakdown(
     linesCleared,
     baseScore,
     luckyMultiplier,
-    goldCount,
+    goldCount: goldCount + blessingGoldBonus,
     relicEffects,
     sizeBonusRelicId,
     copyTargetRelicId,
     relicBonusTotal: actualSizeBonusTotal + copyBonus,
+    blessingPowerBonus,
+    blessingGoldBonus,
+    blessingChainBonus,
     blockPoints,
     linePoints,
     finalScore,

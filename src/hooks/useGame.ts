@@ -71,6 +71,7 @@ export function useGame() {
       probabilityOverride: {
         pattern: debugSettings.patternProbability / 100,
         seal: debugSettings.sealProbability / 100,
+        blessing: debugSettings.blessingProbability / 100,
       },
     })
   }, [debugSettings])

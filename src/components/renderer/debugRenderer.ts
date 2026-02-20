@@ -43,6 +43,8 @@ export interface DebugWindowRenderResult {
   patternMinusButton: ButtonArea
   sealPlusButton: ButtonArea
   sealMinusButton: ButtonArea
+  blessingPlusButton: ButtonArea
+  blessingMinusButton: ButtonArea
   deleteSaveButton: ButtonArea
   windowBounds: ButtonArea
   // レリック操作ボタン
@@ -511,6 +513,13 @@ export function renderDebugWindow(
   )
   y += ps.rowHeight
 
+  // 加護確率
+  const blessingButtons = drawProbabilityRow(
+    ctx, 'Blessing', debugSettings.blessingProbability,
+    offsetX, y, windowWidth, padding
+  )
+  y += ps.rowHeight
+
   // セパレータライン
   y += padding / 2
   ctx.strokeStyle = titleColor
@@ -636,6 +645,8 @@ export function renderDebugWindow(
     patternMinusButton: patternButtons.minusButton,
     sealPlusButton: sealButtons.plusButton,
     sealMinusButton: sealButtons.minusButton,
+    blessingPlusButton: blessingButtons.plusButton,
+    blessingMinusButton: blessingButtons.minusButton,
     deleteSaveButton: { x: deleteButtonX, y: deleteButtonY, width: deleteButtonWidth, height: deleteButtonHeight },
     windowBounds: { x: offsetX, y: offsetY, width: windowWidth, height: windowHeight },
     relicButtons: relicResult.relicButtons,

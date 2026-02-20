@@ -1,6 +1,6 @@
 import { Board, CanvasLayout, ClearingCell } from '../../lib/game/types'
 import { COLORS, LAYOUT, GRID_SIZE } from '../../lib/game/Data/Constants'
-import { drawWoodenCell } from './cellRenderer'
+import { drawWoodenCell, drawBlessingIndicator } from './cellRenderer'
 import type { ScriptRelicLines } from '../../lib/game/Domain/Effect/ScriptRelicState'
 
 /**
@@ -47,9 +47,17 @@ export function renderBoard(
       if (cell.filled && !isClearing) {
         // 配置済みブロック（消去中でない場合のみ）- パターンとシールを渡す
         drawWoodenCell(ctx, cellX, cellY, cellSize, cell.pattern, cell.seal, cell.chargeValue)
+        // 配置済みセル + 加護の場合: 加護の光を表示
+        if (cell.blessing && cell.blessingLevel > 0) {
+          drawBlessingIndicator(ctx, cellX, cellY, cellSize, cell.blessing, cell.blessingLevel, cell.pattern === 'obstacle')
+        }
       } else {
         // 空のセル
         drawEmptyCell(ctx, cellX, cellY, cellSize)
+        // 空セル + 加護の場合: 淡いシンボル表示
+        if (cell.blessing && cell.blessingLevel > 0) {
+          drawBlessingIndicator(ctx, cellX, cellY, cellSize, cell.blessing, cell.blessingLevel)
+        }
       }
 
       // セル枠線

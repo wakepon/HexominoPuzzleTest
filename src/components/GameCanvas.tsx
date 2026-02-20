@@ -859,6 +859,22 @@ export function GameCanvas({
         return true
       }
 
+      // 加護確率のマイナスボタン
+      if (isPointInArea(pos, debugResult.blessingMinusButton)) {
+        onUpdateDebugSettings({
+          blessingProbability: Math.max(MIN, debugSettings.blessingProbability - STEP),
+        })
+        return true
+      }
+
+      // 加護確率のプラスボタン
+      if (isPointInArea(pos, debugResult.blessingPlusButton)) {
+        onUpdateDebugSettings({
+          blessingProbability: Math.min(MAX, debugSettings.blessingProbability + STEP),
+        })
+        return true
+      }
+
       // レリックボタンのクリック判定
       for (const relicButton of debugResult.relicButtons) {
         if (isPointInArea(pos, relicButton)) {

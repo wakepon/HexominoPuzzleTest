@@ -434,6 +434,19 @@ export const PATTERN_SYMBOL_STYLE = {
   shadowBlur: 2,
 }
 
+// 加護別カラー定義
+export const BLESSING_COLORS: Record<string, string> = {
+  power: '#FF6347',   // 赤系（力）
+  gold: '#FFD700',    // 金色
+  chain: '#4169E1',   // 青系（連鎖）
+}
+
+// 加護記号のスタイル設定
+export const BLESSING_SYMBOL_STYLE = {
+  fontSize: 10,
+  fontFamily: 'serif',
+}
+
 // シール別カラー定義
 export const SEAL_COLORS: Record<string, string> = {
   gold: '#FFD700',   // ゴールド

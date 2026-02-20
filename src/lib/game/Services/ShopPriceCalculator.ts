@@ -3,9 +3,10 @@
  */
 
 import type { Piece } from '../Domain'
-import type { PatternId, SealId } from '../Domain/Core/Id'
+import type { PatternId, SealId, BlessingId } from '../Domain/Core/Id'
 import { PATTERN_DEFINITIONS, PatternType } from '../Domain/Effect/Pattern'
 import { SEAL_DEFINITIONS, SealType } from '../Domain/Effect/Seal'
+import { BLESSING_DEFINITIONS, BlessingType } from '../Domain/Effect/Blessing'
 
 /** セール割引率 (25%) */
 export const SALE_DISCOUNT_RATE = 0.25
@@ -27,6 +28,14 @@ export function getSealPrice(sealId: SealId): number {
 }
 
 /**
+ * 加護IDから価格を取得
+ */
+export function getBlessingPrice(blessingId: BlessingId): number {
+  const definition = BLESSING_DEFINITIONS[blessingId as BlessingType]
+  return definition?.price ?? 0
+}
+
+/**
  * Pieceの価格を計算
  * - 基本価格: セル数
  * - パターン付きの場合: パターン定義の価格を加算
@@ -38,17 +47,19 @@ export function calculatePiecePrice(piece: Piece): number {
     0
   )
 
-  // イミュータブルにパターンとシールの価格を取得
+  // イミュータブルにパターン・シール・加護の価格を取得
   const blocksArray = Array.from(piece.blocks.values())
   const patternBlock = blocksArray.find((b) => b.pattern)
   const sealBlock = blocksArray.find((b) => b.seal)
+  const blessingBlock = blocksArray.find((b) => b.blessing)
 
   const patternPrice = patternBlock?.pattern
     ? getPatternPrice(patternBlock.pattern)
     : 0
   const sealPrice = sealBlock?.seal ? getSealPrice(sealBlock.seal) : 0
+  const blessingPrice = blessingBlock?.blessing ? getBlessingPrice(blessingBlock.blessing) : 0
 
-  return cellCount + patternPrice + sealPrice
+  return cellCount + patternPrice + sealPrice + blessingPrice
 }
 
 /**

@@ -5,4 +5,4 @@
  * ここでは再エクスポートと追加の型を定義。
  */
 
-export type { PatternId, SealId, RelicId } from '../Core/Id'
+export type { PatternId, SealId, RelicId, BlessingId } from '../Core/Id'

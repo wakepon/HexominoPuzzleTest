@@ -10,6 +10,7 @@ export type BlockSetId = number & { readonly __brand?: 'BlockSetId' }
 export type RelicId = string & { readonly __brand?: 'RelicId' }
 export type PatternId = string & { readonly __brand?: 'PatternId' }
 export type SealId = string & { readonly __brand?: 'SealId' }
+export type BlessingId = string & { readonly __brand?: 'BlessingId' }
 
 /**
  * ID生成ユーティリティ

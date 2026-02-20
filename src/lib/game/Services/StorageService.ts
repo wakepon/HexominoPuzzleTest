@@ -276,11 +276,16 @@ function serializeState(state: GameState): SavedGameState {
  * シリアライズされたPieceを復元
  */
 function deserializePiece(serialized: SerializedPiece): Piece {
+  // マイグレーション対応: 古いセーブデータにはblessingがない
+  const migratedBlocks = serialized.blocks.map(([key, data]) => [
+    key,
+    { ...data, blessing: (data as unknown as Record<string, unknown>).blessing ?? null },
+  ] as const)
   return {
     id: serialized.id,
     blockSetId: serialized.blockSetId,
     shape: serialized.shape,
-    blocks: new Map(serialized.blocks) as BlockDataMap,
+    blocks: new Map(migratedBlocks) as BlockDataMap,
   }
 }
 
@@ -458,12 +463,18 @@ export function restoreGameState(
   initialDragState: GameState['dragState']
 ): GameState {
   return {
-    // マイグレーション対応: 古いセーブデータにはchargeValueがない
+    // マイグレーション対応: 古いセーブデータにはchargeValue/blessing系がない
     board: saved.board.map((row) =>
-      row.map((cell) => ({
-        ...cell,
-        chargeValue: (cell as unknown as { chargeValue?: number }).chargeValue ?? 0,
-      }))
+      row.map((cell) => {
+        const c = cell as unknown as Record<string, unknown>
+        return {
+          ...cell,
+          chargeValue: (c.chargeValue as number) ?? 0,
+          blessing: (c.blessing as string) ?? null,
+          blessingLevel: (c.blessingLevel as number) ?? 0,
+          blockBlessing: (c.blockBlessing as string) ?? null,
+        }
+      })
     ),
     pieceSlots: saved.pieceSlots.map(deserializePieceSlot),
     dragState: initialDragState,

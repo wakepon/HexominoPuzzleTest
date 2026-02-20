@@ -41,6 +41,9 @@ function createBoardWithFilledRow(
             pattern: override?.pattern ?? null,
             seal: override?.seal ?? null,
             chargeValue: override?.chargeValue ?? 0,
+            blessing: null,
+            blessingLevel: 0,
+            blockBlessing: null,
           }
         })
       : row
@@ -63,6 +66,9 @@ function createBoardWithFilledRows(
             pattern: override?.pattern ?? null,
             seal: override?.seal ?? null,
             chargeValue: override?.chargeValue ?? 0,
+            blessing: null,
+            blessingLevel: 0,
+            blockBlessing: null,
           }
         })
       : row
@@ -84,6 +90,9 @@ function createBoardWithFilledColumn(
         pattern: override?.pattern ?? null,
         seal: override?.seal ?? null,
         chargeValue: override?.chargeValue ?? 0,
+        blessing: null,
+        blessingLevel: 0,
+        blockBlessing: null,
       }
     })
   )
@@ -106,6 +115,9 @@ function createBoardWithFilledRowAndColumn(
         pattern: override?.pattern ?? null,
         seal: override?.seal ?? null,
         chargeValue: override?.chargeValue ?? 0,
+        blessing: null,
+        blessingLevel: 0,
+        blockBlessing: null,
       }
     })
   )
@@ -368,7 +380,7 @@ describe('calculateScoreWithEffects', () => {
       const board = createEmptyBoard().map(row =>
         row.map((cell, x) =>
           x === 0 || x === 1
-            ? { filled: true, blockSetId: 1 as BlockSetId, pattern: null, seal: null, chargeValue: 0 } as const
+            ? { filled: true, blockSetId: 1 as BlockSetId, pattern: null, seal: null, chargeValue: 0, blessing: null, blessingLevel: 0, blockBlessing: null } as const
             : cell
         )
       )

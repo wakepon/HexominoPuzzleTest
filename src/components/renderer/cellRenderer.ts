@@ -1,7 +1,8 @@
-import { COLORS, CELL_STYLE, PATTERN_COLORS, PATTERN_SYMBOL_STYLE, SEAL_COLORS, SEAL_SYMBOL_STYLE } from '../../lib/game/Data/Constants'
-import type { PatternId, SealId } from '../../lib/game/Domain/Core/Id'
+import { COLORS, CELL_STYLE, PATTERN_COLORS, PATTERN_SYMBOL_STYLE, SEAL_COLORS, SEAL_SYMBOL_STYLE, BLESSING_COLORS, BLESSING_SYMBOL_STYLE } from '../../lib/game/Data/Constants'
+import type { PatternId, SealId, BlessingId } from '../../lib/game/Domain/Core/Id'
 import { getPatternDefinition } from '../../lib/game/Domain/Effect/Pattern'
 import { getSealDefinition } from '../../lib/game/Domain/Effect/Seal'
+import { getBlessingDefinition } from '../../lib/game/Domain/Effect/Blessing'
 
 /**
  * パターン用のカラーセットを取得
@@ -167,7 +168,8 @@ export function drawWoodenCellWithBorder(
   size: number,
   pattern: PatternId | null = null,
   seal: SealId | null = null,
-  chargeValue: number = 0
+  chargeValue: number = 0,
+  blessing: BlessingId | null = null
 ): void {
   const { padding } = CELL_STYLE
 
@@ -182,5 +184,107 @@ export function drawWoodenCellWithBorder(
     size - padding * 2,
     size - padding * 2
   )
+
+  // ブロック上の加護マーク（左上）
+  if (blessing) {
+    drawBlessingOnBlock(ctx, x, y, size, blessing)
+  }
+}
+
+/**
+ * ブロック上の加護マークを描画（左上のバッジ）
+ */
+export function drawBlessingOnBlock(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  _size: number,
+  blessing: BlessingId
+): void {
+  const blessingDef = getBlessingDefinition(blessing)
+  if (!blessingDef) return
+
+  const { fontSize, fontFamily } = BLESSING_SYMBOL_STYLE
+  const blessingColor = BLESSING_COLORS[blessing as string] ?? '#FFFFFF'
+
+  ctx.save()
+
+  ctx.font = `bold ${fontSize}px ${fontFamily}`
+  const metrics = ctx.measureText(blessingDef.symbol)
+  const textWidth = metrics.width
+  const textHeight = fontSize
+
+  // 左上に配置
+  const padding = 1
+  const bgWidth = textWidth + padding * 4
+  const bgHeight = textHeight + padding * 2
+  const bgX = x + 2
+  const bgY = y + 2
+
+  // 背景
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.6)'
+  ctx.beginPath()
+  ctx.roundRect(bgX, bgY, bgWidth, bgHeight, 2)
+  ctx.fill()
+
+  // 記号
+  ctx.fillStyle = blessingColor
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(blessingDef.symbol, bgX + bgWidth / 2, bgY + bgHeight / 2)
+
+  ctx.restore()
+}
+
+/**
+ * 空セルの加護インジケーターを描画
+ * セルに淡いシンボルを表示（レベルで明るさが変化）
+ */
+export function drawBlessingIndicator(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  size: number,
+  blessing: BlessingId,
+  level: number,
+  isObstacle: boolean = false
+): void {
+  const blessingDef = getBlessingDefinition(blessing)
+  if (!blessingDef) return
+
+  const blessingColor = BLESSING_COLORS[blessing as string] ?? '#FFFFFF'
+  // レベルで明るさ変化: Lv1=0.2, Lv2=0.35, Lv3=0.5
+  const baseAlpha = isObstacle ? 0.1 : 0.15 + level * 0.1
+  const fontSize = Math.max(10, Math.floor(size * 0.3))
+
+  ctx.save()
+
+  // 背景に淡い色の丸
+  ctx.fillStyle = blessingColor
+  ctx.globalAlpha = baseAlpha * 0.5
+  ctx.beginPath()
+  ctx.arc(x + size / 2, y + size / 2, size * 0.3, 0, Math.PI * 2)
+  ctx.fill()
+
+  // シンボル
+  ctx.globalAlpha = isObstacle ? 0.2 : baseAlpha + 0.1
+  ctx.font = `bold ${fontSize}px ${BLESSING_SYMBOL_STYLE.fontFamily}`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillStyle = blessingColor
+  ctx.fillText(blessingDef.symbol, x + size / 2, y + size / 2)
+
+  // レベル表示（右下に小さく）
+  if (level > 1) {
+    const lvFontSize = Math.max(8, Math.floor(size * 0.18))
+    ctx.globalAlpha = isObstacle ? 0.3 : 0.7
+    ctx.font = `bold ${lvFontSize}px Arial, sans-serif`
+    ctx.textAlign = 'right'
+    ctx.textBaseline = 'bottom'
+    ctx.fillStyle = blessingColor
+    ctx.fillText(`${level}`, x + size - 3, y + size - 2)
+  }
+
+  ctx.restore()
 }
 

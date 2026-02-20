@@ -16,7 +16,7 @@ export function createEmptyBoard(): Board {
   for (let y = 0; y < GRID_SIZE; y++) {
     const row: Cell[] = []
     for (let x = 0; x < GRID_SIZE; x++) {
-      row.push({ filled: false, blockSetId: null, pattern: null, seal: null, chargeValue: 0 })
+      row.push({ filled: false, blockSetId: null, pattern: null, seal: null, chargeValue: 0, blessing: null, blessingLevel: 0, blockBlessing: null })
     }
     board.push(row)
   }
@@ -59,6 +59,11 @@ export function placePieceOnBoard(
           pattern: blockData?.pattern ?? null,
           seal: blockData?.seal ?? null,
           chargeValue: 0,
+          // 既存の加護を維持（ブロック配置で加護は消えない）
+          blessing: newBoard[boardY][boardX].blessing,
+          blessingLevel: newBoard[boardY][boardX].blessingLevel,
+          // ブロックの加護を一時保持（消去時にセルにスタンプされる）
+          blockBlessing: blockData?.blessing ?? null,
         }
       }
     }
@@ -87,6 +92,10 @@ export function placeObstacleOnBoard(
     pattern: 'obstacle' as PatternId,
     seal: null,
     chargeValue: 0,
+    // obstacleは既存の加護を維持
+    blessing: newBoard[row][col].blessing,
+    blessingLevel: newBoard[row][col].blessingLevel,
+    blockBlessing: null,
   }
 
   return newBoard

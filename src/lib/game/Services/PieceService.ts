@@ -3,7 +3,7 @@
  */
 
 import type { MinoCategory, MinoDefinition, Piece, PieceShape } from '../Domain'
-import type { PatternId, SealId } from '../Domain/Core/Id'
+import type { PatternId, SealId, BlessingId } from '../Domain/Core/Id'
 import type { RandomGenerator } from '../Utils/Random'
 import { MINOS_BY_CATEGORY } from '../Data/MinoDefinitions'
 import { createPieceId, createBlockSetId } from '../Domain/Core/Id'
@@ -170,6 +170,119 @@ export function createPieceWithPatternAndSeal(
     const idx = Math.floor(rng.next() * positions.length)
     const pos = positions[idx]
     blocks = BlockDataMapUtils.setSeal(blocks, pos.row, pos.col, seal)
+  }
+
+  return {
+    id: createPieceId(mino.id),
+    shape,
+    blockSetId: createBlockSetId(),
+    blocks,
+  }
+}
+
+/**
+ * 加護付きPieceを生成する（パターン・シールなし）
+ */
+export function createPieceWithBlessing(
+  mino: MinoDefinition,
+  blessing: BlessingId,
+  rng: RandomGenerator
+): Piece {
+  const shape = mino.shape
+  let blocks = BlockDataMapUtils.createFromShape(shape)
+
+  // ランダムな位置に加護を付与
+  const positions = getFilledPositions(shape)
+  if (positions.length > 0) {
+    const idx = Math.floor(rng.next() * positions.length)
+    const pos = positions[idx]
+    blocks = BlockDataMapUtils.setBlessing(blocks, pos.row, pos.col, blessing)
+  }
+
+  return {
+    id: createPieceId(mino.id),
+    shape,
+    blockSetId: createBlockSetId(),
+    blocks,
+  }
+}
+
+/**
+ * パターン+加護付きPieceを生成する
+ */
+export function createPieceWithPatternAndBlessing(
+  mino: MinoDefinition,
+  pattern: PatternId,
+  blessing: BlessingId,
+  rng: RandomGenerator
+): Piece {
+  const shape = mino.shape
+  let blocks = BlockDataMapUtils.createWithPattern(shape, pattern)
+
+  const positions = getFilledPositions(shape)
+  if (positions.length > 0) {
+    const idx = Math.floor(rng.next() * positions.length)
+    const pos = positions[idx]
+    blocks = BlockDataMapUtils.setBlessing(blocks, pos.row, pos.col, blessing)
+  }
+
+  return {
+    id: createPieceId(mino.id),
+    shape,
+    blockSetId: createBlockSetId(),
+    blocks,
+  }
+}
+
+/**
+ * シール+加護付きPieceを生成する
+ */
+export function createPieceWithSealAndBlessing(
+  mino: MinoDefinition,
+  seal: SealId,
+  blessing: BlessingId,
+  rng: RandomGenerator
+): Piece {
+  const shape = mino.shape
+  let blocks = BlockDataMapUtils.createFromShape(shape)
+
+  const positions = getFilledPositions(shape)
+  if (positions.length > 0) {
+    const sealIdx = Math.floor(rng.next() * positions.length)
+    blocks = BlockDataMapUtils.setSeal(blocks, positions[sealIdx].row, positions[sealIdx].col, seal)
+
+    const blessingIdx = Math.floor(rng.next() * positions.length)
+    blocks = BlockDataMapUtils.setBlessing(blocks, positions[blessingIdx].row, positions[blessingIdx].col, blessing)
+  }
+
+  return {
+    id: createPieceId(mino.id),
+    shape,
+    blockSetId: createBlockSetId(),
+    blocks,
+  }
+}
+
+/**
+ * パターン+シール+加護付きPieceを生成する
+ */
+export function createPieceWithPatternSealAndBlessing(
+  mino: MinoDefinition,
+  pattern: PatternId,
+  seal: SealId,
+  blessing: BlessingId,
+  rng: RandomGenerator
+): Piece {
+  const shape = mino.shape
+  let blocks = BlockDataMapUtils.createWithPattern(shape, pattern)
+
+  const positions = getFilledPositions(shape)
+  if (positions.length > 0) {
+    const sealIdx = Math.floor(rng.next() * positions.length)
+    blocks = BlockDataMapUtils.setSeal(blocks, positions[sealIdx].row, positions[sealIdx].col, seal)
+
+    const blessingIdx = Math.floor(rng.next() * positions.length)
+    blocks = BlockDataMapUtils.setBlessing(blocks, positions[blessingIdx].row, positions[blessingIdx].col, blessing)
   }
 
   return {

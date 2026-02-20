@@ -11,7 +11,7 @@ import type { CompletedLines } from '../Services/LineService'
 
 // テスト用ヘルパー関数: 埋まったセルを作成
 function createFilledCell(): Cell {
-  return { filled: true, blockSetId: null, pattern: null, seal: null, chargeValue: 0 }
+  return { filled: true, blockSetId: null, pattern: null, seal: null, chargeValue: 0, blessing: null, blessingLevel: 0, blockBlessing: null }
 }
 
 // テスト用ヘルパー関数: 指定した行を埋めたボードを作成（immutable）

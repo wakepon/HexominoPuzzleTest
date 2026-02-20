@@ -1,4 +1,4 @@
-import type { PatternId, SealId } from '../Core/Id'
+import type { PatternId, SealId, BlessingId } from '../Core/Id'
 import type { PieceShape } from './PieceShape'
 
 /**
@@ -6,13 +6,12 @@ import type { PieceShape } from './PieceShape'
  *
  * - pattern: パターン（Piece全体で同じ値が設定される）
  * - seal: シール（一部のBlockのみに設定される）
- *
- * 注意: 現在の基本パズル実装ではnull固定。
- * 将来のローグライト機能で使用予定。
+ * - blessing: 加護（一部のBlockのみに設定される）
  */
 export interface BlockData {
   readonly pattern: PatternId | null
   readonly seal: SealId | null
+  readonly blessing: BlessingId | null
 }
 
 /**
@@ -38,7 +37,7 @@ export const BlockDataMapUtils = {
     shape.forEach((row, rowIdx) => {
       row.forEach((filled, colIdx) => {
         if (filled) {
-          map.set(`${rowIdx},${colIdx}`, { pattern: null, seal: null })
+          map.set(`${rowIdx},${colIdx}`, { pattern: null, seal: null, blessing: null })
         }
       })
     })
@@ -56,7 +55,7 @@ export const BlockDataMapUtils = {
     shape.forEach((row, rowIdx) => {
       row.forEach((filled, colIdx) => {
         if (filled) {
-          map.set(`${rowIdx},${colIdx}`, { pattern, seal: null })
+          map.set(`${rowIdx},${colIdx}`, { pattern, seal: null, blessing: null })
         }
       })
     })
@@ -78,6 +77,24 @@ export const BlockDataMapUtils = {
 
     const newMap = new Map(map)
     newMap.set(key, { ...existing, seal })
+    return newMap
+  },
+
+  /**
+   * 特定のBlockに加護を設定
+   */
+  setBlessing: (
+    map: BlockDataMap,
+    row: number,
+    col: number,
+    blessing: BlessingId
+  ): BlockDataMap => {
+    const key = `${row},${col}`
+    const existing = map.get(key)
+    if (!existing) return map
+
+    const newMap = new Map(map)
+    newMap.set(key, { ...existing, blessing })
     return newMap
   },
 
