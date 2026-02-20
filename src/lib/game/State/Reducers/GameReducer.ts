@@ -248,17 +248,8 @@ function buildScoreBonuses(breakdown: ScoreBreakdown): ScoreBonus[] {
   if (breakdown.enhancedBonus > 0) {
     bonuses.push({ source: 'pattern:enhanced', amount: breakdown.enhancedBonus })
   }
-  if (breakdown.auraBonus > 0) {
-    bonuses.push({ source: 'pattern:aura', amount: breakdown.auraBonus })
-  }
-  if (breakdown.mossBonus > 0) {
-    bonuses.push({ source: 'pattern:moss', amount: breakdown.mossBonus })
-  }
   if (breakdown.chargeBonus > 0) {
     bonuses.push({ source: 'pattern:charge', amount: breakdown.chargeBonus })
-  }
-  if (breakdown.comboBonus > 0) {
-    bonuses.push({ source: 'pattern:combo', amount: breakdown.comboBonus })
   }
   if (breakdown.luckyMultiplier > 1) {
     bonuses.push({

@@ -403,21 +403,6 @@ export const PATTERN_COLORS: Record<string, { base: string; highlight: string; s
     highlight: '#32CD32', // ライムグリーン
     shadow: '#006400',    // ダークグリーン
   },
-  combo: {
-    base: '#8B008B',      // ダークマゼンタ
-    highlight: '#BA55D3', // ミディアムオーキッド
-    shadow: '#4B0082',    // インディゴ
-  },
-  aura: {
-    base: '#00CED1',      // ダークターコイズ
-    highlight: '#40E0D0', // ターコイズ
-    shadow: '#008B8B',    // ダークシアン
-  },
-  moss: {
-    base: '#2E8B57',      // シーグリーン
-    highlight: '#3CB371', // ミディアムシーグリーン
-    shadow: '#006400',    // ダークグリーン
-  },
   feather: {
     base: '#F5F5DC',      // ベージュ
     highlight: '#FFFACD', // レモンシフォン

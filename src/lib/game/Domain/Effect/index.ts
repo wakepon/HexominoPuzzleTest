@@ -32,10 +32,7 @@ export type {
 } from './PatternEffectTypes'
 export {
   calculateEnhancedBonus,
-  calculateAuraBonus,
-  calculateMossBonus,
   rollLuckyMultiplier,
-  calculateComboBonus,
   calculatePatternEffects,
   calculateScoreBreakdown,
 } from './PatternEffectHandler'

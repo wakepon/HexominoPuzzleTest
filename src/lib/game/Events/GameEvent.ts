@@ -55,7 +55,7 @@ export interface LinesClearedEvent extends BaseEvent {
  * スコアボーナス情報
  */
 export interface ScoreBonus {
-  readonly source: string  // 'aura' | 'moss' | 'relic:chain_master' など
+  readonly source: string  // 'pattern:enhanced' | 'relic:chain_master' など
   readonly amount: number
   readonly multiplier?: number
 }

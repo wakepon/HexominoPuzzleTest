@@ -67,16 +67,6 @@ export function buildFormulaSteps(
     })
   }
 
-  if (breakdown.auraBonus > 0) {
-    a += breakdown.auraBonus
-    steps.push({
-      type: 'pattern',
-      label: 'オーラ',
-      formula: buildABFormula(a, b),
-      relicId: null,
-    })
-  }
-
   if (breakdown.chargeBonus > 0) {
     a += breakdown.chargeBonus
     steps.push({
@@ -155,18 +145,7 @@ export function buildFormulaSteps(
     }
   }
 
-  // === 5. コンボ → Aに加算 ===
-  if (breakdown.comboBonus > 0) {
-    a += breakdown.comboBonus
-    steps.push({
-      type: 'pattern',
-      label: 'コンボ',
-      formula: buildABFormula(a, b),
-      relicId: null,
-    })
-  }
-
-  // === 6. lucky → Bに乗算 ===
+  // === 5. lucky → Bに乗算 ===
   if (breakdown.luckyMultiplier > 1) {
     b *= breakdown.luckyMultiplier
     steps.push({
@@ -177,18 +156,7 @@ export function buildFormulaSteps(
     })
   }
 
-  // === 6.5. moss → Bに加算 ===
-  if (breakdown.mossBonus > 0) {
-    b += breakdown.mossBonus
-    steps.push({
-      type: 'pattern',
-      label: 'モス',
-      formula: buildABFormula(a, b),
-      relicId: null,
-    })
-  }
-
-  // === 7. レリック効果（relicDisplayOrder順） → Bに影響 ===
+  // === 6. レリック効果（relicDisplayOrder順） → Bに影響 ===
   let effectiveLines = b
   for (const relicId of relicDisplayOrder) {
     const module = getRelicModule(relicId)

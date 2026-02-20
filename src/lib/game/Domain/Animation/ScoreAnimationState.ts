@@ -10,7 +10,7 @@ import type { RelicId } from '../Core/Id'
 export type FormulaStepType =
   | 'base'           // 基本式: (ブロック数 × ライン数)
   | 'seal'           // シール効果（multi/score）
-  | 'pattern'        // パターン効果（enhanced/aura/moss/combo/lucky）
+  | 'pattern'        // パターン効果（enhanced/lucky/charge）
   | 'relic'          // レリック効果
   | 'simplified'     // 簡潔化された式
   | 'result'         // 最終結果表示
