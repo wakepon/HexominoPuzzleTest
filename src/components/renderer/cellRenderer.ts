@@ -1,8 +1,10 @@
-import { COLORS, CELL_STYLE, PATTERN_COLORS, PATTERN_SYMBOL_STYLE, SEAL_COLORS, SEAL_SYMBOL_STYLE, BLESSING_COLORS, BLESSING_SYMBOL_STYLE } from '../../lib/game/Data/Constants'
+import { COLORS, CELL_STYLE, PATTERN_COLORS, PATTERN_SYMBOL_STYLE, SEAL_COLORS, SEAL_SYMBOL_STYLE, BLESSING_COLORS, BLESSING_SYMBOL_STYLE, BUFF_COLORS, BUFF_SYMBOL_STYLE } from '../../lib/game/Data/Constants'
 import type { PatternId, SealId, BlessingId } from '../../lib/game/Domain/Core/Id'
+import type { BuffType } from '../../lib/game/Domain/Effect/Buff'
 import { getPatternDefinition } from '../../lib/game/Domain/Effect/Pattern'
 import { getSealDefinition } from '../../lib/game/Domain/Effect/Seal'
 import { getBlessingDefinition } from '../../lib/game/Domain/Effect/Blessing'
+import { getBuffDefinition } from '../../lib/game/Domain/Effect/Buff'
 
 /**
  * パターン用のカラーセットを取得
@@ -237,22 +239,22 @@ export function drawBlessingOnBlock(
 }
 
 /**
- * 空セルの加護インジケーターを描画
+ * 空セルのバフインジケーターを描画
  * セルに淡いシンボルを表示（レベルで明るさが変化）
  */
-export function drawBlessingIndicator(
+export function drawBuffIndicator(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
   size: number,
-  blessing: BlessingId,
+  buff: BuffType,
   level: number,
   isObstacle: boolean = false
 ): void {
-  const blessingDef = getBlessingDefinition(blessing)
-  if (!blessingDef) return
+  const buffDef = getBuffDefinition(buff)
+  if (!buffDef) return
 
-  const blessingColor = BLESSING_COLORS[blessing as string] ?? '#FFFFFF'
+  const buffColor = BUFF_COLORS[buff] ?? '#FFFFFF'
   // レベルで明るさ変化: Lv1=0.2, Lv2=0.35, Lv3=0.5
   const baseAlpha = isObstacle ? 0.1 : 0.15 + level * 0.1
   const fontSize = Math.max(10, Math.floor(size * 0.3))
@@ -260,7 +262,7 @@ export function drawBlessingIndicator(
   ctx.save()
 
   // 背景に淡い色の丸
-  ctx.fillStyle = blessingColor
+  ctx.fillStyle = buffColor
   ctx.globalAlpha = baseAlpha * 0.5
   ctx.beginPath()
   ctx.arc(x + size / 2, y + size / 2, size * 0.3, 0, Math.PI * 2)
@@ -268,11 +270,11 @@ export function drawBlessingIndicator(
 
   // シンボル
   ctx.globalAlpha = isObstacle ? 0.2 : baseAlpha + 0.1
-  ctx.font = `bold ${fontSize}px ${BLESSING_SYMBOL_STYLE.fontFamily}`
+  ctx.font = `bold ${fontSize}px ${BUFF_SYMBOL_STYLE.fontFamily}`
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
-  ctx.fillStyle = blessingColor
-  ctx.fillText(blessingDef.symbol, x + size / 2, y + size / 2)
+  ctx.fillStyle = buffColor
+  ctx.fillText(buffDef.symbol, x + size / 2, y + size / 2)
 
   // レベル表示（右下に小さく）
   if (level > 1) {
@@ -281,10 +283,9 @@ export function drawBlessingIndicator(
     ctx.font = `bold ${lvFontSize}px Arial, sans-serif`
     ctx.textAlign = 'right'
     ctx.textBaseline = 'bottom'
-    ctx.fillStyle = blessingColor
+    ctx.fillStyle = buffColor
     ctx.fillText(`${level}`, x + size - 3, y + size - 2)
   }
 
   ctx.restore()
 }
-

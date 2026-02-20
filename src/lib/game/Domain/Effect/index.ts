@@ -21,12 +21,16 @@ export { SEAL_DEFINITIONS, getSealDefinition, SHOP_AVAILABLE_SEALS } from './Sea
 export type { BlessingType, BlessingDefinition } from './Blessing'
 export { BLESSING_DEFINITIONS, getBlessingDefinition, SHOP_AVAILABLE_BLESSINGS } from './Blessing'
 
-// 加護効果
-export type { BlessingScoreResult } from './BlessingEffectHandler'
+// バフ
+export type { BuffType, BuffDefinition } from './Buff'
+export { BUFF_DEFINITIONS, getBuffDefinition, getBuffDescription, blessingToBuffType } from './Buff'
+
+// バフ効果
+export type { BuffScoreResult } from './BlessingEffectHandler'
 export {
-  calculateBlessingLevelUp,
+  calculateBuffLevelUp,
   stampBlessingsOnBoard,
-  calculateBlessingScoreEffects,
+  calculateBuffScoreEffects,
 } from './BlessingEffectHandler'
 
 // レリック

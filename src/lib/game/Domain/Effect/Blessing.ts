@@ -1,5 +1,7 @@
 /**
  * 加護定義
+ *
+ * 加護 = ピース上の効果。消去時にセルにバフとして刻まれる。
  */
 
 import type { BlessingId } from '../Core/Id'
@@ -7,7 +9,7 @@ import type { BlessingId } from '../Core/Id'
 /**
  * 加護の種類
  */
-export type BlessingType = 'power' | 'gold' | 'chain'
+export type BlessingType = 'power' | 'gold' | 'chain' | 'phase'
 
 /**
  * 加護定義
@@ -30,7 +32,7 @@ export const BLESSING_DEFINITIONS: Record<BlessingType, BlessingDefinition> = {
     id: 'power' as BlessingId,
     type: 'power',
     name: '力の加護',
-    description: 'ブロック点+Lv',
+    description: '消滅時にセルに+1増強を付与する',
     symbol: '力',
     maxLevel: 3,
     price: 3,
@@ -39,7 +41,7 @@ export const BLESSING_DEFINITIONS: Record<BlessingType, BlessingDefinition> = {
     id: 'gold' as BlessingId,
     type: 'gold',
     name: '金の加護',
-    description: '消去時+LvG',
+    description: '消滅時にセルに+1金鉱を付与する',
     symbol: '金',
     maxLevel: 3,
     price: 3,
@@ -48,9 +50,18 @@ export const BLESSING_DEFINITIONS: Record<BlessingType, BlessingDefinition> = {
     id: 'chain' as BlessingId,
     type: 'chain',
     name: '連の加護',
-    description: 'ライン点+Lv',
+    description: '消滅時にセルに+1脈動を付与する',
     symbol: '連',
     maxLevel: 3,
+    price: 3,
+  },
+  phase: {
+    id: 'phase' as BlessingId,
+    type: 'phase',
+    name: '透の加護',
+    description: '消滅時にセルに透過を付与する',
+    symbol: '透',
+    maxLevel: 1,
     price: 3,
   },
 }
@@ -63,36 +74,18 @@ export const getBlessingDefinition = (blessingId: BlessingId): BlessingDefinitio
 }
 
 /**
- * 加護の効果テキストをレベル込みで取得
- * 例: "ブロック点+2"
- */
-function getBlessingEffectText(type: BlessingType, level: number): string {
-  switch (type) {
-    case 'power':
-      return `ブロック点+${level}`
-    case 'gold':
-      return `消去時+${level}G`
-    case 'chain':
-      return `ライン点+${level}`
-    default:
-      return ''
-  }
-}
-
-/**
- * 加護のレベル込み説明文を取得
- * 例: "力の加護 Lv2 / ブロック点+2"
+ * 加護の説明文を取得（バフ付与の説明）
  */
 export const getBlessingDescription = (
   blessingId: BlessingId,
-  level: number
+  _level: number
 ): string => {
   const def = getBlessingDefinition(blessingId)
-  if (!def || level === 0) return ''
-  return `${def.name} Lv${level} / ${getBlessingEffectText(def.type, level)}`
+  if (!def) return ''
+  return def.description
 }
 
 /**
  * ショップで購入可能な加護タイプ
  */
-export const SHOP_AVAILABLE_BLESSINGS: BlessingType[] = ['power', 'gold', 'chain']
+export const SHOP_AVAILABLE_BLESSINGS: BlessingType[] = ['power', 'gold', 'chain', 'phase']

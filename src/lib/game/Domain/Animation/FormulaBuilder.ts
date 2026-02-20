@@ -77,12 +77,12 @@ export function buildFormulaSteps(
     })
   }
 
-  // === 2.5 加護効果 → Aが増加 ===
-  if (breakdown.blessingPowerBonus > 0) {
-    a += breakdown.blessingPowerBonus
+  // === 2.5 バフ効果 → Aが増加 ===
+  if (breakdown.buffEnhancementBonus > 0) {
+    a += breakdown.buffEnhancementBonus
     steps.push({
-      type: 'blessing',
-      label: `力の加護 +${breakdown.blessingPowerBonus}`,
+      type: 'buff',
+      label: `増強 +${breakdown.buffEnhancementBonus}`,
       formula: buildABFormula(a, b),
       relicId: null,
     })
@@ -145,12 +145,12 @@ export function buildFormulaSteps(
     })
   }
 
-  // === 5.5 加護効果 → Bが増加 ===
-  if (breakdown.blessingChainBonus > 0) {
-    b += breakdown.blessingChainBonus
+  // === 5.5 バフ効果 → Bが増加 ===
+  if (breakdown.buffPulsationBonus > 0) {
+    b += breakdown.buffPulsationBonus
     steps.push({
-      type: 'blessing',
-      label: `連の加護 +${breakdown.blessingChainBonus}`,
+      type: 'buff',
+      label: `脈動 +${breakdown.buffPulsationBonus}`,
       formula: buildABFormula(a, b),
       relicId: null,
     })

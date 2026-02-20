@@ -9,6 +9,7 @@ import type { GameState } from '../Domain/GameState'
 import type { GamePhase } from '../Domain/Round/GamePhase'
 import type { RoundInfo } from '../Domain/Round/RoundTypes'
 import type { Board } from '../Domain/Board/Board'
+import type { Cell } from '../Domain/Board/Cell'
 import type { Piece } from '../Domain/Piece/Piece'
 import type { PieceSlot, DeckState } from '../Domain/Deck/DeckState'
 import type { ShopState, ShopItem, RelicShopItem, AmuletShopItem } from '../Domain/Shop/ShopTypes'
@@ -19,6 +20,8 @@ import type { Position } from '../Domain/Core/Position'
 import { INITIAL_RELIC_MULTIPLIER_STATE } from '../Domain/Effect/RelicState'
 import type { ScriptRelicLines } from '../Domain/Effect/ScriptRelicState'
 import type { Amulet } from '../Domain/Effect/Amulet'
+import type { BlessingId } from '../Domain/Core/Id'
+import { blessingToBuffType } from '../Domain/Effect/Buff'
 
 // ========================================
 // 定数
@@ -463,16 +466,26 @@ export function restoreGameState(
   initialDragState: GameState['dragState']
 ): GameState {
   return {
-    // マイグレーション対応: 古いセーブデータにはchargeValue/blessing系がない
+    // マイグレーション対応: 古いセーブデータにはchargeValue/buff系がない
+    // blessing/blessingLevel → buff/buffLevel へのマイグレーション
     board: saved.board.map((row) =>
       row.map((cell) => {
         const c = cell as unknown as Record<string, unknown>
+        // 旧フィールド blessing/blessingLevel からのマイグレーション
+        const legacyBlessing = c.blessing as string | null
+        const legacyBlessingLevel = (c.blessingLevel as number) ?? 0
+        // 新フィールドがあればそのまま使用、なければ旧フィールドから変換
+        const buff = (c.buff as string) ?? (legacyBlessing ? blessingToBuffType(legacyBlessing as BlessingId) : null)
+        const buffLevel = (c.buffLevel as number) ?? legacyBlessingLevel
         return {
-          ...cell,
+          filled: cell.filled,
+          blockSetId: cell.blockSetId,
+          pattern: cell.pattern,
+          seal: cell.seal,
           chargeValue: (c.chargeValue as number) ?? 0,
-          blessing: (c.blessing as string) ?? null,
-          blessingLevel: (c.blessingLevel as number) ?? 0,
-          blockBlessing: (c.blockBlessing as string) ?? null,
+          buff: (buff ?? null) as Cell['buff'],
+          buffLevel: buffLevel,
+          blockBlessing: ((c.blockBlessing as string) ?? null) as Cell['blockBlessing'],
         }
       })
     ),

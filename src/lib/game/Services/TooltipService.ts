@@ -10,7 +10,8 @@ import { INITIAL_TOOLTIP_STATE } from '../Domain/Tooltip'
 import { getPatternDefinition } from '../Domain/Effect/Pattern'
 import { getSealDefinition } from '../Domain/Effect/Seal'
 import { getRelicDefinition, RELIC_DEFINITIONS } from '../Domain/Effect/Relic'
-import { getBlessingDefinition, getBlessingDescription } from '../Domain/Effect/Blessing'
+import { getBlessingDefinition } from '../Domain/Effect/Blessing'
+import { getBuffDefinition, getBuffDescription } from '../Domain/Effect/Buff'
 import { calculateRelicSellPrice } from './ShopPriceCalculator'
 import { HD_LAYOUT, SHOP_STYLE, GRID_SIZE, RELIC_PANEL_STYLE } from '../Data/Constants'
 import { BlockDataMapUtils } from '../Domain/Piece/BlockData'
@@ -42,7 +43,7 @@ function getEffectsFromBlockData(blockData: BlockData): EffectInfo[] {
     if (blessingDef) {
       effects.push({
         name: blessingDef.name,
-        description: getBlessingDescription(blockData.blessing, 1),
+        description: blessingDef.description,
       })
     }
   }
@@ -91,14 +92,14 @@ function getEffectsFromBoardCell(
     }
   }
 
-  // 加護は空セルでも表示（消去後もセルに残る永続効果）
-  if (cell.blessing && cell.blessingLevel > 0) {
-    const blessingDef = getBlessingDefinition(cell.blessing)
-    if (blessingDef) {
-      const desc = getBlessingDescription(cell.blessing, cell.blessingLevel)
+  // バフは空セルでも表示（消去後もセルに残る永続効果）
+  if (cell.buff && cell.buffLevel > 0) {
+    const buffDef = getBuffDefinition(cell.buff)
+    if (buffDef) {
+      const desc = getBuffDescription(cell.buff, cell.buffLevel)
       if (desc) {
         effects.push({
-          name: blessingDef.name,
+          name: buffDef.name,
           description: desc,
         })
       }

@@ -1,66 +1,66 @@
 /**
- * 加護効果ハンドラー
+ * バフ効果ハンドラー
  *
- * - stampBlessingsOnBoard: ブロック消去時にセルへ加護を刻む
- * - calculateBlessingScoreEffects: 加護がスコアに与える効果を計算
+ * - stampBlessingsOnBoard: ブロック消去時にセルへバフを刻む（加護→バフ変換）
+ * - calculateBuffScoreEffects: バフがスコアに与える効果を計算
  */
 
 import type { Board } from '../Board/Board'
 import type { ClearingCell } from '../Animation/AnimationState'
-import type { BlessingId } from '../Core/Id'
-import { getBlessingDefinition } from './Blessing'
+import type { BuffType } from './Buff'
+import { blessingToBuffType, getBuffDefinition } from './Buff'
 
 /**
- * 加護スコア効果の結果
+ * バフスコア効果の結果
  */
-export interface BlessingScoreResult {
-  readonly powerBonus: number    // ブロック点(A)加算
-  readonly goldBonus: number     // ゴールド加算（スコア外）
-  readonly chainBonus: number    // 列点(B)加算
+export interface BuffScoreResult {
+  readonly enhancementBonus: number    // ブロック点(A)加算
+  readonly goldMineBonus: number       // ゴールド加算（スコア外）
+  readonly pulsationBonus: number      // 列点(B)加算
 }
 
 /**
  * レベルアップ計算
- * - 同種: +1 (multi付き: +2)、上限Lv3
+ * - 同種: +1 (multi付き: +2)、上限maxLevel
  * - 異種: 変更なし（既存維持）
  * - 新規: Lv1 (multi付き: Lv2)
  */
-export function calculateBlessingLevelUp(
-  currentBlessing: BlessingId | null,
+export function calculateBuffLevelUp(
+  currentBuff: BuffType | null,
   currentLevel: number,
-  incomingBlessing: BlessingId,
+  incomingBuff: BuffType,
   hasMultiSeal: boolean
-): { blessing: BlessingId; level: number } {
+): { buff: BuffType; level: number } {
   const increment = hasMultiSeal ? 2 : 1
-  const blessingDef = getBlessingDefinition(incomingBlessing)
-  const maxLevel = blessingDef?.maxLevel ?? 3
+  const buffDef = getBuffDefinition(incomingBuff)
+  const maxLevel = buffDef?.maxLevel ?? 3
 
-  if (!currentBlessing || currentLevel === 0) {
+  if (!currentBuff || currentLevel === 0) {
     // 新規: Lv1 (multi付き: Lv2)
     return {
-      blessing: incomingBlessing,
+      buff: incomingBuff,
       level: Math.min(increment, maxLevel),
     }
   }
 
-  if (currentBlessing === incomingBlessing) {
-    // 同種: +increment、上限3
+  if (currentBuff === incomingBuff) {
+    // 同種: +increment、上限maxLevel
     return {
-      blessing: currentBlessing,
+      buff: currentBuff,
       level: Math.min(currentLevel + increment, maxLevel),
     }
   }
 
   // 異種: 変更なし
   return {
-    blessing: currentBlessing,
+    buff: currentBuff,
     level: currentLevel,
   }
 }
 
 /**
- * ブロック消去時にセルへ加護を刻む
- * ClearingCell の blockBlessing を参照し、セルの blessing/blessingLevel を更新
+ * ブロック消去時にセルへバフを刻む
+ * ClearingCell の blockBlessing を参照し、バフ種別に変換してセルの buff/buffLevel を更新
  */
 export function stampBlessingsOnBoard(
   board: Board,
@@ -79,17 +79,20 @@ export function stampBlessingsOnBoard(
     const boardCell = newBoard[cell.row][cell.col]
     const hasMulti = boardCell.seal === 'multi'
 
-    const result = calculateBlessingLevelUp(
-      boardCell.blessing,
-      boardCell.blessingLevel,
-      cell.blockBlessing,
+    // 加護をバフ種別に変換
+    const incomingBuff = blessingToBuffType(cell.blockBlessing)
+
+    const result = calculateBuffLevelUp(
+      boardCell.buff,
+      boardCell.buffLevel,
+      incomingBuff,
       hasMulti
     )
 
     newBoard[cell.row][cell.col] = {
       ...boardCell,
-      blessing: result.blessing,
-      blessingLevel: result.level,
+      buff: result.buff,
+      buffLevel: result.level,
     }
   }
 
@@ -97,39 +100,39 @@ export function stampBlessingsOnBoard(
 }
 
 /**
- * 加護がスコアに与える効果を計算
- * 消去対象セルの下にある加護を参照
- * obstacleパターンが乗っているセルの加護は無効化
+ * バフがスコアに与える効果を計算
+ * 消去対象セルの下にあるバフを参照
+ * obstacleパターンが乗っているセルのバフは無効化
  */
-export function calculateBlessingScoreEffects(
+export function calculateBuffScoreEffects(
   board: Board,
   cellsToRemove: readonly ClearingCell[]
-): BlessingScoreResult {
-  let powerBonus = 0
-  let goldBonus = 0
-  let chainBonus = 0
+): BuffScoreResult {
+  let enhancementBonus = 0
+  let goldMineBonus = 0
+  let pulsationBonus = 0
 
   for (const cell of cellsToRemove) {
     const boardCell = board[cell.row][cell.col]
 
-    // 加護なし or obstacle上は無効
-    if (!boardCell.blessing || boardCell.blessingLevel === 0) continue
+    // バフなし or obstacle上は無効
+    if (!boardCell.buff || boardCell.buffLevel === 0) continue
     if (boardCell.pattern === 'obstacle') continue
 
-    const level = boardCell.blessingLevel
+    const level = boardCell.buffLevel
 
-    switch (boardCell.blessing) {
-      case 'power':
-        powerBonus += level
+    switch (boardCell.buff) {
+      case 'enhancement':
+        enhancementBonus += level
         break
-      case 'gold':
-        goldBonus += level
+      case 'gold_mine':
+        goldMineBonus += level
         break
-      case 'chain':
-        chainBonus += level
+      case 'pulsation':
+        pulsationBonus += level
         break
     }
   }
 
-  return { powerBonus, goldBonus, chainBonus }
+  return { enhancementBonus, goldMineBonus, pulsationBonus }
 }

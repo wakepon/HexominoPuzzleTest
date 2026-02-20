@@ -49,13 +49,13 @@ export interface ScoreBreakdown {
   /** レリック加算ボーナス合計（サイズボーナス + コピー加算） */
   readonly relicBonusTotal: number
 
-  // === 加護効果 ===
-  readonly blessingPowerBonus: number   // 力の加護ボーナス
-  readonly blessingGoldBonus: number    // 金の加護ゴールド
-  readonly blessingChainBonus: number   // 連の加護ボーナス
+  // === バフ効果 ===
+  readonly buffEnhancementBonus: number   // 増強バフボーナス
+  readonly buffGoldMineBonus: number      // 金鉱バフゴールド
+  readonly buffPulsationBonus: number     // 脈動バフボーナス
 
   // === 最終計算値 ===
-  readonly blockPoints: number  // ブロック点(A): パターン+シール+加算レリック+力の加護
-  readonly linePoints: number   // 列点(B): ライン数×lucky×乗算レリック+連の加護
+  readonly blockPoints: number  // ブロック点(A): パターン+シール+加算レリック+増強バフ
+  readonly linePoints: number   // 列点(B): ライン数×lucky×乗算レリック+脈動バフ
   readonly finalScore: number   // 最終スコア = Math.floor(A × B)
 }

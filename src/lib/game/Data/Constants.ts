@@ -328,9 +328,9 @@ export const DEBUG_WINDOW_STYLE = {
   highlightBgColor: 'rgba(255, 215, 0, 0.3)',  // 次のミノのハイライト背景
   fontFamily: 'Consolas, Monaco, monospace',
   padding: 10,
-  itemPadding: 4,          // ミノアイテム間のパディング
-  cellSize: 7,             // ミノセルサイズ（小さい 6-8px）
-  maxItems: 20,            // 表示する最大アイテム数
+  itemPadding: 3,          // ミノアイテム間のパディング
+  cellSize: 12,            // ミノセルサイズ（エフェクト表示対応）
+  maxItems: 12,            // 表示する最大アイテム数
   numberColumnWidth: 25,   // 番号表示用の幅
   minWindowWidth: 90,      // 最小ウィンドウ幅
   columnGap: 8,            // 3列レイアウトの列間ギャップ
@@ -440,10 +440,25 @@ export const BLESSING_COLORS: Record<string, string> = {
   power: '#FF6347',   // 赤系（力）
   gold: '#FFD700',    // 金色
   chain: '#4169E1',   // 青系（連鎖）
+  phase: '#00CED1',   // シアン系（透過）
 }
 
-// 加護記号のスタイル設定
+// 加護記号のスタイル設定（ピース上の加護マーク用）
 export const BLESSING_SYMBOL_STYLE = {
+  fontSize: 10,
+  fontFamily: 'serif',
+}
+
+// バフ別カラー定義（セル上の永続効果用）
+export const BUFF_COLORS: Record<string, string> = {
+  enhancement: '#FF6347',   // 赤系（増強）
+  gold_mine: '#FFD700',     // 金色（金鉱）
+  pulsation: '#4169E1',     // 青系（脈動）
+  phase: '#00CED1',         // シアン系（透過）
+}
+
+// バフ記号のスタイル設定
+export const BUFF_SYMBOL_STYLE = {
   fontSize: 10,
   fontFamily: 'serif',
 }

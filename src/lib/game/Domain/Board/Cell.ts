@@ -1,10 +1,11 @@
 import type { BlockSetId, PatternId, SealId, BlessingId } from '../Core/Id'
+import type { BuffType } from '../Effect/Buff'
 
 /**
  * セルの状態
  *
- * - blessing/blessingLevel: 加護（永続効果、消去後もセルに残る）
- * - blockBlessing: ブロック配置時の加護（消去時にセルに刻まれる一時フィールド）
+ * - buff/buffLevel: バフ（永続効果、消去後もセルに残る）
+ * - blockBlessing: ブロック配置時の加護（消去時にセルにバフとして刻まれる一時フィールド）
  */
 export interface Cell {
   readonly filled: boolean
@@ -12,8 +13,8 @@ export interface Cell {
   readonly pattern: PatternId | null
   readonly seal: SealId | null
   readonly chargeValue: number
-  readonly blessing: BlessingId | null
-  readonly blessingLevel: number
+  readonly buff: BuffType | null
+  readonly buffLevel: number
   readonly blockBlessing: BlessingId | null
 }
 
@@ -26,8 +27,8 @@ export const createEmptyCell = (): Cell => ({
   pattern: null,
   seal: null,
   chargeValue: 0,
-  blessing: null,
-  blessingLevel: 0,
+  buff: null,
+  buffLevel: 0,
   blockBlessing: null,
 })
 
@@ -45,7 +46,7 @@ export const createFilledCell = (
   pattern,
   seal,
   chargeValue,
-  blessing: null,
-  blessingLevel: 0,
+  buff: null,
+  buffLevel: 0,
   blockBlessing: null,
 })

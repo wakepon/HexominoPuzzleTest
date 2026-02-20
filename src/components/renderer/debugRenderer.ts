@@ -3,12 +3,17 @@
  */
 
 import { DeckState, PieceShape } from '../../lib/game/types'
-import { DEBUG_WINDOW_STYLE, COLORS } from '../../lib/game/Data/Constants'
+import { DEBUG_WINDOW_STYLE, COLORS, PATTERN_COLORS, SEAL_COLORS, BLESSING_COLORS } from '../../lib/game/Data/Constants'
 import { getMinoById } from '../../lib/game/minoDefinitions'
 import type { DebugSettings } from '../../lib/game/Domain/Debug'
 import { RELIC_DEFINITIONS, type RelicType } from '../../lib/game/Domain/Effect/Relic'
-import type { RelicId } from '../../lib/game/Domain/Core/Id'
+import type { RelicId, MinoId } from '../../lib/game/Domain/Core/Id'
 import { AMULET_DEFINITIONS, type AmuletType } from '../../lib/game/Domain/Effect/Amulet'
+import { BlockDataMapUtils } from '../../lib/game/Domain/Piece/BlockData'
+import type { BlockDataMap } from '../../lib/game/Domain/Piece/BlockData'
+import { getPatternDefinition } from '../../lib/game/Domain/Effect/Pattern'
+import { getSealDefinition } from '../../lib/game/Domain/Effect/Seal'
+import { getBlessingDefinition } from '../../lib/game/Domain/Effect/Blessing'
 
 /**
  * ボタン領域の型定義
@@ -65,14 +70,15 @@ export interface DebugWindowRenderResult {
 }
 
 /**
- * ミノ形状を小さいセルで描画
+ * ミノ形状を小さいセルで描画（エフェクト表示対応）
  */
 function drawMiniMino(
   ctx: CanvasRenderingContext2D,
   shape: PieceShape,
   x: number,
   y: number,
-  cellSize: number
+  cellSize: number,
+  blocks?: BlockDataMap
 ): { width: number; height: number } {
   const rows = shape.length
   const cols = shape[0]?.length ?? 0
@@ -82,20 +88,74 @@ function drawMiniMino(
       if (shape[row][col]) {
         const cellX = x + col * cellSize
         const cellY = y + row * cellSize
+        const blockData = blocks ? BlockDataMapUtils.get(blocks, row, col) : undefined
+
+        // パターンがあれば色を変更
+        const patternColors = blockData?.pattern ? PATTERN_COLORS[blockData.pattern] : null
 
         // ベース色
-        ctx.fillStyle = COLORS.piece
+        ctx.fillStyle = patternColors?.base ?? COLORS.piece
         ctx.fillRect(cellX, cellY, cellSize - 1, cellSize - 1)
 
-        // ハイライト（上端と左端）- セルが小さいので1pxのみ
-        ctx.fillStyle = COLORS.pieceHighlight
+        // ハイライト（上端と左端）
+        ctx.fillStyle = patternColors?.highlight ?? COLORS.pieceHighlight
         ctx.fillRect(cellX, cellY, cellSize - 1, 1)
         ctx.fillRect(cellX, cellY, 1, cellSize - 1)
 
         // シャドウ（下端と右端）
-        ctx.fillStyle = COLORS.pieceShadow
+        ctx.fillStyle = patternColors?.shadow ?? COLORS.pieceShadow
         ctx.fillRect(cellX, cellY + cellSize - 2, cellSize - 1, 1)
         ctx.fillRect(cellX + cellSize - 2, cellY, 1, cellSize - 1)
+
+        // パターンシンボル（中央）
+        if (blockData?.pattern) {
+          const patternDef = getPatternDefinition(blockData.pattern)
+          if (patternDef) {
+            ctx.font = `bold 7px Arial, sans-serif`
+            ctx.fillStyle = '#FFFFFF'
+            ctx.textAlign = 'center'
+            ctx.textBaseline = 'middle'
+            ctx.shadowColor = '#000000'
+            ctx.shadowBlur = 1
+            ctx.fillText(patternDef.symbol, cellX + (cellSize - 1) / 2, cellY + (cellSize - 1) / 2)
+            ctx.shadowColor = 'transparent'
+            ctx.shadowBlur = 0
+          }
+        }
+
+        // シールバッジ（右下）
+        if (blockData?.seal) {
+          const sealDef = getSealDefinition(blockData.seal)
+          if (sealDef) {
+            const badgeSize = 7
+            const badgeX = cellX + cellSize - 1 - badgeSize
+            const badgeY = cellY + cellSize - 1 - badgeSize
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.6)'
+            ctx.fillRect(badgeX, badgeY, badgeSize, badgeSize)
+            ctx.font = `bold 6px Arial, sans-serif`
+            ctx.fillStyle = SEAL_COLORS[blockData.seal] ?? '#FFFFFF'
+            ctx.textAlign = 'center'
+            ctx.textBaseline = 'middle'
+            ctx.fillText(sealDef.symbol, badgeX + badgeSize / 2, badgeY + badgeSize / 2)
+          }
+        }
+
+        // 加護バッジ（左上）
+        if (blockData?.blessing) {
+          const blessingDef = getBlessingDefinition(blockData.blessing)
+          if (blessingDef) {
+            const badgeSize = 7
+            const badgeX = cellX
+            const badgeY = cellY
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.6)'
+            ctx.fillRect(badgeX, badgeY, badgeSize, badgeSize)
+            ctx.font = `bold 6px serif`
+            ctx.fillStyle = BLESSING_COLORS[blockData.blessing] ?? '#FFFFFF'
+            ctx.textAlign = 'center'
+            ctx.textBaseline = 'middle'
+            ctx.fillText(blessingDef.symbol, badgeX + badgeSize / 2, badgeY + badgeSize / 2)
+          }
+        }
       }
     }
   }
@@ -389,13 +449,15 @@ export function renderDebugWindow(
   const cards = deck.cards
   const displayCount = Math.min(cards.length, maxItems)
 
-  const minoShapes: { id: string; shape: PieceShape }[] = []
+  const minoShapes: { id: MinoId; shape: PieceShape; blocks?: BlockDataMap }[] = []
   let maxMinoWidth = 0
 
   for (let i = 0; i < displayCount; i++) {
-    const mino = getMinoById(cards[i])
+    const cardId = cards[i]
+    const mino = getMinoById(cardId)
     if (mino) {
-      minoShapes.push({ id: cards[i], shape: mino.shape })
+      const purchasedPiece = deck.purchasedPieces.get(cardId)
+      minoShapes.push({ id: cardId, shape: mino.shape, blocks: purchasedPiece?.blocks })
       const size = getMinoSize(mino.shape, cellSize)
       maxMinoWidth = Math.max(maxMinoWidth, size.width)
     }
@@ -475,7 +537,7 @@ export function renderDebugWindow(
 
   // デッキの中身をミノ形状で表示（先頭から順に）
   for (let i = 0; i < minoShapes.length; i++) {
-    const { shape } = minoShapes[i]
+    const { shape, blocks } = minoShapes[i]
     const size = getMinoSize(shape, cellSize)
 
     // 先頭（次に出るミノ）の背景ハイライト
@@ -496,8 +558,8 @@ export function renderDebugWindow(
     ctx.textBaseline = 'top'
     ctx.fillText(`${i + 1}.`, col3X + padding + numberColumnWidth - 5, y3 + (size.height - infoFontSize) / 2)
 
-    // ミノ形状を描画
-    drawMiniMino(ctx, shape, col3X + padding + numberColumnWidth, y3, cellSize)
+    // ミノ形状を描画（エフェクト表示付き）
+    drawMiniMino(ctx, shape, col3X + padding + numberColumnWidth, y3, cellSize, blocks)
 
     y3 += size.height + itemPadding
   }
