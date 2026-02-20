@@ -104,6 +104,7 @@ import type { RelicId, PatternId } from '../../Domain/Core/Id'
 import type { RoundInfo } from '../../Domain/Round/RoundTypes'
 import { generateScriptLines } from '../../Domain/Effect/ScriptRelicState'
 import { GOLDFISH_GOLD_BONUS, GOLDFISH_SCORE_MULTIPLIER } from '../../Domain/Effect/Relics/Goldfish'
+import { MAGNET_CHARGE_INCREMENT } from '../../Domain/Effect/Relics/Magnet'
 
 
 /**
@@ -707,8 +708,9 @@ function processPiecePlacement(
       { type: 'lines_cleared', totalLines, rowLines: completedLines.rows.length, colLines: completedLines.columns.length, patternBlockCount: clearedPatternBlockCount, clearedPatternTypes }
     )
 
-    // 得点計算後にchargeValueをインクリメント（配置したピース自身は除外）
-    const boardAfterChargeIncrement = incrementChargeValues(newBoard, piece.blockSetId)
+    // 得点計算後にchargeValueをインクリメント（配置したピース自身は除外、magnet所持時は+2）
+    const chargeIncrement = hasRelic(state.player.ownedRelics, 'magnet') ? MAGNET_CHARGE_INCREMENT : 1
+    const boardAfterChargeIncrement = incrementChargeValues(newBoard, piece.blockSetId, chargeIncrement)
 
     // スコアアニメーションが存在し、playing以外のフェーズに遷移する場合はpendingPhaseに保留
     const shouldDefer = scoreAnim !== null && newPhase !== 'playing'
@@ -760,8 +762,9 @@ function processPiecePlacement(
     return volcanoResult
   }
 
-  // 得点計算後にchargeValueをインクリメント（配置したピース自身は除外）
-  const boardAfterChargeIncrement = incrementChargeValues(newBoard, piece.blockSetId)
+  // 得点計算後にchargeValueをインクリメント（配置したピース自身は除外、magnet所持時は+2）
+  const noLineChargeIncrement = hasRelic(state.player.ownedRelics, 'magnet') ? MAGNET_CHARGE_INCREMENT : 1
+  const boardAfterChargeIncrement = incrementChargeValues(newBoard, piece.blockSetId, noLineChargeIncrement)
 
   return {
     success: true,
@@ -1079,8 +1082,9 @@ function gameReducerInner(state: GameState, action: GameAction): GameState {
         finalDeck.remainingHands
       )
 
-      // 配置後にchargeValueをインクリメント（配置したピース自身は除外）
-      const boardAfterChargeIncrement = incrementChargeValues(newBoard, slot.piece.blockSetId)
+      // 配置後にchargeValueをインクリメント（配置したピース自身は除外、magnet所持時は+2）
+      const stockChargeIncrement = hasRelic(state.player.ownedRelics, 'magnet') ? MAGNET_CHARGE_INCREMENT : 1
+      const boardAfterChargeIncrement = incrementChargeValues(newBoard, slot.piece.blockSetId, stockChargeIncrement)
 
       return {
         ...state,

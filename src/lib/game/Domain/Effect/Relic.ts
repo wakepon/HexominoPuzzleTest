@@ -67,6 +67,7 @@ export type RelicType =
   | 'gambler'           // ギャンブラー
   | 'phoenix'           // 不死鳥
   | 'goldfish'          // 金魚
+  | 'magnet'            // 磁石
 
 /**
  * レリック定義
@@ -552,6 +553,15 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     rarity: 'common',
     price: 10,
     icon: '🐠',
+  },
+  magnet: {
+    id: 'magnet' as RelicId,
+    type: 'magnet',
+    name: '磁石',
+    description: 'chargeパターン（⚡）の蓄積速度を2倍にする',
+    rarity: 'uncommon',
+    price: 15,
+    icon: '🧲',
   },
 }
 

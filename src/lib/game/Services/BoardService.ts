@@ -93,14 +93,15 @@ export function placeObstacleOnBoard(
 }
 
 /**
- * ボード上の全chargeパターンブロックのchargeValueを+1する
+ * ボード上の全chargeパターンブロックのchargeValueを加算する
  * 得点計算後に呼び出すことで「別のブロックが置かれるたび」の仕様を実現
+ * デフォルトは+1、magnet所持時は+2
  */
-export function incrementChargeValues(board: Board, excludeBlockSetId?: BlockSetId | null): Board {
+export function incrementChargeValues(board: Board, excludeBlockSetId?: BlockSetId | null, increment: number = 1): Board {
   return board.map((row) =>
     row.map((cell) => {
       if (cell.filled && cell.pattern === ('charge' as PatternId) && cell.blockSetId !== excludeBlockSetId) {
-        return { ...cell, chargeValue: cell.chargeValue + 1 }
+        return { ...cell, chargeValue: cell.chargeValue + increment }
       }
       return cell
     })
