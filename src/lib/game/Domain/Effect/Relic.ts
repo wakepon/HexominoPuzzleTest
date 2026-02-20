@@ -65,6 +65,7 @@ export type RelicType =
   | 'orchestra'         // オーケストラ
   | 'amplifier'         // アンプリファイア
   | 'gambler'           // ギャンブラー
+  | 'phoenix'           // 不死鳥
 
 /**
  * レリック定義
@@ -532,6 +533,15 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     rarity: 'uncommon',
     price: 15,
     icon: '🎰',
+  },
+  phoenix: {
+    id: 'phoenix' as RelicId,
+    type: 'phoenix',
+    name: '不死鳥',
+    description: 'ラウンド失敗時、1度だけラウンドをやり直せる（使用後消滅）',
+    rarity: 'epic',
+    price: 25,
+    icon: '🐦‍🔥',
   },
 }
 

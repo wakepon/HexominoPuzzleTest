@@ -106,6 +106,86 @@ import { generateScriptLines } from '../../Domain/Effect/ScriptRelicState'
 
 
 /**
+ * フェニックスレリックによるラウンドリスタート
+ * game_over状態でphoenix所持時、現在のラウンドを最初からやり直す
+ * phoenixはレリック枠から消滅する
+ */
+function tryPhoenixRestart(state: GameState): GameState | null {
+  if (state.phase !== 'game_over') return null
+  if (!hasRelic(state.player.ownedRelics, 'phoenix')) return null
+
+  const rng = new DefaultRandom()
+  const round = state.round
+  const roundInfo = state.roundInfo
+
+  // ボス条件に基づいた配置回数とドロー枚数
+  const playerAfterRemove = removeRelic(state.player, 'phoenix' as RelicId)
+  const maxHands = getMaxPlacements(roundInfo, playerAfterRemove.ownedRelics)
+  const drawCount = getDrawCount(roundInfo, playerAfterRemove.ownedRelics)
+
+  // デッキを再シャッフル
+  const baseDeck: DeckState = {
+    cards: shuffleCurrentDeck(state.deck, rng).cards,
+    allMinos: state.deck.allMinos,
+    remainingHands: maxHands,
+    purchasedPieces: state.deck.purchasedPieces,
+    stockSlot: null,
+    stockSlot2: null,
+  }
+
+  const { slots, newDeck } = generateNewPieceSlotsFromDeckWithCount(
+    baseDeck,
+    drawCount,
+    rng
+  )
+
+  // ボス条件「おじゃまブロック」の場合は再配置
+  let board = createEmptyBoard()
+  if (roundInfo?.bossCondition?.id === 'obstacle') {
+    for (let i = 0; i < OBSTACLE_BLOCK_COUNT; i++) {
+      board = placeObstacleOnBoard(board, rng)
+    }
+  }
+
+  // 台本レリック: 所持時に指定ラインを再抽選
+  const scriptRelicLines = hasRelic(playerAfterRemove.ownedRelics, 'script')
+    ? generateScriptLines(() => rng.next())
+    : null
+
+  return {
+    board,
+    pieceSlots: slots,
+    dragState: initialDragState,
+    score: 0,
+    clearingAnimation: null,
+    relicActivationAnimation: null,
+    scoreAnimation: null,
+    deck: newDeck,
+    phase: 'round_progress',
+    pendingPhase: null,
+    round,
+    roundInfo: roundInfo!,
+    player: playerAfterRemove,
+    targetScore: state.targetScore,
+    shopState: null,
+    relicMultiplierState: dispatchRelicStateEvent(
+      playerAfterRemove.ownedRelics,
+      {
+        ...INITIAL_RELIC_MULTIPLIER_STATE,
+        copyRelicState: state.relicMultiplierState.copyRelicState
+          ? createInitialCopyRelicState(state.relicMultiplierState.copyRelicState.targetRelicId)
+          : null,
+      },
+      { type: 'round_start' }
+    ),
+    scriptRelicLines,
+    deckViewOpen: false,
+    volcanoEligible: true,
+    amuletModal: null,
+  }
+}
+
+/**
  * スコアアニメーション状態を作成
  */
 function createScoreAnimation(
@@ -808,8 +888,14 @@ function createNextRoundState(currentState: GameState): GameState {
 
 /**
  * ゲームリデューサー
+ * game_over状態でphoenixレリック所持時はラウンドリスタートをインターセプト
  */
 export function gameReducer(state: GameState, action: GameAction): GameState {
+  const result = gameReducerInner(state, action)
+  return tryPhoenixRestart(result) ?? result
+}
+
+function gameReducerInner(state: GameState, action: GameAction): GameState {
   switch (action.type) {
     case 'UI/START_DRAG': {
       const slot = state.pieceSlots[action.slotIndex]
