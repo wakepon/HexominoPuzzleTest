@@ -946,7 +946,9 @@ export function GameCanvas({
         return true
       }
 
-      return false
+      // ウィンドウ外のクリックでデバッグウィンドウを閉じる
+      setShowDebugWindow(false)
+      return true
     }
 
     // ラウンド進行画面のクリック処理
