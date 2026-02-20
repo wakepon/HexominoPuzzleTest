@@ -32,7 +32,8 @@ Relics/
 ├── RelicEffectEngine.ts    # 汎用エフェクト評価（スコア計算時）
 ├── RelicStateDispatcher.ts # 汎用状態更新ディスパッチ（Reducer用）
 ├── index.ts                # レジストリ初期化（全モジュール登録）
-└── *.ts                    # 個別レリック（1ファイル = 1レリック、計20ファイル）
+├── SizeBonusFactory.ts     # サイズボーナス生成（1~6）
+└── *.ts                    # 個別レリック（1ファイル = 1レリック、計46ファイル）
 ```
 
 **レリック追加手順**: 新規 `Relics/NewRelic.ts` 作成 + `Relics/index.ts` に1行import追加
@@ -43,10 +44,8 @@ Relics/
 ```typescript
 createEmptyBoard(): Board
 placePieceOnBoard(board, piece, position): Board
-placePieceShapeOnBoard(board, shape, position, blockSetId, pattern?, seal?): Board
-getCell(board, position): Cell | null
 placeObstacleOnBoard(board, positions): Board
-incrementChargeValues(board, excludeBlockSetId?): Board
+incrementChargeValues(board, excludeBlockSetId?, increment?): Board
 ```
 
 ### LineService.ts - ライン完成検出・スコア計算（最重要）
@@ -72,6 +71,7 @@ createPieceWithSeal(mino, seal, rng): Piece
 createPieceWithPatternAndSeal(mino, pattern, seal, rng): Piece
 createPieceFromShape(idPrefix, shape): Piece
 generatePieceSet(rng, count, patternProb?, sealProb?): Piece[]
+getInitialPieces(): Piece[]
 getPiecePattern(piece): PatternId | null
 getPieceSize(shape): { width, height }
 getPieceCellCount(shape): number
@@ -100,8 +100,8 @@ isRoundCleared(score, targetScore): boolean
 isFinalRound(round): boolean
 selectRandomBossCondition(rng): BossCondition
 createRoundInfo(round, rng): RoundInfo
-getMaxPlacements(roundInfo): number
-getDrawCount(roundInfo): number
+getMaxPlacements(roundInfo, ownedRelics?): number   // extra_hand対応
+getDrawCount(roundInfo, ownedRelics?): number        // extra_draw対応
 ```
 
 ### ShopService.ts - ショップ
@@ -152,7 +152,6 @@ createSequentialClearingCells(cells, board): ClearingCell[]  // delay, pattern, 
 saveGameState(state): void
 loadGameState(): SavedGameState | null
 clearGameState(): void
-hasSavedGame(): boolean
 restoreGameState(saved, rng): GameState
 ```
 
@@ -193,7 +192,7 @@ LineService.calculateScoreWithEffects()
        │    ├→ filterClearableCells()           → 石シール除外
        │    ├→ calculateGoldCount()             → ゴールドシール
        │    ├→ calculateScoreBonus()            → スコアシール+5
-       │    └→ calculateMultiBonus()            → マルチシール×2
+       │    └→ calculateMultiBonus()            → マルチシール×2（prism所持時×3）
        ├→ RelicEffectEngine.evaluateRelicEffects()  → 全レリック発動判定（Registry経由）
        ├→ RelicEffectEngine.evaluateCopyRelicEffect() → コピーレリック評価
        └→ スコア合算（relicEffects Mapから動的に乗算/加算/ライン加算を分類）
@@ -205,10 +204,12 @@ LineService.calculateScoreWithEffects()
 GameReducer (ライン検出時)
   ├→ dispatchRelicStateEvent({type:'lines_detected'})  → スコア計算前の状態更新（のびのび系）
   ├→ calculateScoreBreakdown()                          → スコア計算
-  └→ dispatchRelicStateEvent({type:'lines_cleared'})   → スコア計算後の状態更新（連射）
+  └→ dispatchRelicStateEvent({type:'lines_cleared', patternBlockCount, clearedPatternTypes})
+                                                        → スコア計算後の状態更新（連射, 庭師, 収集家等）
 
 GameReducer (ピース配置時)
-  ├→ dispatchRelicStateEvent({type:'hand_consumed'})   → ハンド消費通知
+  ├→ dispatchRelicStateEvent({type:'hand_consumed', placedBlockSize})
+  │                                                    → ハンド消費通知（筋肉, 双子等）
   └→ dispatchOnPiecePlaced()                            → フック実行（絆創膏注入等）
 
 GameReducer (ラウンド開始時)

@@ -31,7 +31,7 @@ interface GameState {
   targetScore: number
   player: PlayerState                             // ゴールド、レリック、護符
   shopState: ShopState | null
-  relicMultiplierState: RelicMultiplierState       // レリック倍率の累積
+  relicMultiplierState: RelicMultiplierState       // レリック累積状態
   scriptRelicLines: ScriptRelicLines | null        // 台本指定ライン
   volcanoEligible: boolean                         // 火山発動可能フラグ
   deckViewOpen: boolean
@@ -113,7 +113,7 @@ type GamePhase =
 //        round_clear → game_clear
 ```
 
-### RoundInfo
+### RoundInfo / BossCondition
 ```typescript
 interface RoundInfo {
   round: number
@@ -121,7 +121,16 @@ interface RoundInfo {
   bossCondition: BossCondition | null
 }
 
-type BossCondition = 'obstacle'  // おじゃまブロック配置
+type BossConditionType = 'obstacle' | 'energy_save' | 'two_cards'
+
+interface BossCondition {
+  id: BossConditionType
+  name: string
+  description: string
+}
+// obstacle: おじゃまブロック4マス配置
+// energy_save: 配置可能数25%減少
+// two_cards: 手札2枚になる
 ```
 
 ## Effect全種別
@@ -129,31 +138,50 @@ type BossCondition = 'obstacle'  // おじゃまブロック配置
 ### Pattern（ブロック効果）- 9種
 | PatternType | 名前 | 記号 | 効果 |
 |------------|------|------|------|
-| enhanced | 強化ブロック | ★ | ブロック点+2 |
+| enhanced | 強化ブロック | ★ | ブロック点+2（amplifier所持時+5） |
 | lucky | ラッキーブロック | ♣ | 10%で列点×2 |
 | combo | コンボブロック | C | 同時消去ボーナス |
 | aura | オーラブロック | ◎ | 隣接ブロック点+1 |
 | moss | 苔ブロック | M | 端接触で列点+1 |
 | feather | 羽ブロック | F | 重ね配置可能 |
 | nohand | ノーハンドブロック | N | ハンド消費なし |
-| charge | チャージブロック | ⚡ | 配置ごとにブロック点+1蓄積 |
+| charge | チャージブロック | ⚡ | 配置ごとにブロック点+1蓄積（magnet所持時+2） |
 | obstacle | おじゃまブロック | × | 消去不可（ボス条件） |
 
 ### Seal（シール効果）- 6種
 | SealType | 名前 | 記号 | 効果 |
 |----------|------|------|------|
-| gold | ゴールドシール | G | 消去時+1G |
+| gold | ゴールドシール | G | 消去時+1G（treasure_hunter所持時+2G） |
 | score | スコアシール | +5 | ブロック点+5 |
-| multi | マルチシール | ×2 | 2回発動 |
-| stone | 石 | 石 | 消去不可 |
-| arrow_v | アローシール(縦) | ↕ | 縦消去時ブロック点+10 |
-| arrow_h | アローシール(横) | ↔ | 横消去時ブロック点+10 |
+| multi | マルチシール | ×2 | 2回発動（prism所持時×3） |
+| stone | 石 | 石 | 消去不可（furnace所持時消去でブロック点+15） |
+| arrow_v | アローシール(縦) | ↕ | 縦消去時ブロック点+10（compass_rose所持時+20） |
+| arrow_h | アローシール(横) | ↔ | 横消去時ブロック点+10（compass_rose所持時+20） |
 
-### Relic（レリック）- 20種
+### Relic（レリック）- 52種（サイズボーナス6種 + 個別46種）
+
+#### スコア系: 加算（additive） - ブロック点(A)に加算
+| RelicType | 名前 | レアリティ | 価格 | 効果概要 |
+|-----------|------|----------|------|---------|
+| size_bonus_1~6 | Nサイズボーナス | common | 10 | Nブロックピース消去時ブロック点+1 |
+| anchor | アンカー | common | 10 | ラウンド最初の消去時ブロック点+5 |
+| featherweight | 軽量級 | common | 10 | 2ブロック以下配置で消去時ブロック点+4 |
+| heavyweight | 重量級 | common | 10 | 5ブロック以上配置で消去時ブロック点+3 |
+| twin | 双子 | common | 10 | 同サイズ連続配置で消去時ブロック点+4 |
+| crown | 王冠 | uncommon | 15 | パターン付きブロック1個につきブロック点+2 |
+| stamp | スタンプ | uncommon | 15 | シール付きブロック1個につきブロック点+5 |
+| compass | コンパス | uncommon | 15 | 行列同時消去時ブロック点+3 |
+| gardener | 庭師 | uncommon | 15 | パターンブロック消去ごとにブロック点+0.2累積（ラウンド中） |
+| minimalist | ミニマリスト | uncommon | 15 | デッキ5枚以下でブロック点+5 |
+| furnace | 溶鉱炉 | uncommon | 15 | stoneシール消去時1個につきブロック点+15 |
+| cross | 十字 | rare | 20 | 行列同時消去時、交差セルのブロック点+30 |
+| alchemist | 錬金術師 | rare | 20 | パターン+シール両方持ちブロック1個につきブロック点+10 |
+| snowball | 雪だるま | rare | 20 | 消去ごとにブロック点+0.5累積（永続） |
+
+#### スコア系: 乗算（multiplicative） - 列点(B)に乗算
 | RelicType | 名前 | レアリティ | 価格 | 効果概要 |
 |-----------|------|----------|------|---------|
 | full_clear_bonus | 全消しボーナス | common | 10 | 全消し時列点×5 |
-| size_bonus_1~6 | Nサイズボーナス | common | 10 | Nブロックピース消去時ブロック点+1 |
 | chain_master | 連鎖の達人 | rare | 20 | 複数行列同時消しで列点×1.5 |
 | single_line | シングルライン | uncommon | 15 | 1行/列のみ消去で列点×3 |
 | takenoko | タケノコ | common | 10 | 縦列のみ消去で列点×列数 |
@@ -161,12 +189,44 @@ type BossCondition = 'obstacle'  // おじゃまブロック配置
 | rensha | 連射 | rare | 20 | 連続消去で列点+1蓄積（リセットあり） |
 | nobi_takenoko | のびのびタケノコ | uncommon | 15 | 縦のみ消去で列点+0.5蓄積 |
 | nobi_kani | のびのびカニ | uncommon | 15 | 横のみ消去で列点+0.5蓄積 |
-| hand_stock | 手札ストック | epic | 25 | ストック枠出現 |
-| script | 台本 | uncommon | 15 | 指定ライン揃えで列数+1/+2 |
-| volcano | 火山 | uncommon | 15 | 未消去時全消去（ブロック数×最大列数） |
-| bandaid | 絆創膏 | rare | 20 | 3ハンドごとにノーハンドモノミノ追加 |
 | timing | タイミング | uncommon | 15 | 残ハンド数÷3で列点×3 |
+| meteor | 流星 | rare | 20 | 3ライン以上同時消しで列点×2 |
+| symmetry | シンメトリー | uncommon | 15 | 消去行数と列数が同数で列点×2 |
+| crescent | 三日月 | uncommon | 15 | 残ハンド奇数で列点×1.5 |
+| last_stand | ラストスタンド | rare | 20 | 残ハンド2以下で列点×4 |
+| first_strike | 先制攻撃 | uncommon | 15 | ラウンド最初の消去で列点×2.5 |
+| patience | 忍耐 | rare | 20 | 連続3回非消去後の次の消去で列点×3 |
+| muscle | 筋肉 | uncommon | 15 | 4ブロック以上配置ごとに列点+0.3累積（ラウンド中） |
+| collector | 収集家 | uncommon | 15 | 異なるパターン種類1種につき列点+0.5累積 |
+| overload | 過負荷 | rare | 20 | 盤面75%以上で列点×2 |
+| orchestra | オーケストラ | uncommon | 15 | 3種以上のパターンで列点×2 |
+
+#### スコア系: ライン加算（line_additive） - ライン数に加算
+| RelicType | 名前 | レアリティ | 価格 | 効果概要 |
+|-----------|------|----------|------|---------|
+| script | 台本 | uncommon | 15 | 指定ライン揃えで列数+1/+2 |
+| gambler | ギャンブラー | uncommon | 15 | 消去時ランダムに列数+0~3 |
+
+#### 非スコア系（none） - ゲームメカニクスに影響
+| RelicType | 名前 | レアリティ | 価格 | 効果概要 |
+|-----------|------|----------|------|---------|
+| hand_stock | 手札ストック | epic | 25 | ストック枠出現 |
 | copy | コピー | epic | 25 | 1つ上のレリック効果をコピー |
+| bandaid | 絆創膏 | rare | 20 | 3ハンドごとにノーハンドモノミノ追加 |
+| volcano | 火山 | uncommon | 15 | 未消去時全消去（ブロック数×最大列数） |
+| merchant | 商人 | uncommon | 15 | リロール費用-2G |
+| recycler | リサイクラー | uncommon | 15 | ラウンド中3回まで手札1枚入替可能 |
+| treasure_hunter | トレジャーハンター | common | 10 | ゴールドシール消去時追加+1G |
+| midas | ミダス | uncommon | 15 | 全消し時+5G |
+| goldfish | 金魚 | common | 10 | スコアが目標2倍以上で+3G |
+| extra_draw | 追加ドロー | epic | 25 | ドロー枚数+1 |
+| extra_hand | 追加ハンド | epic | 25 | ハンド数+2 |
+| phoenix | 不死鳥 | epic | 25 | ラウンド失敗時1度だけやり直し（消滅） |
+| amplifier | アンプリファイア | epic | 25 | enhanced(★)ボーナスを+2→+5に強化 |
+| magnet | 磁石 | uncommon | 15 | charge(⚡)蓄積速度2倍 |
+| prism | プリズム | rare | 20 | multiシール(×2)を×3に強化 |
+| compass_rose | 羅針盤 | uncommon | 15 | arrowシールボーナスを+10→+20に強化 |
+| jester | 道化師 | rare | 20 | レリック枠-1、ショップ全商品30%OFF |
 
 ### Amulet（護符）- 4種
 | AmuletType | 名前 | 価格帯 | 効果 |
@@ -213,7 +273,7 @@ interface ScoreBreakdown {
 |----------------|-------------|---|
 | multiplicative | 列点(B)の乗算倍率 | chain_master→1.5 |
 | additive | ブロック点(A)への加算 | size_bonus_3→消去ブロック数 |
-| line_additive | ライン数への加算 | script→1 or 2 |
+| line_additive | ライン数への加算 | script→1 or 2, gambler→0~3 |
 
 ## RelicModule（レリックモジュールインターフェース）
 ```typescript
@@ -229,10 +289,29 @@ interface RelicModule {
   onRoundStart?: (ctx) => RelicHookResult   // ラウンド開始フック
 }
 
+interface RelicContext {
+  ownedRelics: readonly RelicId[]
+  totalLines, rowLines, colLines: number
+  placedBlockSize: number
+  isBoardEmptyAfterClear: boolean
+  completedRows: readonly number[]
+  completedCols: readonly number[]
+  scriptRelicLines: ScriptRelicLines | null
+  remainingHands: number
+  patternBlockCount: number           // 消去セル内パターン付きブロック数
+  sealBlockCount: number              // 消去セル内シール付きブロック数
+  deckSize: number                    // デッキ全カード枚数
+  boardFilledCount: number            // 盤面の埋まっているセル数
+  patternAndSealBlockCount: number    // パターン+シール両方持ちブロック数
+  distinctPatternTypeCount: number    // 異なるパターン種類数
+  stoneBlockCount?: number            // stoneシール付きブロック数
+  relicState: unknown                 // レリック自身の累積状態
+}
+
 type RelicStateEvent =
-  | { type: 'lines_detected'; totalLines; rowLines; colLines }  // スコア計算前
-  | { type: 'lines_cleared'; totalLines; rowLines; colLines }   // スコア計算後
-  | { type: 'hand_consumed' }
+  | { type: 'lines_detected'; totalLines; rowLines; colLines }
+  | { type: 'lines_cleared'; totalLines; rowLines; colLines; patternBlockCount; clearedPatternTypes }
+  | { type: 'hand_consumed'; placedBlockSize }
   | { type: 'round_start' }
 ```
 
@@ -280,6 +359,7 @@ type RelicStateEvent =
 
 ### RELIC/ - レリック
 - `RELIC/REORDER` { fromIndex, toIndex }
+- `RELIC/RECYCLE_PIECE` { slotIndex }
 
 ### AMULET/ - 護符
 - `AMULET/USE` { amuletIndex }
