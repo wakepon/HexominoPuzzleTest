@@ -103,6 +103,7 @@ import type { RelicMultiplierState } from '../../Domain/Effect/RelicState'
 import type { RelicId, PatternId } from '../../Domain/Core/Id'
 import type { RoundInfo } from '../../Domain/Round/RoundTypes'
 import { generateScriptLines } from '../../Domain/Effect/ScriptRelicState'
+import { GOLDFISH_GOLD_BONUS, GOLDFISH_SCORE_MULTIPLIER } from '../../Domain/Effect/Relics/Goldfish'
 
 
 /**
@@ -1260,7 +1261,10 @@ function gameReducerInner(state: GameState, action: GameAction): GameState {
       if (isFinalRound(state.round)) {
         const goldReward = calculateGoldReward(state.deck.remainingHands, state.roundInfo.roundType)
         const interest = calculateInterest(state.player.gold)
-        const totalGold = goldReward + interest
+        // goldfish レリック: スコアが目標の2倍以上で+3G
+        const goldfishBonus = hasRelic(state.player.ownedRelics, 'goldfish') && state.score >= state.targetScore * GOLDFISH_SCORE_MULTIPLIER
+          ? GOLDFISH_GOLD_BONUS : 0
+        const totalGold = goldReward + interest + goldfishBonus
 
         // イベント発火: ラウンドクリア + ゴールド獲得
         emitRoundCleared(state.round, state.score, totalGold)
@@ -1281,7 +1285,10 @@ function gameReducerInner(state: GameState, action: GameAction): GameState {
       const rng = new DefaultRandom()
       const goldReward = calculateGoldReward(state.deck.remainingHands, state.roundInfo.roundType)
       const interest = calculateInterest(state.player.gold)
-      const totalGold = goldReward + interest
+      // goldfish レリック: スコアが目標の2倍以上で+3G
+      const goldfishBonus = hasRelic(state.player.ownedRelics, 'goldfish') && state.score >= state.targetScore * GOLDFISH_SCORE_MULTIPLIER
+        ? GOLDFISH_GOLD_BONUS : 0
+      const totalGold = goldReward + interest + goldfishBonus
 
       // イベント発火: ラウンドクリア + ゴールド獲得
       emitRoundCleared(state.round, state.score, totalGold)

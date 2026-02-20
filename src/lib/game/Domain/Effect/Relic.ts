@@ -66,6 +66,7 @@ export type RelicType =
   | 'amplifier'         // アンプリファイア
   | 'gambler'           // ギャンブラー
   | 'phoenix'           // 不死鳥
+  | 'goldfish'          // 金魚
 
 /**
  * レリック定義
@@ -542,6 +543,15 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     rarity: 'epic',
     price: 25,
     icon: '🐦‍🔥',
+  },
+  goldfish: {
+    id: 'goldfish' as RelicId,
+    type: 'goldfish',
+    name: '金魚',
+    description: 'ラウンドクリア時にスコアが目標の2倍以上で+3G',
+    rarity: 'common',
+    price: 10,
+    icon: '🐠',
   },
 }
 
