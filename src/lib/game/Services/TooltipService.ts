@@ -10,6 +10,7 @@ import { INITIAL_TOOLTIP_STATE } from '../Domain/Tooltip'
 import { getPatternDefinition } from '../Domain/Effect/Pattern'
 import { getSealDefinition } from '../Domain/Effect/Seal'
 import { getRelicDefinition, RELIC_DEFINITIONS } from '../Domain/Effect/Relic'
+import { getBlessingDefinition, getBlessingDescription } from '../Domain/Effect/Blessing'
 import { calculateRelicSellPrice } from './ShopPriceCalculator'
 import { HD_LAYOUT, SHOP_STYLE, GRID_SIZE, RELIC_PANEL_STYLE } from '../Data/Constants'
 import { BlockDataMapUtils } from '../Domain/Piece/BlockData'
@@ -36,6 +37,16 @@ function getEffectsFromBlockData(blockData: BlockData): EffectInfo[] {
     }
   }
 
+  if (blockData.blessing) {
+    const blessingDef = getBlessingDefinition(blockData.blessing)
+    if (blessingDef) {
+      effects.push({
+        name: blessingDef.name,
+        description: getBlessingDescription(blockData.blessing, 1),
+      })
+    }
+  }
+
   return effects
 }
 
@@ -52,32 +63,45 @@ function getEffectsFromBoardCell(
   }
 
   const cell = board[gridY][gridX]
-  if (!cell.filled) {
-    return []
-  }
-
   const effects: EffectInfo[] = []
 
-  if (cell.pattern) {
-    const patternDef = getPatternDefinition(cell.pattern)
-    if (patternDef) {
-      const description = cell.pattern === 'charge'
-        ? `${patternDef.description}（現在: +${cell.chargeValue}）`
-        : patternDef.description
-      effects.push({
-        name: patternDef.name,
-        description,
-      })
+  // パターン・シールはfilledセルのみ
+  if (cell.filled) {
+    if (cell.pattern) {
+      const patternDef = getPatternDefinition(cell.pattern)
+      if (patternDef) {
+        const description = cell.pattern === 'charge'
+          ? `${patternDef.description}（現在: +${cell.chargeValue}）`
+          : patternDef.description
+        effects.push({
+          name: patternDef.name,
+          description,
+        })
+      }
+    }
+
+    if (cell.seal) {
+      const sealDef = getSealDefinition(cell.seal)
+      if (sealDef) {
+        effects.push({
+          name: sealDef.name,
+          description: sealDef.description,
+        })
+      }
     }
   }
 
-  if (cell.seal) {
-    const sealDef = getSealDefinition(cell.seal)
-    if (sealDef) {
-      effects.push({
-        name: sealDef.name,
-        description: sealDef.description,
-      })
+  // 加護は空セルでも表示（消去後もセルに残る永続効果）
+  if (cell.blessing && cell.blessingLevel > 0) {
+    const blessingDef = getBlessingDefinition(cell.blessing)
+    if (blessingDef) {
+      const desc = getBlessingDescription(cell.blessing, cell.blessingLevel)
+      if (desc) {
+        effects.push({
+          name: blessingDef.name,
+          description: desc,
+        })
+      }
     }
   }
 

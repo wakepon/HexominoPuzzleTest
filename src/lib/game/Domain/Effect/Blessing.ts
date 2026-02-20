@@ -63,6 +63,36 @@ export const getBlessingDefinition = (blessingId: BlessingId): BlessingDefinitio
 }
 
 /**
+ * 加護の効果テキストをレベル込みで取得
+ * 例: "ブロック点+2"
+ */
+function getBlessingEffectText(type: BlessingType, level: number): string {
+  switch (type) {
+    case 'power':
+      return `ブロック点+${level}`
+    case 'gold':
+      return `消去時+${level}G`
+    case 'chain':
+      return `ライン点+${level}`
+    default:
+      return ''
+  }
+}
+
+/**
+ * 加護のレベル込み説明文を取得
+ * 例: "力の加護 Lv2 / ブロック点+2"
+ */
+export const getBlessingDescription = (
+  blessingId: BlessingId,
+  level: number
+): string => {
+  const def = getBlessingDefinition(blessingId)
+  if (!def || level === 0) return ''
+  return `${def.name} Lv${level} / ${getBlessingEffectText(def.type, level)}`
+}
+
+/**
  * ショップで購入可能な加護タイプ
  */
 export const SHOP_AVAILABLE_BLESSINGS: BlessingType[] = ['power', 'gold', 'chain']
