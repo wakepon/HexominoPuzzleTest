@@ -15,6 +15,7 @@ import type { RandomGenerator } from '../Utils/Random'
 import type { RelicId } from '../Domain/Core/Id'
 import { hasRelic } from '../Domain/Effect/RelicEffectHandler'
 import { EXTRA_DRAW_BONUS } from '../Domain/Effect/Relics/ExtraDraw'
+import { EXTRA_HAND_BONUS } from '../Domain/Effect/Relics/ExtraHand'
 
 /**
  * 目標スコアを計算
@@ -90,12 +91,16 @@ export function createRoundInfo(round: number, rng: RandomGenerator): RoundInfo 
 }
 
 /**
- * ボス条件に基づく配置可能回数を取得
+ * ボス条件とレリックに基づく配置可能回数を取得
  */
-export function getMaxPlacements(roundInfo: RoundInfo | null): number {
-  const base = DECK_CONFIG.totalHands
+export function getMaxPlacements(roundInfo: RoundInfo | null, ownedRelics?: readonly RelicId[]): number {
+  let base = DECK_CONFIG.totalHands
+  // extra_hand レリック: ハンド数+2
+  if (ownedRelics && hasRelic(ownedRelics, 'extra_hand')) {
+    base += EXTRA_HAND_BONUS
+  }
   if (roundInfo?.bossCondition?.id === 'energy_save') {
-    return Math.floor(base * ENERGY_SAVE_RATIO) // 25%減少（12 → 9）
+    return Math.floor(base * ENERGY_SAVE_RATIO) // 25%減少
   }
   return base
 }

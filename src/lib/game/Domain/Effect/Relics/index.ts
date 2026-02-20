@@ -74,6 +74,7 @@ import { treasureHunterRelic } from './TreasureHunter'
 import { crossRelic } from './Cross'
 import { midasRelic } from './Midas'
 import { extraDrawRelic } from './ExtraDraw'
+import { extraHandRelic } from './ExtraHand'
 
 /**
  * 全レリックモジュールの配列
@@ -138,6 +139,8 @@ const allModules: readonly RelicModule[] = [
   midasRelic,
   // 非スコア系（追加ドロー）
   extraDrawRelic,
+  // 非スコア系（追加ハンド）
+  extraHandRelic,
 ]
 
 /**

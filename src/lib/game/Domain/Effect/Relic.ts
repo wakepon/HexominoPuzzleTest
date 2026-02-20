@@ -56,6 +56,7 @@ export type RelicType =
   | 'cross'             // 十字
   | 'midas'             // ミダス
   | 'extra_draw'        // 追加ドロー
+  | 'extra_hand'        // 追加ハンド
 
 /**
  * レリック定義
@@ -442,6 +443,15 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     rarity: 'epic',
     price: 25,
     icon: '🃏',
+  },
+  extra_hand: {
+    id: 'extra_hand' as RelicId,
+    type: 'extra_hand',
+    name: '追加ハンド',
+    description: 'ラウンド中のハンド数が+2',
+    rarity: 'epic',
+    price: 25,
+    icon: '✋',
   },
 }
 

@@ -722,7 +722,7 @@ function createNextRoundState(currentState: GameState): GameState {
   const roundInfo = createRoundInfo(nextRound, rng)
 
   // ボス条件に基づいた配置回数とドロー枚数を取得
-  const maxHands = getMaxPlacements(roundInfo)
+  const maxHands = getMaxPlacements(roundInfo, currentState.player.ownedRelics)
   const drawCount = getDrawCount(roundInfo, currentState.player.ownedRelics)
 
   // allMinos（初期デッキ + 購入済みブロック）を使って新しいデッキを作成
