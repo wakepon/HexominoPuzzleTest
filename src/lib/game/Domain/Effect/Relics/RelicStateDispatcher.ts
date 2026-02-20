@@ -37,6 +37,22 @@ export function extractRelicState(
       return { multiplier: legacy.nobiKaniMultiplier }
     case 'bandaid':
       return { counter: legacy.bandaidCounter, shouldTrigger: false }
+    case 'anchor':
+      return { hasClearedInRound: legacy.anchorHasClearedInRound }
+    case 'first_strike':
+      return { hasClearedInRound: legacy.firstStrikeHasClearedInRound }
+    case 'patience':
+      return { consecutiveNonClearHands: legacy.patienceConsecutiveNonClearHands, isCharged: legacy.patienceIsCharged }
+    case 'snowball':
+      return { bonus: legacy.snowballBonus }
+    case 'muscle':
+      return { accumulatedBonus: legacy.muscleAccumulatedBonus }
+    case 'gardener':
+      return { accumulatedBonus: legacy.gardenerAccumulatedBonus }
+    case 'collector':
+      return { collectedPatterns: legacy.collectorCollectedPatterns, accumulatedBonus: legacy.collectorAccumulatedBonus }
+    case 'twin':
+      return { lastPlacedBlockSize: legacy.twinLastPlacedBlockSize }
     default:
       return null
   }
@@ -60,6 +76,30 @@ function applyRelicState(
       return { ...legacy, nobiKaniMultiplier: (newState as { multiplier: number }).multiplier }
     case 'bandaid':
       return { ...legacy, bandaidCounter: (newState as { counter: number }).counter }
+    case 'anchor':
+      return { ...legacy, anchorHasClearedInRound: (newState as { hasClearedInRound: boolean }).hasClearedInRound }
+    case 'first_strike':
+      return { ...legacy, firstStrikeHasClearedInRound: (newState as { hasClearedInRound: boolean }).hasClearedInRound }
+    case 'patience':
+      return {
+        ...legacy,
+        patienceConsecutiveNonClearHands: (newState as { consecutiveNonClearHands: number }).consecutiveNonClearHands,
+        patienceIsCharged: (newState as { isCharged: boolean }).isCharged,
+      }
+    case 'snowball':
+      return { ...legacy, snowballBonus: (newState as { bonus: number }).bonus }
+    case 'muscle':
+      return { ...legacy, muscleAccumulatedBonus: (newState as { accumulatedBonus: number }).accumulatedBonus }
+    case 'gardener':
+      return { ...legacy, gardenerAccumulatedBonus: (newState as { accumulatedBonus: number }).accumulatedBonus }
+    case 'collector':
+      return {
+        ...legacy,
+        collectorCollectedPatterns: (newState as { collectedPatterns: readonly string[] }).collectedPatterns,
+        collectorAccumulatedBonus: (newState as { accumulatedBonus: number }).accumulatedBonus,
+      }
+    case 'twin':
+      return { ...legacy, twinLastPlacedBlockSize: (newState as { lastPlacedBlockSize: number }).lastPlacedBlockSize }
     default:
       return legacy
   }
@@ -81,6 +121,22 @@ export function extractCopyRelicState(
       return { multiplier: copyState.nobiKaniMultiplier }
     case 'bandaid':
       return { counter: copyState.bandaidCounter, shouldTrigger: false }
+    case 'anchor':
+      return { hasClearedInRound: copyState.anchorHasClearedInRound }
+    case 'first_strike':
+      return { hasClearedInRound: copyState.firstStrikeHasClearedInRound }
+    case 'patience':
+      return { consecutiveNonClearHands: copyState.patienceConsecutiveNonClearHands, isCharged: copyState.patienceIsCharged }
+    case 'snowball':
+      return { bonus: copyState.snowballBonus }
+    case 'muscle':
+      return { accumulatedBonus: copyState.muscleAccumulatedBonus }
+    case 'gardener':
+      return { accumulatedBonus: copyState.gardenerAccumulatedBonus }
+    case 'collector':
+      return { collectedPatterns: copyState.collectorCollectedPatterns, accumulatedBonus: copyState.collectorAccumulatedBonus }
+    case 'twin':
+      return { lastPlacedBlockSize: copyState.twinLastPlacedBlockSize }
     default:
       return null
   }
@@ -104,6 +160,30 @@ function applyCopyRelicState(
       return { ...copyState, nobiKaniMultiplier: (newState as { multiplier: number }).multiplier }
     case 'bandaid':
       return { ...copyState, bandaidCounter: (newState as { counter: number }).counter }
+    case 'anchor':
+      return { ...copyState, anchorHasClearedInRound: (newState as { hasClearedInRound: boolean }).hasClearedInRound }
+    case 'first_strike':
+      return { ...copyState, firstStrikeHasClearedInRound: (newState as { hasClearedInRound: boolean }).hasClearedInRound }
+    case 'patience':
+      return {
+        ...copyState,
+        patienceConsecutiveNonClearHands: (newState as { consecutiveNonClearHands: number }).consecutiveNonClearHands,
+        patienceIsCharged: (newState as { isCharged: boolean }).isCharged,
+      }
+    case 'snowball':
+      return { ...copyState, snowballBonus: (newState as { bonus: number }).bonus }
+    case 'muscle':
+      return { ...copyState, muscleAccumulatedBonus: (newState as { accumulatedBonus: number }).accumulatedBonus }
+    case 'gardener':
+      return { ...copyState, gardenerAccumulatedBonus: (newState as { accumulatedBonus: number }).accumulatedBonus }
+    case 'collector':
+      return {
+        ...copyState,
+        collectorCollectedPatterns: (newState as { collectedPatterns: readonly string[] }).collectedPatterns,
+        collectorAccumulatedBonus: (newState as { accumulatedBonus: number }).accumulatedBonus,
+      }
+    case 'twin':
+      return { ...copyState, twinLastPlacedBlockSize: (newState as { lastPlacedBlockSize: number }).lastPlacedBlockSize }
     default:
       return copyState
   }

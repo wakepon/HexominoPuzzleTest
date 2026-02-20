@@ -61,6 +61,10 @@ export function useGame() {
     dispatch({ type: 'RELIC/REORDER', fromIndex, toIndex })
   }, [])
 
+  const recyclePiece = useCallback((slotIndex: number) => {
+    dispatch({ type: 'RELIC/RECYCLE_PIECE', slotIndex })
+  }, [])
+
   const advanceRound = useCallback(() => {
     dispatch({
       type: 'ROUND/ADVANCE',
@@ -216,6 +220,7 @@ export function useGame() {
       endScoreAnimation,
       setFastForward,
       reorderRelic,
+      recyclePiece,
       advanceRound,
       buyItem,
       leaveShop,

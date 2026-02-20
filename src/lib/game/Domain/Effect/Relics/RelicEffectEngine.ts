@@ -33,6 +33,13 @@ export function evaluateRelicEffects(
     readonly completedCols: readonly number[]
     readonly scriptRelicLines: ScriptRelicLines | null
     readonly remainingHands: number
+    readonly patternBlockCount: number
+    readonly sealBlockCount: number
+    readonly deckSize: number
+    readonly boardFilledCount: number
+    readonly patternAndSealBlockCount: number
+    readonly distinctPatternTypeCount: number
+    readonly stoneBlockCount?: number
   },
   relicMultiplierState: RelicMultiplierState
 ): ReadonlyMap<string, RelicActivation> {
@@ -75,6 +82,13 @@ export function evaluateCopyRelicEffect(
     readonly completedCols: readonly number[]
     readonly scriptRelicLines: ScriptRelicLines | null
     readonly remainingHands: number
+    readonly patternBlockCount: number
+    readonly sealBlockCount: number
+    readonly deckSize: number
+    readonly boardFilledCount: number
+    readonly patternAndSealBlockCount: number
+    readonly distinctPatternTypeCount: number
+    readonly stoneBlockCount?: number
   },
   relicMultiplierState: RelicMultiplierState
 ): { multiplier: number; bonus: number; lineBonus: number } {

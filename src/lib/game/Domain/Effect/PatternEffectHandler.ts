@@ -12,6 +12,9 @@ import { GRID_SIZE } from '../../Data/Constants'
 import { getRelicModule } from './Relics/RelicRegistry'
 import { evaluateRelicEffects, evaluateCopyRelicEffect } from './Relics/RelicEffectEngine'
 import { isCopyRelicInactive } from './CopyRelicResolver'
+import { AMPLIFIED_ENHANCED_BONUS } from './Relics/Amplifier'
+import { PRISM_MULTI_MULTIPLIER } from './Relics/Prism'
+import { COMPASS_ROSE_ARROW_BONUS } from './Relics/CompassRose'
 
 /**
  * 隣接セルの位置（上下左右）
@@ -55,18 +58,21 @@ function countEdgeContacts(row: number, col: number): number {
 // === enhanced効果 ===
 /**
  * enhanced効果を計算
- * enhanced付きセルの数 × 2 を返す（乗算対象に加算）
+ * enhanced付きセルの数 × bonusPerBlock を返す（乗算対象に加算）
+ * デフォルトは +2、amplifier所持時は +5
  */
 export function calculateEnhancedBonus(
   board: Board,
-  cellsToRemove: readonly ClearingCell[]
+  cellsToRemove: readonly ClearingCell[],
+  bonusPerBlock: number = 2,
+  multiSealMultiplier: number = 2
 ): number {
   let bonus = 0
   for (const cell of cellsToRemove) {
     const boardCell = board[cell.row][cell.col]
     if (boardCell.pattern === ('enhanced' as PatternId)) {
-      const multiplier = boardCell.seal === ('multi' as SealId) ? 2 : 1
-      bonus += 2 * multiplier
+      const multiplier = boardCell.seal === ('multi' as SealId) ? multiSealMultiplier : 1
+      bonus += bonusPerBlock * multiplier
     }
   }
   return bonus
@@ -79,7 +85,8 @@ export function calculateEnhancedBonus(
  */
 export function calculateAuraBonus(
   board: Board,
-  cellsToRemove: readonly ClearingCell[]
+  cellsToRemove: readonly ClearingCell[],
+  multiSealMultiplier: number = 2
 ): number {
   let bonus = 0
 
@@ -97,7 +104,7 @@ export function calculateAuraBonus(
         adjCell.pattern === ('aura' as PatternId) &&
         adjCell.blockSetId !== currentCell.blockSetId
       ) {
-        const multiplier = currentCell.seal === ('multi' as SealId) ? 2 : 1
+        const multiplier = currentCell.seal === ('multi' as SealId) ? multiSealMultiplier : 1
         bonus += 1 * multiplier
         break // 1セルあたり最大+1
       }
@@ -114,14 +121,15 @@ export function calculateAuraBonus(
  */
 export function calculateMossBonus(
   board: Board,
-  cellsToRemove: readonly ClearingCell[]
+  cellsToRemove: readonly ClearingCell[],
+  multiSealMultiplier: number = 2
 ): number {
   let bonus = 0
 
   for (const cell of cellsToRemove) {
     const boardCell = board[cell.row][cell.col]
     if (boardCell.pattern === ('moss' as PatternId)) {
-      const multiplier = boardCell.seal === ('multi' as SealId) ? 2 : 1
+      const multiplier = boardCell.seal === ('multi' as SealId) ? multiSealMultiplier : 1
       bonus += countEdgeContacts(cell.row, cell.col) * multiplier
     }
   }
@@ -136,13 +144,14 @@ export function calculateMossBonus(
  */
 export function calculateChargeBonus(
   board: Board,
-  cellsToRemove: readonly ClearingCell[]
+  cellsToRemove: readonly ClearingCell[],
+  multiSealMultiplier: number = 2
 ): number {
   let bonus = 0
   for (const cell of cellsToRemove) {
     const boardCell = board[cell.row][cell.col]
     if (boardCell.pattern === ('charge' as PatternId)) {
-      const multiplier = boardCell.seal === ('multi' as SealId) ? 2 : 1
+      const multiplier = boardCell.seal === ('multi' as SealId) ? multiSealMultiplier : 1
       bonus += boardCell.chargeValue * multiplier
     }
   }
@@ -158,14 +167,15 @@ export function calculateChargeBonus(
 export function rollLuckyMultiplier(
   board: Board,
   cellsToRemove: readonly ClearingCell[],
-  random: () => number = Math.random
+  random: () => number = Math.random,
+  multiSealMultiplier: number = 2
 ): number {
-  // multi付きluckyブロックは2回抽選
+  // multi付きluckyブロックはmultiSealMultiplier回抽選
   let luckyRolls = 0
   for (const cell of cellsToRemove) {
     const boardCell = board[cell.row][cell.col]
     if (boardCell.pattern === ('lucky' as PatternId)) {
-      luckyRolls += boardCell.seal === ('multi' as SealId) ? 2 : 1
+      luckyRolls += boardCell.seal === ('multi' as SealId) ? multiSealMultiplier : 1
     }
   }
 
@@ -186,13 +196,14 @@ export function rollLuckyMultiplier(
  */
 export function calculateComboBonus(
   board: Board,
-  cellsToRemove: readonly ClearingCell[]
+  cellsToRemove: readonly ClearingCell[],
+  multiSealMultiplier: number = 2
 ): number {
   let comboCount = 0
   for (const cell of cellsToRemove) {
     const boardCell = board[cell.row][cell.col]
     if (boardCell.pattern === ('combo' as PatternId)) {
-      const increment = boardCell.seal === ('multi' as SealId) ? 2 : 1
+      const increment = boardCell.seal === ('multi' as SealId) ? multiSealMultiplier : 1
       comboCount += increment
     }
   }
@@ -206,13 +217,15 @@ export function calculateComboBonus(
  */
 export function calculatePatternEffects(
   board: Board,
-  cellsToRemove: readonly ClearingCell[]
+  cellsToRemove: readonly ClearingCell[],
+  enhancedBonusPerBlock: number = 2,
+  multiSealMultiplier: number = 2
 ): PatternEffectResult {
   return {
-    enhancedBonus: calculateEnhancedBonus(board, cellsToRemove),
-    auraBonus: calculateAuraBonus(board, cellsToRemove),
-    mossBonus: calculateMossBonus(board, cellsToRemove),
-    chargeBonus: calculateChargeBonus(board, cellsToRemove),
+    enhancedBonus: calculateEnhancedBonus(board, cellsToRemove, enhancedBonusPerBlock, multiSealMultiplier),
+    auraBonus: calculateAuraBonus(board, cellsToRemove, multiSealMultiplier),
+    mossBonus: calculateMossBonus(board, cellsToRemove, multiSealMultiplier),
+    chargeBonus: calculateChargeBonus(board, cellsToRemove, multiSealMultiplier),
   }
 }
 
@@ -238,12 +251,24 @@ export function calculateScoreBreakdown(
     (c) => board[c.row][c.col].pattern === ('charge' as PatternId)
   ).length
 
+  // amplifier所持チェック → enhancedボーナス値決定
+  const hasAmplifier = relicContext?.ownedRelics.some(r => r === ('amplifier' as RelicId)) ?? false
+  const enhancedBonusPerBlock = hasAmplifier ? AMPLIFIED_ENHANCED_BONUS : 2
+
+  // prism所持チェック → multiシール乗数決定
+  const hasPrism = relicContext?.ownedRelics.some(r => r === ('prism' as RelicId)) ?? false
+  const multiSealMultiplier = hasPrism ? PRISM_MULTI_MULTIPLIER : 2
+
+  // compass_rose所持チェック → arrowシールボーナス値決定
+  const hasCompassRose = relicContext?.ownedRelics.some(r => r === ('compass_rose' as RelicId)) ?? false
+  const arrowBonusPerSeal = hasCompassRose ? COMPASS_ROSE_ARROW_BONUS : 10
+
   // パターン効果を計算
-  const patternEffects = calculatePatternEffects(board, cellsToRemove)
+  const patternEffects = calculatePatternEffects(board, cellsToRemove, enhancedBonusPerBlock, multiSealMultiplier)
   const { enhancedBonus, auraBonus, mossBonus, chargeBonus } = patternEffects
 
   // シール効果を計算
-  const sealEffects = calculateSealEffects(board, cellsToRemove, completedLines)
+  const sealEffects = calculateSealEffects(board, cellsToRemove, completedLines, multiSealMultiplier, arrowBonusPerSeal)
   const { multiBonus, scoreBonus: sealScoreBonus, goldCount, arrowBonus } = sealEffects
 
   // 合計ブロック数（パターン効果 + multiシール効果 + アローシール効果、chargeブロック基礎分除外）
@@ -251,10 +276,10 @@ export function calculateScoreBreakdown(
     baseBlocks - chargeBlockCount + enhancedBonus + auraBonus + chargeBonus + multiBonus + arrowBonus
 
   // comboボーナス（同時消去されたcomboブロック数から計算）
-  const comboBonus = calculateComboBonus(board, cellsToRemove)
+  const comboBonus = calculateComboBonus(board, cellsToRemove, multiSealMultiplier)
 
   // lucky効果（列点として扱う）
-  const luckyMultiplier = rollLuckyMultiplier(board, cellsToRemove, luckyRandom)
+  const luckyMultiplier = rollLuckyMultiplier(board, cellsToRemove, luckyRandom, multiSealMultiplier)
 
   // === レリック効果計算（レジストリベース） ===
   const relicEffects = new Map<string, number>()
@@ -265,6 +290,26 @@ export function calculateScoreBreakdown(
   let copyLineBonus = 0
 
   if (relicContext) {
+    // boardから patternBlockCount, sealBlockCount, patternAndSealBlockCount, distinctPatternTypeCount を計算
+    let patternBlockCount = 0
+    let sealBlockCount = 0
+    let patternAndSealBlockCount = 0
+    let stoneBlockCount = 0
+    const patternTypeSet = new Set<string>()
+    for (const cell of cellsToRemove) {
+      const boardCell = board[cell.row][cell.col]
+      if (boardCell.pattern) {
+        patternBlockCount++
+        patternTypeSet.add(boardCell.pattern as string)
+      }
+      if (boardCell.seal) {
+        sealBlockCount++
+        if (boardCell.seal === ('stone' as SealId)) stoneBlockCount++
+      }
+      if (boardCell.pattern && boardCell.seal) patternAndSealBlockCount++
+    }
+    const distinctPatternTypeCount = patternTypeSet.size
+
     // 全所持レリックの発動判定
     const activations = evaluateRelicEffects(
       relicContext.ownedRelics,
@@ -278,6 +323,13 @@ export function calculateScoreBreakdown(
         completedCols: relicContext.completedCols,
         scriptRelicLines: relicContext.scriptRelicLines,
         remainingHands: relicContext.remainingHands,
+        patternBlockCount,
+        sealBlockCount,
+        deckSize: relicContext.deckSize,
+        boardFilledCount: relicContext.boardFilledCount,
+        patternAndSealBlockCount,
+        distinctPatternTypeCount,
+        stoneBlockCount,
       },
       relicContext.relicMultiplierState
     )
@@ -317,6 +369,13 @@ export function calculateScoreBreakdown(
             completedCols: relicContext.completedCols,
             scriptRelicLines: relicContext.scriptRelicLines,
             remainingHands: relicContext.remainingHands,
+            patternBlockCount,
+            sealBlockCount,
+            deckSize: relicContext.deckSize,
+            boardFilledCount: relicContext.boardFilledCount,
+            patternAndSealBlockCount,
+            distinctPatternTypeCount,
+            stoneBlockCount,
           },
           relicContext.relicMultiplierState
         )

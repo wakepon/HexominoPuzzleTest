@@ -44,6 +44,13 @@ export interface RelicContext {
   readonly completedCols: readonly number[]
   readonly scriptRelicLines: ScriptRelicLines | null
   readonly remainingHands: number
+  readonly patternBlockCount: number  // 消去セル内のパターン付きブロック数
+  readonly sealBlockCount: number     // 消去セル内のシール付きブロック数
+  readonly deckSize: number           // デッキの全カード枚数
+  readonly boardFilledCount: number   // 盤面の埋まっているセル数（消去前）
+  readonly patternAndSealBlockCount: number  // 消去セル内のパターン+シール両方持ちブロック数
+  readonly distinctPatternTypeCount: number  // 消去セル内の異なるパターン種類数
+  readonly stoneBlockCount?: number           // 消去セル内のstoneシール付きブロック数
 
   /**
    * このレリック自身の累積状態
@@ -88,8 +95,8 @@ export interface RelicActivation {
  */
 export type RelicStateEvent =
   | { readonly type: 'lines_detected'; readonly totalLines: number; readonly rowLines: number; readonly colLines: number }
-  | { readonly type: 'lines_cleared'; readonly totalLines: number; readonly rowLines: number; readonly colLines: number }
-  | { readonly type: 'hand_consumed' }
+  | { readonly type: 'lines_cleared'; readonly totalLines: number; readonly rowLines: number; readonly colLines: number; readonly patternBlockCount: number; readonly clearedPatternTypes: readonly string[] }
+  | { readonly type: 'hand_consumed'; readonly placedBlockSize: number }
   | { readonly type: 'round_start' }
 
 // ============================================================

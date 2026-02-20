@@ -68,6 +68,7 @@ export function GameContainer() {
         onMoveFromStock2={actions.moveFromStock2}
         onSwapWithStock2={actions.swapWithStock2}
         onReorderRelic={actions.reorderRelic}
+        onRecyclePiece={actions.recyclePiece}
         onApplyPendingPhase={actions.applyPendingPhase}
         onUseAmulet={actions.useAmulet}
         onAmuletSelectPiece={actions.amuletSelectPiece}

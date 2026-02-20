@@ -128,12 +128,30 @@ interface SavedGameState {
     readonly nobiKaniMultiplier: number
     readonly renshaMultiplier: number
     readonly bandaidCounter?: number
+    readonly anchorHasClearedInRound?: boolean
+    readonly firstStrikeHasClearedInRound?: boolean
+    readonly patienceConsecutiveNonClearHands?: number
+    readonly patienceIsCharged?: boolean
+    readonly snowballBonus?: number
+    readonly muscleAccumulatedBonus?: number
+    readonly gardenerAccumulatedBonus?: number
+    readonly collectorCollectedPatterns?: readonly string[]
+    readonly collectorAccumulatedBonus?: number
     readonly copyRelicState?: {
       readonly targetRelicId: string | null
       readonly bandaidCounter: number
       readonly renshaMultiplier: number
       readonly nobiTakenokoMultiplier: number
       readonly nobiKaniMultiplier: number
+      readonly anchorHasClearedInRound?: boolean
+      readonly firstStrikeHasClearedInRound?: boolean
+      readonly patienceConsecutiveNonClearHands?: number
+      readonly patienceIsCharged?: boolean
+      readonly snowballBonus?: number
+      readonly muscleAccumulatedBonus?: number
+      readonly gardenerAccumulatedBonus?: number
+      readonly collectorCollectedPatterns?: readonly string[]
+      readonly collectorAccumulatedBonus?: number
       // マイグレーション: 古いセーブデータにはtimingCounter/timingBonusActiveがある
       readonly timingCounter?: number
       readonly timingBonusActive?: boolean
@@ -481,6 +499,17 @@ export function restoreGameState(
       nobiKaniMultiplier: saved.relicMultiplierState?.nobiKaniMultiplier ?? INITIAL_RELIC_MULTIPLIER_STATE.nobiKaniMultiplier,
       renshaMultiplier: saved.relicMultiplierState?.renshaMultiplier ?? INITIAL_RELIC_MULTIPLIER_STATE.renshaMultiplier,
       bandaidCounter: saved.relicMultiplierState?.bandaidCounter ?? INITIAL_RELIC_MULTIPLIER_STATE.bandaidCounter,
+      anchorHasClearedInRound: saved.relicMultiplierState?.anchorHasClearedInRound ?? INITIAL_RELIC_MULTIPLIER_STATE.anchorHasClearedInRound,
+      firstStrikeHasClearedInRound: saved.relicMultiplierState?.firstStrikeHasClearedInRound ?? INITIAL_RELIC_MULTIPLIER_STATE.firstStrikeHasClearedInRound,
+      patienceConsecutiveNonClearHands: saved.relicMultiplierState?.patienceConsecutiveNonClearHands ?? INITIAL_RELIC_MULTIPLIER_STATE.patienceConsecutiveNonClearHands,
+      patienceIsCharged: saved.relicMultiplierState?.patienceIsCharged ?? INITIAL_RELIC_MULTIPLIER_STATE.patienceIsCharged,
+      snowballBonus: saved.relicMultiplierState?.snowballBonus ?? INITIAL_RELIC_MULTIPLIER_STATE.snowballBonus,
+      muscleAccumulatedBonus: saved.relicMultiplierState?.muscleAccumulatedBonus ?? INITIAL_RELIC_MULTIPLIER_STATE.muscleAccumulatedBonus,
+      gardenerAccumulatedBonus: saved.relicMultiplierState?.gardenerAccumulatedBonus ?? INITIAL_RELIC_MULTIPLIER_STATE.gardenerAccumulatedBonus,
+      collectorCollectedPatterns: saved.relicMultiplierState?.collectorCollectedPatterns ?? INITIAL_RELIC_MULTIPLIER_STATE.collectorCollectedPatterns,
+      collectorAccumulatedBonus: saved.relicMultiplierState?.collectorAccumulatedBonus ?? INITIAL_RELIC_MULTIPLIER_STATE.collectorAccumulatedBonus,
+      recyclerUsesRemaining: (saved.relicMultiplierState as Record<string, unknown>)?.recyclerUsesRemaining as number ?? INITIAL_RELIC_MULTIPLIER_STATE.recyclerUsesRemaining,
+      twinLastPlacedBlockSize: (saved.relicMultiplierState as Record<string, unknown>)?.twinLastPlacedBlockSize as number ?? INITIAL_RELIC_MULTIPLIER_STATE.twinLastPlacedBlockSize,
       // copyRelicStateのマイグレーション（timingCounter/timingBonusActiveを除外）
       copyRelicState: saved.relicMultiplierState?.copyRelicState
         ? {
@@ -489,6 +518,16 @@ export function restoreGameState(
             renshaMultiplier: saved.relicMultiplierState.copyRelicState.renshaMultiplier,
             nobiTakenokoMultiplier: saved.relicMultiplierState.copyRelicState.nobiTakenokoMultiplier,
             nobiKaniMultiplier: saved.relicMultiplierState.copyRelicState.nobiKaniMultiplier,
+            anchorHasClearedInRound: saved.relicMultiplierState.copyRelicState.anchorHasClearedInRound ?? false,
+            firstStrikeHasClearedInRound: saved.relicMultiplierState.copyRelicState.firstStrikeHasClearedInRound ?? false,
+            patienceConsecutiveNonClearHands: saved.relicMultiplierState.copyRelicState.patienceConsecutiveNonClearHands ?? 0,
+            patienceIsCharged: saved.relicMultiplierState.copyRelicState.patienceIsCharged ?? false,
+            snowballBonus: saved.relicMultiplierState.copyRelicState.snowballBonus ?? 0,
+            muscleAccumulatedBonus: saved.relicMultiplierState.copyRelicState.muscleAccumulatedBonus ?? 0,
+            gardenerAccumulatedBonus: saved.relicMultiplierState.copyRelicState.gardenerAccumulatedBonus ?? 0,
+            collectorCollectedPatterns: saved.relicMultiplierState.copyRelicState.collectorCollectedPatterns ?? [],
+            collectorAccumulatedBonus: saved.relicMultiplierState.copyRelicState.collectorAccumulatedBonus ?? 0,
+            twinLastPlacedBlockSize: (saved.relicMultiplierState.copyRelicState as Record<string, unknown>)?.twinLastPlacedBlockSize as number ?? 0,
           }
         : null,
     },

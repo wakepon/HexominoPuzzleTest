@@ -53,6 +53,43 @@ import { volcanoRelic } from './Volcano'
 import { handStockRelic } from './HandStock'
 import { copyRelic } from './Copy'
 import { createSizeBonusRelic } from './SizeBonusFactory'
+import { anchorRelic } from './Anchor'
+import { crownRelic } from './Crown'
+import { stampRelic } from './Stamp'
+import { compassRelic } from './Compass'
+import { featherweightRelic } from './Featherweight'
+import { heavyweightRelic } from './Heavyweight'
+import { meteorRelic } from './Meteor'
+import { symmetryRelic } from './Symmetry'
+import { crescentRelic } from './Crescent'
+import { lastStandRelic } from './LastStand'
+import { firstStrikeRelic } from './FirstStrike'
+import { patienceRelic } from './Patience'
+import { snowballRelic } from './Snowball'
+import { muscleRelic } from './Muscle'
+import { gardenerRelic } from './Gardener'
+import { collectorRelic } from './Collector'
+import { merchantRelic } from './Merchant'
+import { treasureHunterRelic } from './TreasureHunter'
+import { crossRelic } from './Cross'
+import { midasRelic } from './Midas'
+import { extraDrawRelic } from './ExtraDraw'
+import { extraHandRelic } from './ExtraHand'
+import { recyclerRelic } from './Recycler'
+import { twinRelic } from './Twin'
+import { minimalistRelic } from './Minimalist'
+import { overloadRelic } from './Overload'
+import { alchemistRelic } from './Alchemist'
+import { orchestraRelic } from './Orchestra'
+import { amplifierRelic } from './Amplifier'
+import { gamblerRelic } from './Gambler'
+import { phoenixRelic } from './Phoenix'
+import { goldfishRelic } from './Goldfish'
+import { magnetRelic } from './Magnet'
+import { prismRelic } from './Prism'
+import { compassRoseRelic } from './CompassRose'
+import { furnaceRelic } from './Furnace'
+import { jesterRelic } from './Jester'
 
 /**
  * 全レリックモジュールの配列
@@ -83,6 +120,72 @@ const allModules: readonly RelicModule[] = [
   volcanoRelic,
   handStockRelic,
   copyRelic,
+  // 加算系
+  anchorRelic,
+  crownRelic,
+  stampRelic,
+  compassRelic,
+  featherweightRelic,
+  heavyweightRelic,
+  // 乗算系（追加）
+  meteorRelic,
+  symmetryRelic,
+  crescentRelic,
+  lastStandRelic,
+  // 乗算系（先制攻撃）
+  firstStrikeRelic,
+  // 乗算系（忍耐）
+  patienceRelic,
+  // 加算系（雪だるま）
+  snowballRelic,
+  // 乗算系（筋肉）
+  muscleRelic,
+  // 加算系（庭師）
+  gardenerRelic,
+  // 乗算系（収集家）
+  collectorRelic,
+  // 非スコア系（商人）
+  merchantRelic,
+  // 非スコア系（トレジャーハンター）
+  treasureHunterRelic,
+  // 加算系（十字）
+  crossRelic,
+  // 非スコア系（ミダス）
+  midasRelic,
+  // 非スコア系（追加ドロー）
+  extraDrawRelic,
+  // 非スコア系（追加ハンド）
+  extraHandRelic,
+  // 非スコア系（リサイクラー）
+  recyclerRelic,
+  // 加算系（双子）
+  twinRelic,
+  // 加算系（ミニマリスト）
+  minimalistRelic,
+  // 乗算系（過負荷）
+  overloadRelic,
+  // 加算系（錬金術師）
+  alchemistRelic,
+  // 乗算系（オーケストラ）
+  orchestraRelic,
+  // 非スコア系（アンプリファイア）
+  amplifierRelic,
+  // ライン加算系（ギャンブラー）
+  gamblerRelic,
+  // 非スコア系（不死鳥）
+  phoenixRelic,
+  // 非スコア系（金魚）
+  goldfishRelic,
+  // 非スコア系（磁石）
+  magnetRelic,
+  // 非スコア系（プリズム）
+  prismRelic,
+  // 非スコア系（羅針盤）
+  compassRoseRelic,
+  // 加算系（溶鉱炉）
+  furnaceRelic,
+  // 非スコア系（道化師）
+  jesterRelic,
 ]
 
 /**

@@ -75,6 +75,7 @@ export type StockAction =
 // レリックアクション
 export type RelicAction =
   | { type: 'RELIC/REORDER'; fromIndex: number; toIndex: number }
+  | { type: 'RELIC/RECYCLE_PIECE'; slotIndex: number }
 
 // 護符アクション
 export type AmuletAction =

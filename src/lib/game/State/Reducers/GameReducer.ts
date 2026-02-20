@@ -53,6 +53,9 @@ import {
   hasRelic,
 } from '../../Domain/Effect/RelicEffectHandler'
 import { getRelicModule } from '../../Domain/Effect/Relics/RelicRegistry'
+import { TREASURE_HUNTER_GOLD_BONUS } from '../../Domain/Effect/Relics/TreasureHunter'
+import { MIDAS_GOLD_BONUS } from '../../Domain/Effect/Relics/Midas'
+// RECYCLER_MAX_USES は INITIAL_RELIC_MULTIPLIER_STATE 経由で使用
 import {
   INITIAL_RELIC_MULTIPLIER_STATE,
   createInitialCopyRelicState,
@@ -94,13 +97,96 @@ import type { AmuletModalState } from '../../Domain/Effect/AmuletModalState'
 import { applyPatternAdd, applySealAdd, applyVanish, applySculpt, isShapeConnected } from '../../Services/AmuletEffectService'
 import { OBSTACLE_BLOCK_COUNT } from '../../Data/BossConditions'
 import { RELIC_DEFINITIONS } from '../../Domain/Effect/Relic'
+import { JESTER_SLOT_REDUCTION } from '../../Domain/Effect/Relics/Jester'
 import { getMinoById } from '../../Data/MinoDefinitions'
 import { saveGameState, clearGameState } from '../../Services/StorageService'
 import type { RelicMultiplierState } from '../../Domain/Effect/RelicState'
 import type { RelicId, PatternId } from '../../Domain/Core/Id'
 import type { RoundInfo } from '../../Domain/Round/RoundTypes'
 import { generateScriptLines } from '../../Domain/Effect/ScriptRelicState'
+import { GOLDFISH_GOLD_BONUS, GOLDFISH_SCORE_MULTIPLIER } from '../../Domain/Effect/Relics/Goldfish'
+import { MAGNET_CHARGE_INCREMENT } from '../../Domain/Effect/Relics/Magnet'
 
+
+/**
+ * フェニックスレリックによるラウンドリスタート
+ * game_over状態でphoenix所持時、現在のラウンドを最初からやり直す
+ * phoenixはレリック枠から消滅する
+ */
+function tryPhoenixRestart(state: GameState): GameState | null {
+  if (state.phase !== 'game_over') return null
+  if (!hasRelic(state.player.ownedRelics, 'phoenix')) return null
+
+  const rng = new DefaultRandom()
+  const round = state.round
+  const roundInfo = state.roundInfo
+
+  // ボス条件に基づいた配置回数とドロー枚数
+  const playerAfterRemove = removeRelic(state.player, 'phoenix' as RelicId)
+  const maxHands = getMaxPlacements(roundInfo, playerAfterRemove.ownedRelics)
+  const drawCount = getDrawCount(roundInfo, playerAfterRemove.ownedRelics)
+
+  // デッキを再シャッフル
+  const baseDeck: DeckState = {
+    cards: shuffleCurrentDeck(state.deck, rng).cards,
+    allMinos: state.deck.allMinos,
+    remainingHands: maxHands,
+    purchasedPieces: state.deck.purchasedPieces,
+    stockSlot: null,
+    stockSlot2: null,
+  }
+
+  const { slots, newDeck } = generateNewPieceSlotsFromDeckWithCount(
+    baseDeck,
+    drawCount,
+    rng
+  )
+
+  // ボス条件「おじゃまブロック」の場合は再配置
+  let board = createEmptyBoard()
+  if (roundInfo?.bossCondition?.id === 'obstacle') {
+    for (let i = 0; i < OBSTACLE_BLOCK_COUNT; i++) {
+      board = placeObstacleOnBoard(board, rng)
+    }
+  }
+
+  // 台本レリック: 所持時に指定ラインを再抽選
+  const scriptRelicLines = hasRelic(playerAfterRemove.ownedRelics, 'script')
+    ? generateScriptLines(() => rng.next())
+    : null
+
+  return {
+    board,
+    pieceSlots: slots,
+    dragState: initialDragState,
+    score: 0,
+    clearingAnimation: null,
+    relicActivationAnimation: null,
+    scoreAnimation: null,
+    deck: newDeck,
+    phase: 'round_progress',
+    pendingPhase: null,
+    round,
+    roundInfo: roundInfo!,
+    player: playerAfterRemove,
+    targetScore: state.targetScore,
+    shopState: null,
+    relicMultiplierState: dispatchRelicStateEvent(
+      playerAfterRemove.ownedRelics,
+      {
+        ...INITIAL_RELIC_MULTIPLIER_STATE,
+        copyRelicState: state.relicMultiplierState.copyRelicState
+          ? createInitialCopyRelicState(state.relicMultiplierState.copyRelicState.targetRelicId)
+          : null,
+      },
+      { type: 'round_start' }
+    ),
+    scriptRelicLines,
+    deckViewOpen: false,
+    volcanoEligible: true,
+    amuletModal: null,
+  }
+}
 
 /**
  * スコアアニメーション状態を作成
@@ -143,6 +229,14 @@ function getPieceBlockCount(piece: Piece): number {
     }
   }
   return count
+}
+
+/**
+ * 有効なレリック枠上限を取得（jester所持時は-1）
+ */
+function getEffectiveMaxRelicSlots(ownedRelics: readonly RelicId[]): number {
+  const hasJester = ownedRelics.includes('jester' as RelicId)
+  return hasJester ? MAX_RELIC_SLOTS - JESTER_SLOT_REDUCTION : MAX_RELIC_SLOTS
 }
 
 /**
@@ -252,7 +346,8 @@ function handlePlacement(
   deck: DeckState,
   skipHandConsumption: boolean = false,
   bandaidTrigger: boolean = false,
-  roundInfo: RoundInfo | null = null
+  roundInfo: RoundInfo | null = null,
+  ownedRelics?: readonly RelicId[]
 ): { finalSlots: PieceSlot[]; finalDeck: DeckState } {
   const updatedDeck = skipHandConsumption ? deck : decrementRemainingHands(deck)
 
@@ -277,7 +372,7 @@ function handlePlacement(
     }
   }
 
-  const drawCount = getDrawCount(roundInfo)
+  const drawCount = getDrawCount(roundInfo, ownedRelics)
   const result = generateNewPieceSlotsFromDeckWithCount(updatedDeck, drawCount)
   return {
     finalSlots: result.slots,
@@ -295,7 +390,8 @@ function resolveUnplaceableHand(
   deck: DeckState,
   score: number,
   targetScore: number,
-  roundInfo: RoundInfo | null = null
+  roundInfo: RoundInfo | null = null,
+  ownedRelics?: readonly RelicId[]
 ): { finalSlots: PieceSlot[]; finalDeck: DeckState; phase: ReturnType<typeof determinePhase> } {
   let currentSlots = slots
   let currentDeck = deck
@@ -335,7 +431,7 @@ function resolveUnplaceableHand(
     }
 
     // 手札をリセットして新しくドロー
-    const drawCount = getDrawCount(roundInfo)
+    const drawCount = getDrawCount(roundInfo, ownedRelics)
     const result = generateNewPieceSlotsFromDeckWithCount(currentDeck, drawCount)
     currentSlots = result.slots
     currentDeck = result.newDeck
@@ -372,6 +468,7 @@ function tryVolcanoActivation(
   const { sortedCells: filledCells, totalDuration: volcanoClearDuration } = createSequentialClearingCells(rawFilledCells, newBoard)
 
   // RelicEffectContext を構築（火山は全消去なので全行+全列=12ライン扱い）
+  // patternBlockCount/sealBlockCountは calculateScoreBreakdown 内で board から計算されるため、ここでは0初期値
   const volcanoRelicContext: RelicEffectContext = {
     ownedRelics: state.player.ownedRelics,
     totalLines: GRID_SIZE * 2,
@@ -385,6 +482,10 @@ function tryVolcanoActivation(
     scriptRelicLines: null,
     copyRelicState: newRelicMultiplierState.copyRelicState,
     remainingHands: resolved.finalDeck.remainingHands,
+    patternBlockCount: 0,
+    sealBlockCount: 0,
+    deckSize: state.deck.allMinos.length,
+    boardFilledCount: rawFilledCells.length,
   }
 
   // スコア計算（linesCleared=GRID_SIZE で他レリック倍率も適用）
@@ -398,7 +499,15 @@ function tryVolcanoActivation(
   )
 
   const newScore = state.score + volcanoBreakdown.finalScore
-  const goldGain = volcanoBreakdown.goldCount
+  let goldGain = volcanoBreakdown.goldCount
+  // treasure_hunter レリック: ゴールドシール数分の追加ゴールド
+  if (hasRelic(state.player.ownedRelics, 'treasure_hunter') && volcanoBreakdown.goldCount > 0) {
+    goldGain += volcanoBreakdown.goldCount * TREASURE_HUNTER_GOLD_BONUS
+  }
+  // midas レリック: 火山は全消去なので常に+5G
+  if (hasRelic(state.player.ownedRelics, 'midas')) {
+    goldGain += MIDAS_GOLD_BONUS
+  }
   const newPlayer = addGold(state.player, goldGain)
   const volcanoPhase = determinePhase(newScore, state.targetScore, 0)
 
@@ -477,7 +586,7 @@ function processPiecePlacement(
   // ハンド消費イベントをディスパッチ（bandaidカウンター等が更新される）
   const handConsumed = !isNohand
   const afterHandState = handConsumed
-    ? dispatchRelicStateEvent(state.player.ownedRelics, state.relicMultiplierState, { type: 'hand_consumed' })
+    ? dispatchRelicStateEvent(state.player.ownedRelics, state.relicMultiplierState, { type: 'hand_consumed', placedBlockSize: getPieceBlockCount(piece) })
     : state.relicMultiplierState
 
   // onPiecePlacedフックを実行（bandaid注入判定等）
@@ -489,7 +598,7 @@ function processPiecePlacement(
   const bandaidTrigger = hookEffects.some(e => e?.type === 'inject_piece')
 
   // 配置後の状態を計算
-  const { finalSlots, finalDeck } = handlePlacement(newSlots, newDeck, isNohand, bandaidTrigger, state.roundInfo)
+  const { finalSlots, finalDeck } = handlePlacement(newSlots, newDeck, isNohand, bandaidTrigger, state.roundInfo, state.player.ownedRelics)
 
   // ライン消去判定
   const completedLines = findCompletedLines(newBoard)
@@ -521,6 +630,15 @@ function processPiecePlacement(
     )
 
     // レリック効果コンテキストを作成
+    // patternBlockCount/sealBlockCountは calculateScoreBreakdown 内で board から計算されるため、ここでは0初期値
+    // 盤面の埋まりセル数を計算（消去前の配置後盤面）
+    let boardFilledCount = 0
+    for (const row of newBoard) {
+      for (const cell of row) {
+        if (cell.filled) boardFilledCount++
+      }
+    }
+
     const relicContext: RelicEffectContext = {
       ownedRelics: state.player.ownedRelics,
       totalLines,
@@ -534,6 +652,10 @@ function processPiecePlacement(
       scriptRelicLines: state.scriptRelicLines,
       copyRelicState: preUpdatedMultState.copyRelicState,
       remainingHands: finalDeck.remainingHands,
+      patternBlockCount: 0,
+      sealBlockCount: 0,
+      deckSize: state.deck.allMinos.length,
+      boardFilledCount,
     }
 
     const scoreBreakdown = calculateScoreWithEffects(
@@ -545,7 +667,15 @@ function processPiecePlacement(
     )
     const scoreGain = scoreBreakdown.finalScore
     const newScore = state.score + scoreGain
-    const goldGain = scoreBreakdown.goldCount
+    let goldGain = scoreBreakdown.goldCount
+    // treasure_hunter レリック: ゴールドシール数分の追加ゴールド
+    if (hasRelic(state.player.ownedRelics, 'treasure_hunter') && scoreBreakdown.goldCount > 0) {
+      goldGain += scoreBreakdown.goldCount * TREASURE_HUNTER_GOLD_BONUS
+    }
+    // midas レリック: 全消し時に+5G
+    if (hasRelic(state.player.ownedRelics, 'midas') && isBoardEmpty(boardAfterClear)) {
+      goldGain += MIDAS_GOLD_BONUS
+    }
     const newPlayer = addGold(state.player, goldGain)
     const newPhase = determinePhase(newScore, state.targetScore, finalDeck.remainingHands)
 
@@ -569,14 +699,27 @@ function processPiecePlacement(
       : null
 
     // スコア計算後のレリック状態更新（rensha等: lines_cleared イベント）
+    // パターン付きブロック数を消去セルから計算（gardener等で使用）
+    const clearedPatternBlockCount = cells.reduce(
+      (count, c) => count + (newBoard[c.row][c.col].pattern ? 1 : 0), 0
+    )
+    // 消去セル内の異なるパターン種類を取得（collector等で使用）
+    const clearedPatternTypes = Array.from(
+      new Set(
+        cells
+          .map(c => newBoard[c.row][c.col].pattern)
+          .filter((p): p is string => p !== null)
+      )
+    )
     const newRelicMultiplierState = dispatchRelicStateEvent(
       state.player.ownedRelics,
       preUpdatedMultState,
-      { type: 'lines_cleared', totalLines, rowLines: completedLines.rows.length, colLines: completedLines.columns.length }
+      { type: 'lines_cleared', totalLines, rowLines: completedLines.rows.length, colLines: completedLines.columns.length, patternBlockCount: clearedPatternBlockCount, clearedPatternTypes }
     )
 
-    // 得点計算後にchargeValueをインクリメント（配置したピース自身は除外）
-    const boardAfterChargeIncrement = incrementChargeValues(newBoard, piece.blockSetId)
+    // 得点計算後にchargeValueをインクリメント（配置したピース自身は除外、magnet所持時は+2）
+    const chargeIncrement = hasRelic(state.player.ownedRelics, 'magnet') ? MAGNET_CHARGE_INCREMENT : 1
+    const boardAfterChargeIncrement = incrementChargeValues(newBoard, piece.blockSetId, chargeIncrement)
 
     // スコアアニメーションが存在し、playing以外のフェーズに遷移する場合はpendingPhaseに保留
     const shouldDefer = scoreAnim !== null && newPhase !== 'playing'
@@ -612,12 +755,12 @@ function processPiecePlacement(
   const newRelicMultiplierState = dispatchRelicStateEvent(
     state.player.ownedRelics,
     afterHandState,
-    { type: 'lines_cleared', totalLines: 0, rowLines: 0, colLines: 0 }
+    { type: 'lines_cleared', totalLines: 0, rowLines: 0, colLines: 0, patternBlockCount: 0, clearedPatternTypes: [] }
   )
 
   // 配置不可チェック＆リドロー
   const resolved = resolveUnplaceableHand(
-    newBoard, finalSlots, finalDeck, state.score, state.targetScore, state.roundInfo
+    newBoard, finalSlots, finalDeck, state.score, state.targetScore, state.roundInfo, state.player.ownedRelics
   )
 
   // 火山レリック発動判定
@@ -628,8 +771,9 @@ function processPiecePlacement(
     return volcanoResult
   }
 
-  // 得点計算後にchargeValueをインクリメント（配置したピース自身は除外）
-  const boardAfterChargeIncrement = incrementChargeValues(newBoard, piece.blockSetId)
+  // 得点計算後にchargeValueをインクリメント（配置したピース自身は除外、magnet所持時は+2）
+  const noLineChargeIncrement = hasRelic(state.player.ownedRelics, 'magnet') ? MAGNET_CHARGE_INCREMENT : 1
+  const boardAfterChargeIncrement = incrementChargeValues(newBoard, piece.blockSetId, noLineChargeIncrement)
 
   return {
     success: true,
@@ -684,8 +828,8 @@ function createNextRoundState(currentState: GameState): GameState {
   const roundInfo = createRoundInfo(nextRound, rng)
 
   // ボス条件に基づいた配置回数とドロー枚数を取得
-  const maxHands = getMaxPlacements(roundInfo)
-  const drawCount = getDrawCount(roundInfo)
+  const maxHands = getMaxPlacements(roundInfo, currentState.player.ownedRelics)
+  const drawCount = getDrawCount(roundInfo, currentState.player.ownedRelics)
 
   // allMinos（初期デッキ + 購入済みブロック）を使って新しいデッキを作成
   // purchasedPiecesも引き継ぐ（パターン/シール情報を維持するため）
@@ -757,8 +901,14 @@ function createNextRoundState(currentState: GameState): GameState {
 
 /**
  * ゲームリデューサー
+ * game_over状態でphoenixレリック所持時はラウンドリスタートをインターセプト
  */
 export function gameReducer(state: GameState, action: GameAction): GameState {
+  const result = gameReducerInner(state, action)
+  return tryPhoenixRestart(result) ?? result
+}
+
+function gameReducerInner(state: GameState, action: GameAction): GameState {
   switch (action.type) {
     case 'UI/START_DRAG': {
       const slot = state.pieceSlots[action.slotIndex]
@@ -934,15 +1084,16 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       )
 
       // 配置後の状態を計算
-      const { finalSlots, finalDeck } = handlePlacement(newSlots, state.deck, false, false, state.roundInfo)
+      const { finalSlots, finalDeck } = handlePlacement(newSlots, state.deck, false, false, state.roundInfo, state.player.ownedRelics)
       const newPhase = determinePhase(
         state.score,
         state.targetScore,
         finalDeck.remainingHands
       )
 
-      // 配置後にchargeValueをインクリメント（配置したピース自身は除外）
-      const boardAfterChargeIncrement = incrementChargeValues(newBoard, slot.piece.blockSetId)
+      // 配置後にchargeValueをインクリメント（配置したピース自身は除外、magnet所持時は+2）
+      const stockChargeIncrement = hasRelic(state.player.ownedRelics, 'magnet') ? MAGNET_CHARGE_INCREMENT : 1
+      const boardAfterChargeIncrement = incrementChargeValues(newBoard, slot.piece.blockSetId, stockChargeIncrement)
 
       return {
         ...state,
@@ -975,7 +1126,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
       // 配置不可チェック＆リドロー
       const resolved = resolveUnplaceableHand(
-        clearedBoard, [...state.pieceSlots], state.deck, state.score, state.targetScore, state.roundInfo
+        clearedBoard, [...state.pieceSlots], state.deck, state.score, state.targetScore, state.roundInfo, state.player.ownedRelics
       )
 
       // スコアアニメーションがまだ再生中の場合はpendingPhaseに保留
@@ -1086,6 +1237,35 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       }
     }
 
+    case 'RELIC/RECYCLE_PIECE': {
+      // リサイクラー: 手札1枚を捨てて新しい1枚をドロー（ハンド消費なし）
+      if (state.phase !== 'playing') return state
+      if (!hasRelic(state.player.ownedRelics, 'recycler')) return state
+      if (state.relicMultiplierState.recyclerUsesRemaining <= 0) return state
+
+      const targetSlot = state.pieceSlots[action.slotIndex]
+      if (!targetSlot?.piece) return state
+
+      // デッキから1枚ドロー
+      const { slots: drawnSlots, newDeck } = generateNewPieceSlotsFromDeckWithCount(state.deck, 1)
+      const drawnPiece = drawnSlots[0]?.piece ?? null
+
+      // 対象スロットのピースを入れ替え
+      const newSlots = state.pieceSlots.map((slot, i) =>
+        i === action.slotIndex ? { ...slot, piece: drawnPiece } : slot
+      )
+
+      return {
+        ...state,
+        pieceSlots: newSlots,
+        deck: newDeck,
+        relicMultiplierState: {
+          ...state.relicMultiplierState,
+          recyclerUsesRemaining: state.relicMultiplierState.recyclerUsesRemaining - 1,
+        },
+      }
+    }
+
     case 'ROUND/ADVANCE': {
       // round_clear状態でのみショップに進める
       if (state.phase !== 'round_clear') return state
@@ -1094,7 +1274,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       if (isFinalRound(state.round)) {
         const goldReward = calculateGoldReward(state.deck.remainingHands, state.roundInfo.roundType)
         const interest = calculateInterest(state.player.gold)
-        const totalGold = goldReward + interest
+        // goldfish レリック: スコアが目標の2倍以上で+3G
+        const goldfishBonus = hasRelic(state.player.ownedRelics, 'goldfish') && state.score >= state.targetScore * GOLDFISH_SCORE_MULTIPLIER
+          ? GOLDFISH_GOLD_BONUS : 0
+        const totalGold = goldReward + interest + goldfishBonus
 
         // イベント発火: ラウンドクリア + ゴールド獲得
         emitRoundCleared(state.round, state.score, totalGold)
@@ -1115,7 +1298,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const rng = new DefaultRandom()
       const goldReward = calculateGoldReward(state.deck.remainingHands, state.roundInfo.roundType)
       const interest = calculateInterest(state.player.gold)
-      const totalGold = goldReward + interest
+      // goldfish レリック: スコアが目標の2倍以上で+3G
+      const goldfishBonus = hasRelic(state.player.ownedRelics, 'goldfish') && state.score >= state.targetScore * GOLDFISH_SCORE_MULTIPLIER
+        ? GOLDFISH_GOLD_BONUS : 0
+      const totalGold = goldReward + interest + goldfishBonus
 
       // イベント発火: ラウンドクリア + ゴールド獲得
       emitRoundCleared(state.round, state.score, totalGold)
@@ -1183,7 +1369,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       let newRelicMultiplierState = state.relicMultiplierState
       if (isRelicShopItem(item)) {
         // レリック所持上限チェック: 上限に達している場合は入れ替えモードに入る
-        if (state.player.ownedRelics.length >= MAX_RELIC_SLOTS) {
+        if (state.player.ownedRelics.length >= getEffectiveMaxRelicSlots(state.player.ownedRelics)) {
           const updatedState = {
             ...state,
             shopState: {
@@ -1226,7 +1412,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       // shopping状態でのみリロール可能
       if (state.phase !== 'shopping' || !state.shopState) return state
 
-      const rerollCost = getRerollCost(state.shopState.rerollCount)
+      const rerollCost = getRerollCost(state.shopState.rerollCount, state.player.ownedRelics)
       if (!canAfford(state.player.gold, rerollCost)) return state
 
       // ゴールド消費
@@ -1321,7 +1507,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         const pendingIndex = state.shopState.pendingPurchaseIndex
         const pendingItem = state.shopState.items[pendingIndex]
 
-        if (pendingItem && !pendingItem.purchased && isRelicShopItem(pendingItem) && canAfford(newPlayer.gold, pendingItem.price) && newPlayer.ownedRelics.length < MAX_RELIC_SLOTS) {
+        if (pendingItem && !pendingItem.purchased && isRelicShopItem(pendingItem) && canAfford(newPlayer.gold, pendingItem.price) && newPlayer.ownedRelics.length < getEffectiveMaxRelicSlots(newPlayer.ownedRelics)) {
           // ゴールド消費
           newPlayer = subtractGold(newPlayer, pendingItem.price)
           // レリック追加
@@ -1464,7 +1650,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
       // 手札が全て空になった場合、ドロー処理を実行
       if (areAllSlotsEmpty(newSlots) && newDeck.remainingHands > 0) {
-        const drawCount = getDrawCount(state.roundInfo)
+        const drawCount = getDrawCount(state.roundInfo, state.player.ownedRelics)
         const result = generateNewPieceSlotsFromDeckWithCount(newDeck, drawCount)
         return {
           ...state,
@@ -1551,7 +1737,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
       // 手札が全て空になった場合、ドロー処理を実行
       if (areAllSlotsEmpty(newSlots) && newDeck.remainingHands > 0) {
-        const drawCount = getDrawCount(state.roundInfo)
+        const drawCount = getDrawCount(state.roundInfo, state.player.ownedRelics)
         const result = generateNewPieceSlotsFromDeckWithCount(newDeck, drawCount)
         return {
           ...state,

@@ -22,6 +22,12 @@ export interface RelicEffectContext {
   readonly scriptRelicLines: ScriptRelicLines | null  // 台本レリックの指定ライン
   readonly copyRelicState?: CopyRelicState | null  // コピーレリック状態（オプショナル）
   readonly remainingHands: number  // 残りハンド数（タイミングレリック判定用）
+  readonly patternBlockCount: number  // 消去セル内のパターン付きブロック数
+  readonly sealBlockCount: number     // 消去セル内のシール付きブロック数
+  readonly deckSize: number           // デッキの全カード枚数
+  readonly boardFilledCount: number   // 盤面の埋まっているセル数（消去前）
+  // patternAndSealBlockCount, distinctPatternTypeCount は
+  // calculateScoreBreakdown 内で board から算出されるため、ここには含めない
 }
 
 /**
