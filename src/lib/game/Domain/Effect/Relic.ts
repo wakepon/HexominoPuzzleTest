@@ -68,6 +68,7 @@ export type RelicType =
   | 'phoenix'           // 不死鳥
   | 'goldfish'          // 金魚
   | 'magnet'            // 磁石
+  | 'prism'             // プリズム
 
 /**
  * レリック定義
@@ -562,6 +563,15 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     rarity: 'uncommon',
     price: 15,
     icon: '🧲',
+  },
+  prism: {
+    id: 'prism' as RelicId,
+    type: 'prism',
+    name: 'プリズム',
+    description: 'multiシール（×2）の効果を×3に強化',
+    rarity: 'rare',
+    price: 20,
+    icon: '🔻',
   },
 }
 

@@ -96,7 +96,8 @@ export function calculateMultiBonus(
 export function calculateSealEffects(
   board: Board,
   cellsToRemove: readonly ClearingCell[],
-  completedLines: CompletedLinesInfo | null = null
+  completedLines: CompletedLinesInfo | null = null,
+  multiSealMultiplier: number = 2
 ): SealEffectResult {
   let goldCount = 0
   let scoreCount = 0
@@ -128,7 +129,7 @@ export function calculateSealEffects(
   return {
     goldCount,
     scoreBonus: scoreCount * 5,
-    multiBonus: multiCount,
+    multiBonus: multiCount * (multiSealMultiplier - 1),
     arrowBonus: arrowCount * 10,
   }
 }
