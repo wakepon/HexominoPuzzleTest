@@ -334,8 +334,17 @@ function drawRelicSection(
 }
 
 /**
- * デバッグウィンドウを描画
- * デッキの中身をストックに登場する順（先頭から）にブロック形状で表示する
+ * デバッグウィンドウを描画（3列レイアウト）
+ *
+ * Column 1 (Controls) | Column 2 (Items) | Column 3 (Deck)
+ * Pattern確率          | レリック           | DECK
+ * Seal確率             |  (5個/行グリッド)  | N枚 / M手
+ * Blessing確率         |                   | 1. ■■
+ * ─────────────────────|                   | 2. ■
+ * Gold                 |                   | ...
+ * Score                |───────────────────|
+ * ─────────────────────| Amulets           |
+ * Delete Save          |  (グリッド)        |
  */
 export function renderDebugWindow(
   ctx: CanvasRenderingContext2D,
@@ -361,12 +370,24 @@ export function renderDebugWindow(
     minWindowWidth,
     offsetX,
     offsetY,
+    columnGap,
   } = DEBUG_WINDOW_STYLE
 
+  const ps = DEBUG_WINDOW_STYLE.probabilitySection
+  const vs = DEBUG_WINDOW_STYLE.valueSection
+  const rs = DEBUG_WINDOW_STYLE.relicSection
+
+  // === Column 幅計算 ===
+  // Column 1: 値調整行の幅で決定（最も幅広い行）
+  const col1Width = vs.labelWidth + vs.valueWidth + (vs.buttonWidth + vs.buttonGap) * 4 + padding * 2
+
+  // Column 2: レリックアイコングリッドの幅で決定
+  const col2Width = rs.iconsPerRow * (rs.iconSize + rs.iconGap) + padding * 2
+
+  // Column 3: デッキのミノ形状表示幅で決定
   const cards = deck.cards
   const displayCount = Math.min(cards.length, maxItems)
 
-  // ミノ形状を取得
   const minoShapes: { id: string; shape: PieceShape }[] = []
   let maxMinoWidth = 0
 
@@ -379,75 +400,75 @@ export function renderDebugWindow(
     }
   }
 
-  // ウィンドウサイズを計算
+  const col3Width = Math.max(maxMinoWidth + numberColumnWidth + padding * 2, minWindowWidth)
+
+  // ウィンドウ全体幅
+  const windowWidth = col1Width + col2Width + col3Width + columnGap * 2
+
+  // === Column 高さ計算 ===
+  // Column 1: 確率行(3行) + セパレータ + 値調整行(2行) + セパレータ + 削除ボタン
+  const deleteButtonHeight = 22
+  const col1Height =
+    ps.sectionMarginTop + ps.rowHeight * 3 +
+    padding +
+    vs.sectionMarginTop + vs.rowHeight * 2 +
+    padding +
+    deleteButtonHeight
+
+  // Column 2: レリックセクション + セパレータ + 護符セクション
+  const allRelicTypes = Object.keys(RELIC_DEFINITIONS) as RelicType[]
+  const relicRows = Math.ceil(allRelicTypes.length / rs.iconsPerRow)
+  const relicContentHeight = rs.sectionMarginTop + rs.labelFontSize + 4 + relicRows * (rs.iconSize + rs.iconGap)
+
+  const allAmuletTypes = Object.keys(AMULET_DEFINITIONS) as AmuletType[]
+  const amuletRows = Math.ceil(allAmuletTypes.length / rs.iconsPerRow)
+  const amuletContentHeight = rs.sectionMarginTop + rs.labelFontSize + 4 + amuletRows * (rs.iconSize + rs.iconGap)
+
+  const col2Height = relicContentHeight + padding + amuletContentHeight
+
+  // Column 3: ヘッダー + ミノ形状リスト + 省略表示
   const titleHeight = titleFontSize + 4
   const infoHeight = infoFontSize + 4
   const headerHeight = titleHeight + infoHeight + padding
 
-  // 各ミノの高さを計算して合計
   let totalMinoHeight = 0
   for (const { shape } of minoShapes) {
     const size = getMinoSize(shape, cellSize)
     totalMinoHeight += size.height + itemPadding
   }
-
-  // 省略テキスト用の高さ
   const ellipsisHeight = cards.length > maxItems ? infoFontSize + 4 : 0
+  const col3Height = headerHeight + totalMinoHeight + ellipsisHeight
 
-  // 確率設定セクションの高さ
-  const ps = DEBUG_WINDOW_STYLE.probabilitySection
-  const probabilitySectionHeight = ps.sectionMarginTop + ps.rowHeight * 2 + padding
-
-  // レリックセクションの高さ
-  const rs = DEBUG_WINDOW_STYLE.relicSection
-  const allRelicTypes = Object.keys(RELIC_DEFINITIONS) as RelicType[]
-  const relicRows = Math.ceil(allRelicTypes.length / rs.iconsPerRow)
-  const relicSectionHeight = rs.sectionMarginTop + rs.labelFontSize + 4 + relicRows * (rs.iconSize + rs.iconGap) + padding
-
-  // 値調整セクションの高さ（ゴールド + スコア）
-  const vs = DEBUG_WINDOW_STYLE.valueSection
-  const valueSectionHeight = vs.sectionMarginTop + vs.rowHeight * 2 + padding
-
-  // 護符セクションの高さ
-  const allAmuletTypes = Object.keys(AMULET_DEFINITIONS) as AmuletType[]
-  const amuletRows = Math.ceil(allAmuletTypes.length / rs.iconsPerRow)
-  const amuletSectionHeight = rs.sectionMarginTop + rs.labelFontSize + 4 + amuletRows * (rs.iconSize + rs.iconGap) + padding
-
-  // 削除ボタン用の高さ
-  const deleteSaveButtonSectionHeight = 30 + padding
-
-  // ウィンドウ幅を計算（値調整ボタン4つ分を考慮）
-  const valueRowWidth = vs.labelWidth + vs.valueWidth + (vs.buttonWidth + vs.buttonGap) * 4 + padding * 2
-  const relicRowWidth = rs.iconsPerRow * (rs.iconSize + rs.iconGap) + padding * 2
-  const windowWidth = Math.max(maxMinoWidth + padding * 2 + numberColumnWidth + 5, minWindowWidth, 130, valueRowWidth, relicRowWidth)
-  const windowHeight = headerHeight + totalMinoHeight + ellipsisHeight + probabilitySectionHeight + relicSectionHeight + valueSectionHeight + amuletSectionHeight + deleteSaveButtonSectionHeight + padding
+  // ウィンドウ高さ: 最も高い列 + 上下パディング
+  const windowHeight = Math.max(col1Height, col2Height, col3Height) + padding * 2
 
   ctx.save()
 
-  // 背景描画
+  // === 背景・枠線 ===
   ctx.fillStyle = backgroundColor
   ctx.fillRect(offsetX, offsetY, windowWidth, windowHeight)
 
-  // 枠線
   ctx.strokeStyle = titleColor
   ctx.lineWidth = 1
   ctx.strokeRect(offsetX, offsetY, windowWidth, windowHeight)
 
-  // タイトル描画
+  // === Column 3 描画 (Deck) ===
+  const col3X = offsetX + col1Width + columnGap + col2Width + columnGap
+  let y3 = offsetY + padding
+
+  // タイトル「DECK」
   ctx.font = `bold ${titleFontSize}px ${fontFamily}`
   ctx.fillStyle = titleColor
   ctx.textAlign = 'left'
   ctx.textBaseline = 'top'
-
-  let y = offsetY + padding
-  ctx.fillText('DECK', offsetX + padding, y)
-  y += titleHeight
+  ctx.fillText('DECK', col3X + padding, y3)
+  y3 += titleHeight
 
   // 残りカード数とハンド数
   ctx.font = `${infoFontSize}px ${fontFamily}`
   ctx.fillStyle = infoColor
-  ctx.fillText(`${cards.length}枚 / ${deck.remainingHands}手`, offsetX + padding, y)
-  y += infoHeight + padding / 2
+  ctx.fillText(`${cards.length}枚 / ${deck.remainingHands}手`, col3X + padding, y3)
+  y3 += infoHeight + padding / 2
 
   // デッキの中身をミノ形状で表示（先頭から順に）
   for (let i = 0; i < minoShapes.length; i++) {
@@ -458,9 +479,9 @@ export function renderDebugWindow(
     if (i === 0) {
       ctx.fillStyle = highlightBgColor
       ctx.fillRect(
-        offsetX + padding - 2,
-        y - 2,
-        windowWidth - padding * 2 + 4,
+        col3X + padding - 2,
+        y3 - 2,
+        col3Width - padding * 2 + 4,
         size.height + itemPadding
       )
     }
@@ -470,12 +491,12 @@ export function renderDebugWindow(
     ctx.fillStyle = i === 0 ? titleColor : infoColor
     ctx.textAlign = 'right'
     ctx.textBaseline = 'top'
-    ctx.fillText(`${i + 1}.`, offsetX + padding + numberColumnWidth - 5, y + (size.height - infoFontSize) / 2)
+    ctx.fillText(`${i + 1}.`, col3X + padding + numberColumnWidth - 5, y3 + (size.height - infoFontSize) / 2)
 
     // ミノ形状を描画
-    drawMiniMino(ctx, shape, offsetX + padding + numberColumnWidth, y, cellSize)
+    drawMiniMino(ctx, shape, col3X + padding + numberColumnWidth, y3, cellSize)
 
-    y += size.height + itemPadding
+    y3 += size.height + itemPadding
   }
 
   // 省略表示
@@ -484,106 +505,105 @@ export function renderDebugWindow(
     ctx.fillStyle = infoColor
     ctx.textAlign = 'left'
     ctx.textBaseline = 'top'
-    ctx.fillText(`+${cards.length - maxItems}枚`, offsetX + padding, y)
-    y += infoFontSize + 4
+    ctx.fillText(`+${cards.length - maxItems}枚`, col3X + padding, y3)
   }
 
-  // 確率設定セクション
-  y += ps.sectionMarginTop
+  // === Column 1 描画 (Controls) ===
+  const col1X = offsetX
+  let y1 = offsetY + padding
 
-  // セパレータライン
-  ctx.strokeStyle = titleColor
-  ctx.lineWidth = 1
-  ctx.beginPath()
-  ctx.moveTo(offsetX + padding, y - ps.sectionMarginTop / 2)
-  ctx.lineTo(offsetX + windowWidth - padding, y - ps.sectionMarginTop / 2)
-  ctx.stroke()
+  // 確率セクション
+  y1 += ps.sectionMarginTop
 
   // パターン確率
   const patternButtons = drawProbabilityRow(
     ctx, 'Pattern', debugSettings.patternProbability,
-    offsetX, y, windowWidth, padding
+    col1X, y1, col1Width, padding
   )
-  y += ps.rowHeight
+  y1 += ps.rowHeight
 
   // シール確率
   const sealButtons = drawProbabilityRow(
     ctx, 'Seal', debugSettings.sealProbability,
-    offsetX, y, windowWidth, padding
+    col1X, y1, col1Width, padding
   )
-  y += ps.rowHeight
+  y1 += ps.rowHeight
 
   // 加護確率
   const blessingButtons = drawProbabilityRow(
     ctx, 'Blessing', debugSettings.blessingProbability,
-    offsetX, y, windowWidth, padding
+    col1X, y1, col1Width, padding
   )
-  y += ps.rowHeight
+  y1 += ps.rowHeight
 
   // セパレータライン
-  y += padding / 2
+  y1 += padding / 2
   ctx.strokeStyle = titleColor
   ctx.lineWidth = 1
   ctx.beginPath()
-  ctx.moveTo(offsetX + padding, y)
-  ctx.lineTo(offsetX + windowWidth - padding, y)
+  ctx.moveTo(col1X + padding, y1)
+  ctx.lineTo(col1X + col1Width - padding, y1)
   ctx.stroke()
-  y += padding / 2
-
-  // レリックセクション
-  y += rs.sectionMarginTop
-  const relicResult = drawRelicSection(ctx, ownedRelics, offsetX, y, windowWidth, padding)
-  y += relicResult.sectionHeight
-
-  // セパレータライン
-  ctx.strokeStyle = titleColor
-  ctx.lineWidth = 1
-  ctx.beginPath()
-  ctx.moveTo(offsetX + padding, y)
-  ctx.lineTo(offsetX + windowWidth - padding, y)
-  ctx.stroke()
-  y += padding / 2
+  y1 += padding / 2
 
   // 値調整セクション（ゴールド/スコア）
-  y += vs.sectionMarginTop
+  y1 += vs.sectionMarginTop
 
-  // ゴールド調整
-  const goldButtons = drawValueAdjustRow(ctx, 'Gold', gold, offsetX, y, windowWidth, padding)
-  y += vs.rowHeight
+  const goldButtons = drawValueAdjustRow(ctx, 'Gold', gold, col1X, y1, col1Width, padding)
+  y1 += vs.rowHeight
 
-  // スコア調整
-  const scoreButtons = drawValueAdjustRow(ctx, 'Score', score, offsetX, y, windowWidth, padding)
-  y += vs.rowHeight
+  const scoreButtons = drawValueAdjustRow(ctx, 'Score', score, col1X, y1, col1Width, padding)
+  y1 += vs.rowHeight
 
   // セパレータライン
-  y += padding / 2
+  y1 += padding / 2
   ctx.strokeStyle = titleColor
   ctx.lineWidth = 1
   ctx.beginPath()
-  ctx.moveTo(offsetX + padding, y)
-  ctx.lineTo(offsetX + windowWidth - padding, y)
+  ctx.moveTo(col1X + padding, y1)
+  ctx.lineTo(col1X + col1Width - padding, y1)
   ctx.stroke()
-  y += padding / 2
+  y1 += padding / 2
+
+  // セーブデータ削除ボタン
+  const deleteButtonWidth = col1Width - padding * 2
+  const deleteButtonX = col1X + padding
+  const deleteButtonY = y1
+
+  drawProbabilityButton(
+    ctx, deleteButtonX, deleteButtonY, deleteButtonWidth, deleteButtonHeight,
+    'Delete Save', '#CC3333', '#FFFFFF', 11
+  )
+
+  // === Column 2 描画 (Items) ===
+  const col2X = offsetX + col1Width + columnGap
+  let y2 = offsetY + padding
+
+  // レリックセクション
+  y2 += rs.sectionMarginTop
+  const relicResult = drawRelicSection(ctx, ownedRelics, col2X, y2, col2Width, padding)
+  y2 += relicResult.sectionHeight
+
+  // セパレータライン
+  ctx.strokeStyle = titleColor
+  ctx.lineWidth = 1
+  ctx.beginPath()
+  ctx.moveTo(col2X + padding, y2)
+  ctx.lineTo(col2X + col2Width - padding, y2)
+  ctx.stroke()
+  y2 += padding / 2
 
   // 護符セクション
-  y += rs.sectionMarginTop
-
-  // セパレータライン
-  ctx.strokeStyle = titleColor
-  ctx.lineWidth = 1
-  ctx.beginPath()
-  ctx.moveTo(offsetX + padding, y - rs.sectionMarginTop / 2)
-  ctx.lineTo(offsetX + windowWidth - padding, y - rs.sectionMarginTop / 2)
-  ctx.stroke()
+  y2 += rs.sectionMarginTop
 
   // セクションラベル
   ctx.fillStyle = '#DDA0DD'
   ctx.font = `${rs.labelFontSize}px ${fontFamily}`
   ctx.textAlign = 'left'
   ctx.textBaseline = 'top'
-  ctx.fillText('Amulets (click to add)', offsetX + padding, y)
+  ctx.fillText('Amulets (click to add)', col2X + padding, y2)
 
-  const amuletIconsY = y + rs.labelFontSize + 4
+  const amuletIconsY = y2 + rs.labelFontSize + 4
   const amuletButtons: AmuletButtonArea[] = []
 
   for (let i = 0; i < allAmuletTypes.length; i++) {
@@ -592,7 +612,7 @@ export function renderDebugWindow(
     const col = i % rs.iconsPerRow
     const row = Math.floor(i / rs.iconsPerRow)
 
-    const iconX = offsetX + padding + col * (rs.iconSize + rs.iconGap)
+    const iconX = col2X + padding + col * (rs.iconSize + rs.iconGap)
     const iconY = amuletIconsY + row * (rs.iconSize + rs.iconGap)
 
     // アイコン描画
@@ -616,27 +636,23 @@ export function renderDebugWindow(
     })
   }
 
-  y = amuletIconsY + amuletRows * (rs.iconSize + rs.iconGap)
-
-  // セパレータライン
+  // === 列間の縦セパレータライン ===
   ctx.strokeStyle = titleColor
   ctx.lineWidth = 1
+
+  // Col1 | Col2
+  const sep1X = offsetX + col1Width + columnGap / 2
   ctx.beginPath()
-  ctx.moveTo(offsetX + padding, y)
-  ctx.lineTo(offsetX + windowWidth - padding, y)
+  ctx.moveTo(sep1X, offsetY + padding)
+  ctx.lineTo(sep1X, offsetY + windowHeight - padding)
   ctx.stroke()
-  y += padding / 2
 
-  // セーブデータ削除ボタン
-  const deleteButtonWidth = windowWidth - padding * 2
-  const deleteButtonHeight = 22
-  const deleteButtonX = offsetX + padding
-  const deleteButtonY = y
-
-  drawProbabilityButton(
-    ctx, deleteButtonX, deleteButtonY, deleteButtonWidth, deleteButtonHeight,
-    'Delete Save', '#CC3333', '#FFFFFF', 11
-  )
+  // Col2 | Col3
+  const sep2X = offsetX + col1Width + columnGap + col2Width + columnGap / 2
+  ctx.beginPath()
+  ctx.moveTo(sep2X, offsetY + padding)
+  ctx.lineTo(sep2X, offsetY + windowHeight - padding)
+  ctx.stroke()
 
   ctx.restore()
 

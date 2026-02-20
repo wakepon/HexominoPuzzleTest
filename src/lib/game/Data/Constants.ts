@@ -333,6 +333,7 @@ export const DEBUG_WINDOW_STYLE = {
   maxItems: 20,            // 表示する最大アイテム数
   numberColumnWidth: 25,   // 番号表示用の幅
   minWindowWidth: 90,      // 最小ウィンドウ幅
+  columnGap: 8,            // 3列レイアウトの列間ギャップ
   offsetX: 10,             // 左端からのオフセット
   offsetY: 80,             // 上端からのオフセット
   // 確率設定セクション
@@ -357,7 +358,7 @@ export const DEBUG_WINDOW_STYLE = {
     sectionMarginTop: 12,   // セクション間のマージン
     iconSize: 22,           // レリックアイコンのサイズ
     iconGap: 4,             // アイコン間のギャップ
-    iconsPerRow: 5,         // 1行あたりのアイコン数
+    iconsPerRow: 10,        // 1行あたりのアイコン数
     ownedOpacity: 1.0,      // 所持時の不透明度
     unownedOpacity: 0.3,    // 未所持時の不透明度
     ownedBgColor: 'rgba(255, 215, 0, 0.3)', // 所持時の背景
