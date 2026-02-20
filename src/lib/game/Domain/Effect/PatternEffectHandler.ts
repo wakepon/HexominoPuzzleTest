@@ -6,14 +6,12 @@ import type { Board, ClearingCell } from '..'
 import type { PatternId, RelicId, SealId } from '../Core/Id'
 import type { PatternEffectResult, ScoreBreakdown } from './PatternEffectTypes'
 import type { RelicEffectContext } from './RelicEffectTypes'
-import type { CompletedLinesInfo } from './SealEffectTypes'
 import { calculateSealEffects } from './SealEffectHandler'
 import { getRelicModule } from './Relics/RelicRegistry'
 import { evaluateRelicEffects, evaluateCopyRelicEffect } from './Relics/RelicEffectEngine'
 import { isCopyRelicInactive } from './CopyRelicResolver'
 import { AMPLIFIED_ENHANCED_BONUS } from './Relics/Amplifier'
 import { PRISM_MULTI_MULTIPLIER } from './Relics/Prism'
-import { COMPASS_ROSE_ARROW_BONUS } from './Relics/CompassRose'
 
 // === enhanced効果 ===
 /**
@@ -117,8 +115,7 @@ export function calculateScoreBreakdown(
   linesCleared: number,
   relicContext: RelicEffectContext | null = null,
   luckyRandom: () => number = Math.random,
-  relicDisplayOrder: readonly RelicId[] = [],
-  completedLines: CompletedLinesInfo | null = null
+  relicDisplayOrder: readonly RelicId[] = []
 ): ScoreBreakdown {
   const baseBlocks = cellsToRemove.length
 
@@ -135,21 +132,17 @@ export function calculateScoreBreakdown(
   const hasPrism = relicContext?.ownedRelics.some(r => r === ('prism' as RelicId)) ?? false
   const multiSealMultiplier = hasPrism ? PRISM_MULTI_MULTIPLIER : 2
 
-  // compass_rose所持チェック → arrowシールボーナス値決定
-  const hasCompassRose = relicContext?.ownedRelics.some(r => r === ('compass_rose' as RelicId)) ?? false
-  const arrowBonusPerSeal = hasCompassRose ? COMPASS_ROSE_ARROW_BONUS : 10
-
   // パターン効果を計算
   const patternEffects = calculatePatternEffects(board, cellsToRemove, enhancedBonusPerBlock, multiSealMultiplier)
   const { enhancedBonus, chargeBonus } = patternEffects
 
   // シール効果を計算
-  const sealEffects = calculateSealEffects(board, cellsToRemove, completedLines, multiSealMultiplier, arrowBonusPerSeal)
-  const { multiBonus, scoreBonus: sealScoreBonus, goldCount, arrowBonus } = sealEffects
+  const sealEffects = calculateSealEffects(board, cellsToRemove, multiSealMultiplier)
+  const { multiBonus, goldCount } = sealEffects
 
-  // 合計ブロック数（パターン効果 + multiシール効果 + アローシール効果、chargeブロック基礎分除外）
+  // 合計ブロック数（パターン効果 + multiシール効果、chargeブロック基礎分除外）
   const totalBlocks =
-    baseBlocks - chargeBlockCount + enhancedBonus + chargeBonus + multiBonus + arrowBonus
+    baseBlocks - chargeBlockCount + enhancedBonus + chargeBonus + multiBonus
 
   // lucky効果（列点として扱う）
   const luckyMultiplier = rollLuckyMultiplier(board, cellsToRemove, luckyRandom, multiSealMultiplier)
@@ -285,8 +278,8 @@ export function calculateScoreBreakdown(
     ? relicDisplayOrder.map(id => id as string)
     : Array.from(relicEffects.keys()).filter(id => id !== 'copy')
 
-  // A (ブロック点): totalBlocks + sealScoreBonus + 加算レリック
-  let blockPoints = totalBlocks + sealScoreBonus
+  // A (ブロック点): totalBlocks + 加算レリック
+  let blockPoints = totalBlocks
 
   for (const relicId of effectiveOrder) {
     const module = getRelicModule(relicId)
@@ -352,13 +345,11 @@ export function calculateScoreBreakdown(
     baseBlocks,
     enhancedBonus,
     multiBonus,
-    arrowBonus,
     chargeBonus,
     totalBlocks,
     linesCleared,
     baseScore,
     luckyMultiplier,
-    sealScoreBonus,
     goldCount,
     relicEffects,
     sizeBonusRelicId,

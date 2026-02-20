@@ -24,13 +24,11 @@ export interface ScoreBreakdown {
   readonly baseBlocks: number       // 基本消去ブロック数
   readonly enhancedBonus: number    // enhanced効果
   readonly multiBonus: number       // multiシール効果（追加ブロック数）
-  readonly arrowBonus: number       // アローシール効果（+10/個）
   readonly chargeBonus: number      // charge効果による追加ブロック数
   readonly totalBlocks: number      // 合計ブロック数（乗算対象）
   readonly linesCleared: number     // 消去ライン数
   readonly baseScore: number        // 基本スコア（totalBlocks × linesCleared）
   readonly luckyMultiplier: number  // lucky倍率（1 or 2）
-  readonly sealScoreBonus: number   // scoreシールによる加算（+5点/個）
   readonly goldCount: number        // goldシール数（スコアには影響しないがReducerで使用）
 
   // === レリック効果（動的マップ） ===

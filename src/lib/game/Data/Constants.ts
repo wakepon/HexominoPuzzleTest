@@ -437,11 +437,8 @@ export const PATTERN_SYMBOL_STYLE = {
 // シール別カラー定義
 export const SEAL_COLORS: Record<string, string> = {
   gold: '#FFD700',   // ゴールド
-  score: '#00FF00',  // グリーン
   multi: '#FF69B4',  // ピンク
   stone: '#808080',  // グレー
-  arrow_v: '#1E90FF', // ドジャーブルー
-  arrow_h: '#FF6347', // トマト
 }
 
 // シール記号のスタイル設定

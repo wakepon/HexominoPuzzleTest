@@ -258,12 +258,6 @@ function buildScoreBonuses(breakdown: ScoreBreakdown): ScoreBonus[] {
       multiplier: breakdown.luckyMultiplier,
     })
   }
-  if (breakdown.arrowBonus > 0) {
-    bonuses.push({ source: 'seal:arrow', amount: breakdown.arrowBonus })
-  }
-  if (breakdown.sealScoreBonus > 0) {
-    bonuses.push({ source: 'seal:score', amount: breakdown.sealScoreBonus })
-  }
   // レリック効果（動的マップから生成）
   for (const [relicId, effectValue] of breakdown.relicEffects) {
     if (relicId === 'copy') continue // コピーは別途処理

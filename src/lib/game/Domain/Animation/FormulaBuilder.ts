@@ -89,28 +89,6 @@ export function buildFormulaSteps(
     })
   }
 
-  // arrowシール: Aに加算
-  if (breakdown.arrowBonus > 0) {
-    a += breakdown.arrowBonus
-    steps.push({
-      type: 'seal',
-      label: 'アローシール',
-      formula: buildABFormula(a, b),
-      relicId: null,
-    })
-  }
-
-  // scoreシール: Aに加算
-  if (breakdown.sealScoreBonus > 0) {
-    a += breakdown.sealScoreBonus
-    steps.push({
-      type: 'seal',
-      label: 'スコアシール',
-      formula: buildABFormula(a, b),
-      relicId: null,
-    })
-  }
-
   // === 4. レリック効果（relicDisplayOrder順）===
   // 加算系レリック → Aに加算
   for (const relicId of relicDisplayOrder) {

@@ -267,19 +267,6 @@ describe('calculateScoreWithEffects', () => {
   // シール効果
   // ========================================
   describe('シール効果', () => {
-    it('score: +5 → A=11, B=1, score=11', () => {
-      const board = createBoardWithFilledRow(0, {
-        0: { seal: 'score' as SealId },
-      })
-      const lines: CompletedLines = { rows: [0], columns: [] }
-
-      const result = calculateScoreWithEffects(board, lines)
-
-      expect(result.sealScoreBonus).toBe(5)
-      expect(result.blockPoints).toBe(11)
-      expect(result.finalScore).toBe(11)
-    })
-
     it('multi: +1 → A=7, B=1, score=7', () => {
       const board = createBoardWithFilledRow(0, {
         0: { seal: 'multi' as SealId },
@@ -303,32 +290,6 @@ describe('calculateScoreWithEffects', () => {
 
       expect(result.goldCount).toBe(1)
       expect(result.finalScore).toBe(6)
-    })
-
-    it('arrow_h: 行消去で+10 → A=16, B=1, score=16', () => {
-      const board = createBoardWithFilledRow(0, {
-        0: { seal: 'arrow_h' as SealId },
-      })
-      const lines: CompletedLines = { rows: [0], columns: [] }
-
-      const result = calculateScoreWithEffects(board, lines)
-
-      expect(result.arrowBonus).toBe(10)
-      expect(result.blockPoints).toBe(16) // 6 + 10
-      expect(result.finalScore).toBe(16)
-    })
-
-    it('arrow_v: 列消去で+10 → A=16, B=1, score=16', () => {
-      const board = createBoardWithFilledColumn(0, {
-        0: { seal: 'arrow_v' as SealId },
-      })
-      const lines: CompletedLines = { rows: [], columns: [0] }
-
-      const result = calculateScoreWithEffects(board, lines)
-
-      expect(result.arrowBonus).toBe(10)
-      expect(result.blockPoints).toBe(16)
-      expect(result.finalScore).toBe(16)
     })
 
     it('stone: 消去除外で5ブロック → A=5, B=1, score=5', () => {
@@ -1274,32 +1235,6 @@ describe('calculateScoreWithEffects', () => {
   // 複合効果
   // ========================================
   describe('複合効果', () => {
-    it('enhanced+score+chain_master: 2行消去 → A=19, B=3, score=57', () => {
-      // 2行消去、row0のcol0にenhanced、col1にscoreシール
-      const board = createBoardWithFilledRows([0, 1], {
-        '0,0': { pattern: 'enhanced' as PatternId },
-        '0,1': { seal: 'score' as SealId },
-      })
-      const lines: CompletedLines = { rows: [0, 1], columns: [] }
-      const ctx = createDefaultRelicContext({
-        ownedRelics: ['chain_master' as RelicId],
-        totalLines: 2,
-        rowLines: 2,
-        colLines: 0,
-        completedRows: [0, 1],
-        completedCols: [],
-      })
-
-      const result = calculateScoreWithEffects(board, lines, ctx)
-
-      expect(result.enhancedBonus).toBe(2)
-      expect(result.sealScoreBonus).toBe(5)
-      expect(result.blockPoints).toBe(19) // 12 + 2(enhanced) + 5(score)
-      expect(result.relicEffects.get('chain_master')).toBe(1.5)
-      expect(result.linePoints).toBe(3) // 2 × 1.5
-      expect(result.finalScore).toBe(57) // 19 × 3
-    })
-
     it('single_line+timing: 両方×3 → B=1×3×3=9, score=54', () => {
       const board = createBoardWithFilledRow(0)
       const lines: CompletedLines = { rows: [0], columns: [] }

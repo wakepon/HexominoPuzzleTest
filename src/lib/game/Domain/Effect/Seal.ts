@@ -9,11 +9,8 @@ import type { SealId } from '../Core/Id'
  */
 export type SealType =
   | 'gold' // ゴールドシール
-  | 'score' // スコアシール
   | 'multi' // マルチシール
   | 'stone' // 石シール
-  | 'arrow_v' // アローシール(縦)
-  | 'arrow_h' // アローシール(横)
 
 /**
  * シール定義
@@ -41,15 +38,6 @@ export const SEAL_DEFINITIONS: Record<SealType, SealDefinition> = {
     preventsClearing: false,
     price: 3, // ゴールド獲得で回収可能
   },
-  score: {
-    id: 'score' as SealId,
-    type: 'score',
-    name: 'スコアシール',
-    description: 'ブロック点+5',
-    symbol: '+5',
-    preventsClearing: false,
-    price: 2, // 固定+5点
-  },
   multi: {
     id: 'multi' as SealId,
     type: 'multi',
@@ -68,24 +56,6 @@ export const SEAL_DEFINITIONS: Record<SealType, SealDefinition> = {
     preventsClearing: true,
     price: 0, // ショップに出ない
   },
-  arrow_v: {
-    id: 'arrow_v' as SealId,
-    type: 'arrow_v',
-    name: 'アローシール(縦)',
-    description: '縦ライン消去時にブロック点+10',
-    symbol: '↕',
-    preventsClearing: false,
-    price: 4,
-  },
-  arrow_h: {
-    id: 'arrow_h' as SealId,
-    type: 'arrow_h',
-    name: 'アローシール(横)',
-    description: '横ライン消去時にブロック点+10',
-    symbol: '↔',
-    preventsClearing: false,
-    price: 4,
-  },
 }
 
 /**
@@ -98,4 +68,4 @@ export const getSealDefinition = (sealId: SealId): SealDefinition | undefined =>
 /**
  * ショップで購入可能なシールタイプ（ネガティブ効果のstoneは除外）
  */
-export const SHOP_AVAILABLE_SEALS: SealType[] = ['gold', 'score', 'multi', 'arrow_v', 'arrow_h']
+export const SHOP_AVAILABLE_SEALS: SealType[] = ['gold', 'multi']

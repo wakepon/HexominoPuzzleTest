@@ -4,7 +4,7 @@
 
 import type { Board, ClearingCell } from '..'
 import type { SealId } from '../Core/Id'
-import type { SealEffectResult, CompletedLinesInfo } from './SealEffectTypes'
+import type { SealEffectResult } from './SealEffectTypes'
 import { getSealDefinition } from './Seal'
 import { getPatternDefinition } from './Pattern'
 
@@ -54,24 +54,6 @@ export function calculateGoldCount(
 }
 
 /**
- * scoreシールによるスコアボーナスを計算
- * scoreシール1個につき+5点
- */
-export function calculateScoreBonus(
-  board: Board,
-  cellsToRemove: readonly ClearingCell[]
-): number {
-  let count = 0
-  for (const cell of cellsToRemove) {
-    const boardCell = board[cell.row][cell.col]
-    if (boardCell.seal === ('score' as SealId)) {
-      count += 1
-    }
-  }
-  return count * 5
-}
-
-/**
  * multiシールによる追加ブロック数を計算
  * multiシール付きブロックは2回カウントされるため、+1/個
  */
@@ -91,46 +73,27 @@ export function calculateMultiBonus(
 
 /**
  * 全シール効果を統合計算（1回のループで全て計算）
- * @param completedLines 完成ライン情報（アローシール判定用、nullの場合はアロー無効）
  */
 export function calculateSealEffects(
   board: Board,
   cellsToRemove: readonly ClearingCell[],
-  completedLines: CompletedLinesInfo | null = null,
-  multiSealMultiplier: number = 2,
-  arrowBonusPerSeal: number = 10
+  multiSealMultiplier: number = 2
 ): SealEffectResult {
   let goldCount = 0
-  let scoreCount = 0
   let multiCount = 0
-  let arrowCount = 0
 
   for (const cell of cellsToRemove) {
     const boardCell = board[cell.row][cell.col]
     const seal = boardCell.seal
     if (seal === ('gold' as SealId)) {
       goldCount++
-    } else if (seal === ('score' as SealId)) {
-      scoreCount++
     } else if (seal === ('multi' as SealId)) {
       multiCount++
-    } else if (seal === ('arrow_v' as SealId)) {
-      // 縦アロー: このセルが完成した縦列に含まれているか
-      if (completedLines?.columns.includes(cell.col)) {
-        arrowCount++
-      }
-    } else if (seal === ('arrow_h' as SealId)) {
-      // 横アロー: このセルが完成した横行に含まれているか
-      if (completedLines?.rows.includes(cell.row)) {
-        arrowCount++
-      }
     }
   }
 
   return {
     goldCount,
-    scoreBonus: scoreCount * 5,
     multiBonus: multiCount * (multiSealMultiplier - 1),
-    arrowBonus: arrowCount * arrowBonusPerSeal,
   }
 }

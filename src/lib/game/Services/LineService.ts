@@ -125,13 +125,11 @@ export function calculateScoreWithEffects(
       baseBlocks: 0,
       enhancedBonus: 0,
       multiBonus: 0,
-      arrowBonus: 0,
       chargeBonus: 0,
       totalBlocks: 0,
       linesCleared: 0,
       baseScore: 0,
       luckyMultiplier: 1,
-      sealScoreBonus: 0,
       goldCount: 0,
       relicEffects: new Map(),
       sizeBonusRelicId: null,
@@ -152,8 +150,7 @@ export function calculateScoreWithEffects(
     totalLines,
     relicContext,
     luckyRandom,
-    relicDisplayOrder,
-    { rows: completedLines.rows, columns: completedLines.columns }
+    relicDisplayOrder
   )
 }
 

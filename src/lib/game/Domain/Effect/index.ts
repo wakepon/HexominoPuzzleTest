@@ -42,7 +42,6 @@ export type { SealEffectResult } from './SealEffectTypes'
 export {
   filterClearableCells,
   calculateGoldCount,
-  calculateScoreBonus,
   calculateMultiBonus,
   calculateSealEffects,
 } from './SealEffectHandler'
