@@ -1,6 +1,6 @@
 import { useRef, useEffect, useCallback, useState } from 'react'
 import { GameState, CanvasLayout, Position } from '../lib/game/types'
-import { COLORS, HD_LAYOUT, ROUND_CLEAR_STYLE, DEBUG_PROBABILITY_SETTINGS } from '../lib/game/Data/Constants'
+import { COLORS, HD_LAYOUT, DEBUG_PROBABILITY_SETTINGS } from '../lib/game/Data/Constants'
 import { SCORE_ANIMATION } from '../lib/game/Domain/Animation/ScoreAnimationState'
 import { renderBoard, renderScriptMarkers } from './renderer/boardRenderer'
 import { renderPieceSlots, renderDraggingPiece, renderRecycleButtons, hitTestRecycleButton } from './renderer/pieceRenderer'
@@ -146,7 +146,6 @@ export function GameCanvas({
   const isDraggingRef = useRef(false)
   const activeSlotRef = useRef<number | null>(null)
   const buttonAreaRef = useRef<{ x: number; y: number; width: number; height: number } | null>(null)
-  const roundClearTimeRef = useRef<number | null>(null)
   const shopRenderResultRef = useRef<ShopRenderResult | null>(null)
   const debugWindowResultRef = useRef<DebugWindowRenderResult | null>(null)
   const roundProgressResultRef = useRef<RoundProgressRenderResult | null>(null)
@@ -350,8 +349,7 @@ export function GameCanvas({
     } else if (state.phase === 'round_clear') {
       const goldReward = calculateGoldReward(state.deck.remainingHands, state.roundInfo.roundType)
       const interest = calculateInterest(state.player.gold)
-      renderRoundClear(ctx, state.round, goldReward, interest, state.player.gold, layout)
-      buttonAreaRef.current = null
+      buttonAreaRef.current = renderRoundClear(ctx, state.round, goldReward, interest, state.player.gold, layout)
       shopRenderResultRef.current = null
       roundProgressResultRef.current = null
     } else if (state.phase === 'shopping' && state.shopState) {
@@ -537,26 +535,6 @@ export function GameCanvas({
     }
   }, [state.scoreAnimation?.isAnimating, state.scoreAnimation?.currentStepIndex, state.scoreAnimation?.isCountingUp, state.scoreAnimation?.isFastForward, render, onAdvanceScoreStep, onEndScoreAnimation])
 
-  // ラウンドクリア演出のタイマー
-  useEffect(() => {
-    if (state.phase !== 'round_clear') {
-      roundClearTimeRef.current = null
-      return
-    }
-
-    // 演出開始時刻を記録
-    if (roundClearTimeRef.current === null) {
-      roundClearTimeRef.current = Date.now()
-    }
-
-    const timer = setTimeout(() => {
-      onAdvanceRound()
-    }, ROUND_CLEAR_STYLE.duration)
-
-    return () => {
-      clearTimeout(timer)
-    }
-  }, [state.phase, onAdvanceRound])
 
   // キーボードイベントリスナー（Shift + 1 でデバッグウィンドウのトグル）
   useEffect(() => {
@@ -1095,8 +1073,16 @@ export function GameCanvas({
         return
       }
 
-      // アニメーション中またはラウンドクリア中は操作をブロック
-      if (state.clearingAnimation?.isAnimating || state.phase === 'round_clear') return
+      // ラウンドクリア時はボタンクリックのみ許可
+      if (state.phase === 'round_clear') {
+        if (isPointInButton(pos)) {
+          onAdvanceRound()
+        }
+        return
+      }
+
+      // アニメーション中は操作をブロック
+      if (state.clearingAnimation?.isAnimating) return
 
       // 護符スロットのクリック判定（playing 時）
       if (state.phase === 'playing') {
@@ -1391,8 +1377,16 @@ export function GameCanvas({
         return
       }
 
-      // アニメーション中またはラウンドクリア中は操作をブロック
-      if (state.clearingAnimation?.isAnimating || state.phase === 'round_clear') return
+      // ラウンドクリア時はボタンクリックのみ許可
+      if (state.phase === 'round_clear') {
+        if (isPointInButton(pos)) {
+          onAdvanceRound()
+        }
+        return
+      }
+
+      // アニメーション中は操作をブロック
+      if (state.clearingAnimation?.isAnimating) return
 
       // 護符スロットのクリック判定（playing 時）
       if (state.phase === 'playing') {

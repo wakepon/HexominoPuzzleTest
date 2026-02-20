@@ -176,14 +176,19 @@ export const ROUND_CONFIG = {
 
 // ラウンドクリア演出
 export const ROUND_CLEAR_STYLE = {
-  duration: 1500,              // 1.5秒表示
   fontSize: 36,
   subFontSize: 24,
   color: '#FFFFFF',
   goldColor: '#FFD700',
   backgroundColor: 'rgba(0, 0, 0, 0.7)',
-  titleOffsetY: -30,
-  goldTextOffsetY: 20,
+  titleOffsetY: -50,
+  goldTextOffsetY: -5,
+  buttonWidth: 160,
+  buttonHeight: 50,
+  buttonColor: '#4CAF50',
+  buttonTextColor: '#FFFFFF',
+  buttonFontSize: 20,
+  buttonOffsetY: 60,
 }
 
 // ゲームオーバー表示
