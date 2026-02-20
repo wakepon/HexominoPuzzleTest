@@ -10,6 +10,8 @@ import { INITIAL_TOOLTIP_STATE } from '../Domain/Tooltip'
 import { getPatternDefinition } from '../Domain/Effect/Pattern'
 import { getSealDefinition } from '../Domain/Effect/Seal'
 import { getRelicDefinition, RELIC_DEFINITIONS } from '../Domain/Effect/Relic'
+import { getBlessingDefinition } from '../Domain/Effect/Blessing'
+import { getBuffDefinition, getBuffDescription } from '../Domain/Effect/Buff'
 import { calculateRelicSellPrice } from './ShopPriceCalculator'
 import { HD_LAYOUT, SHOP_STYLE, GRID_SIZE, RELIC_PANEL_STYLE } from '../Data/Constants'
 import { BlockDataMapUtils } from '../Domain/Piece/BlockData'
@@ -36,6 +38,16 @@ function getEffectsFromBlockData(blockData: BlockData): EffectInfo[] {
     }
   }
 
+  if (blockData.blessing) {
+    const blessingDef = getBlessingDefinition(blockData.blessing)
+    if (blessingDef) {
+      effects.push({
+        name: blessingDef.name,
+        description: blessingDef.description,
+      })
+    }
+  }
+
   return effects
 }
 
@@ -52,32 +64,45 @@ function getEffectsFromBoardCell(
   }
 
   const cell = board[gridY][gridX]
-  if (!cell.filled) {
-    return []
-  }
-
   const effects: EffectInfo[] = []
 
-  if (cell.pattern) {
-    const patternDef = getPatternDefinition(cell.pattern)
-    if (patternDef) {
-      const description = cell.pattern === 'charge'
-        ? `${patternDef.description}（現在: +${cell.chargeValue}）`
-        : patternDef.description
-      effects.push({
-        name: patternDef.name,
-        description,
-      })
+  // パターン・シールはfilledセルのみ
+  if (cell.filled) {
+    if (cell.pattern) {
+      const patternDef = getPatternDefinition(cell.pattern)
+      if (patternDef) {
+        const description = cell.pattern === 'charge'
+          ? `${patternDef.description}（現在: +${cell.chargeValue}）`
+          : patternDef.description
+        effects.push({
+          name: patternDef.name,
+          description,
+        })
+      }
+    }
+
+    if (cell.seal) {
+      const sealDef = getSealDefinition(cell.seal)
+      if (sealDef) {
+        effects.push({
+          name: sealDef.name,
+          description: sealDef.description,
+        })
+      }
     }
   }
 
-  if (cell.seal) {
-    const sealDef = getSealDefinition(cell.seal)
-    if (sealDef) {
-      effects.push({
-        name: sealDef.name,
-        description: sealDef.description,
-      })
+  // バフは空セルでも表示（消去後もセルに残る永続効果）
+  if (cell.buff && cell.buffLevel > 0) {
+    const buffDef = getBuffDefinition(cell.buff)
+    if (buffDef) {
+      const desc = getBuffDescription(cell.buff, cell.buffLevel)
+      if (desc) {
+        effects.push({
+          name: buffDef.name,
+          description: desc,
+        })
+      }
     }
   }
 
@@ -278,7 +303,7 @@ function hitTestRelicPanel(
       const relicDef = RELIC_DEFINITIONS[relicType as keyof typeof RELIC_DEFINITIONS]
       const sellPrice = relicDef ? calculateRelicSellPrice(relicDef.price) : 0
       const descWithSellPrice = `${def.description}\n売却額: ${sellPrice}G`
-      return [{ name: def.name, description: descWithSellPrice }]
+      return [{ name: def.name, description: descWithSellPrice, rarity: def.rarity }]
     }
   }
 
@@ -331,7 +356,7 @@ function hitTestShopRelics(
     ) {
       const def = getRelicDefinition(item.relicId)
       if (def) {
-        return [{ name: def.name, description: def.description }]
+        return [{ name: def.name, description: def.description, rarity: def.rarity }]
       }
     }
   }

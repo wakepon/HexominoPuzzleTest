@@ -79,10 +79,10 @@ describe('collectorRelic', () => {
         rowLines: 1,
         colLines: 1,
         patternBlockCount: 5,
-        clearedPatternTypes: ['enhanced', 'lucky', 'combo'],
+        clearedPatternTypes: ['enhanced', 'lucky', 'charge'],
       }
       const result = collectorRelic.updateState!(null, event) as CollectorState
-      expect(result.collectedPatterns).toEqual(['enhanced', 'lucky', 'combo'])
+      expect(result.collectedPatterns).toEqual(['enhanced', 'lucky', 'charge'])
       expect(result.accumulatedBonus).toBe(1.5)
     })
 
@@ -115,10 +115,10 @@ describe('collectorRelic', () => {
         rowLines: 1,
         colLines: 1,
         patternBlockCount: 4,
-        clearedPatternTypes: ['enhanced', 'lucky', 'combo'],
+        clearedPatternTypes: ['enhanced', 'lucky', 'charge'],
       }
       const result = collectorRelic.updateState!(initial, event) as CollectorState
-      expect(result.collectedPatterns).toEqual(['enhanced', 'lucky', 'combo'])
+      expect(result.collectedPatterns).toEqual(['enhanced', 'lucky', 'charge'])
       expect(result.accumulatedBonus).toBe(1.5) // 0.5 + 2 * 0.5
     })
 
@@ -152,7 +152,7 @@ describe('collectorRelic', () => {
 
     it('round_startでリセット', () => {
       const initial: CollectorState = {
-        collectedPatterns: ['enhanced', 'lucky', 'combo'],
+        collectedPatterns: ['enhanced', 'lucky', 'charge'],
         accumulatedBonus: 1.5,
       }
       const event: RelicStateEvent = { type: 'round_start' }
@@ -230,7 +230,7 @@ describe('collectorRelic', () => {
 
     it('3種類収集で列点x2.5', () => {
       const state: CollectorState = {
-        collectedPatterns: ['enhanced', 'lucky', 'combo'],
+        collectedPatterns: ['enhanced', 'lucky', 'charge'],
         accumulatedBonus: 1.5,
       }
       const ctx = createContext({ totalLines: 2, relicState: state })

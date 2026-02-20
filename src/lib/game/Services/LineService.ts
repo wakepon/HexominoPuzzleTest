@@ -124,22 +124,20 @@ export function calculateScoreWithEffects(
     return {
       baseBlocks: 0,
       enhancedBonus: 0,
-      auraBonus: 0,
-      mossBonus: 0,
       multiBonus: 0,
-      arrowBonus: 0,
       chargeBonus: 0,
       totalBlocks: 0,
       linesCleared: 0,
       baseScore: 0,
-      comboBonus: 0,
       luckyMultiplier: 1,
-      sealScoreBonus: 0,
       goldCount: 0,
       relicEffects: new Map(),
       sizeBonusRelicId: null,
       copyTargetRelicId: null,
       relicBonusTotal: 0,
+      buffEnhancementBonus: 0,
+      buffGoldMineBonus: 0,
+      buffPulsationBonus: 0,
       blockPoints: 0,
       linePoints: 0,
       finalScore: 0,
@@ -155,8 +153,7 @@ export function calculateScoreWithEffects(
     totalLines,
     relicContext,
     luckyRandom,
-    relicDisplayOrder,
-    { rows: completedLines.rows, columns: completedLines.columns }
+    relicDisplayOrder
   )
 }
 
@@ -169,7 +166,7 @@ export function clearLines(board: Board, cellsToClear: readonly ClearingCell[]):
     row.map(cell => ({ ...cell }))
   )
 
-  // セルをクリア
+  // セルをクリア（バフは消去後もセルに残る）
   for (const { row, col } of cellsToClear) {
     newBoard[row][col] = {
       filled: false,
@@ -177,6 +174,9 @@ export function clearLines(board: Board, cellsToClear: readonly ClearingCell[]):
       pattern: null,
       seal: null,
       chargeValue: 0,
+      buff: newBoard[row][col].buff,
+      buffLevel: newBoard[row][col].buffLevel,
+      blockBlessing: null,
     }
   }
 

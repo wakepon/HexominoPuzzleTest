@@ -98,6 +98,7 @@ export function createSequentialClearingCells(
       pattern: boardCell.pattern,
       seal: boardCell.seal,
       chargeValue: boardCell.chargeValue,
+      blockBlessing: boardCell.blockBlessing,
     }
   })
 

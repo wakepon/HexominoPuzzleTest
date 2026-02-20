@@ -67,21 +67,22 @@ export function buildFormulaSteps(
     })
   }
 
-  if (breakdown.auraBonus > 0) {
-    a += breakdown.auraBonus
-    steps.push({
-      type: 'pattern',
-      label: 'オーラ',
-      formula: buildABFormula(a, b),
-      relicId: null,
-    })
-  }
-
   if (breakdown.chargeBonus > 0) {
     a += breakdown.chargeBonus
     steps.push({
       type: 'pattern',
       label: 'チャージ',
+      formula: buildABFormula(a, b),
+      relicId: null,
+    })
+  }
+
+  // === 2.5 バフ効果 → Aが増加 ===
+  if (breakdown.buffEnhancementBonus > 0) {
+    a += breakdown.buffEnhancementBonus
+    steps.push({
+      type: 'buff',
+      label: `増強 +${formatNum(breakdown.buffEnhancementBonus)}`,
       formula: buildABFormula(a, b),
       relicId: null,
     })
@@ -94,28 +95,6 @@ export function buildFormulaSteps(
     steps.push({
       type: 'seal',
       label: 'マルチシール',
-      formula: buildABFormula(a, b),
-      relicId: null,
-    })
-  }
-
-  // arrowシール: Aに加算
-  if (breakdown.arrowBonus > 0) {
-    a += breakdown.arrowBonus
-    steps.push({
-      type: 'seal',
-      label: 'アローシール',
-      formula: buildABFormula(a, b),
-      relicId: null,
-    })
-  }
-
-  // scoreシール: Aに加算
-  if (breakdown.sealScoreBonus > 0) {
-    a += breakdown.sealScoreBonus
-    steps.push({
-      type: 'seal',
-      label: 'スコアシール',
       formula: buildABFormula(a, b),
       relicId: null,
     })
@@ -155,18 +134,7 @@ export function buildFormulaSteps(
     }
   }
 
-  // === 5. コンボ → Aに加算 ===
-  if (breakdown.comboBonus > 0) {
-    a += breakdown.comboBonus
-    steps.push({
-      type: 'pattern',
-      label: 'コンボ',
-      formula: buildABFormula(a, b),
-      relicId: null,
-    })
-  }
-
-  // === 6. lucky → Bに乗算 ===
+  // === 5. lucky → Bに乗算 ===
   if (breakdown.luckyMultiplier > 1) {
     b *= breakdown.luckyMultiplier
     steps.push({
@@ -177,18 +145,18 @@ export function buildFormulaSteps(
     })
   }
 
-  // === 6.5. moss → Bに加算 ===
-  if (breakdown.mossBonus > 0) {
-    b += breakdown.mossBonus
+  // === 5.5 バフ効果 → Bが増加 ===
+  if (breakdown.buffPulsationBonus > 0) {
+    b += breakdown.buffPulsationBonus
     steps.push({
-      type: 'pattern',
-      label: 'モス',
+      type: 'buff',
+      label: `脈動 +${formatNum(breakdown.buffPulsationBonus)}`,
       formula: buildABFormula(a, b),
       relicId: null,
     })
   }
 
-  // === 7. レリック効果（relicDisplayOrder順） → Bに影響 ===
+  // === 6. レリック効果（relicDisplayOrder順） → Bに影響 ===
   let effectiveLines = b
   for (const relicId of relicDisplayOrder) {
     const module = getRelicModule(relicId)

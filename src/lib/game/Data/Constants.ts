@@ -328,11 +328,12 @@ export const DEBUG_WINDOW_STYLE = {
   highlightBgColor: 'rgba(255, 215, 0, 0.3)',  // 次のミノのハイライト背景
   fontFamily: 'Consolas, Monaco, monospace',
   padding: 10,
-  itemPadding: 4,          // ミノアイテム間のパディング
-  cellSize: 7,             // ミノセルサイズ（小さい 6-8px）
-  maxItems: 20,            // 表示する最大アイテム数
+  itemPadding: 3,          // ミノアイテム間のパディング
+  cellSize: 12,            // ミノセルサイズ（エフェクト表示対応）
+  maxItems: 12,            // 表示する最大アイテム数
   numberColumnWidth: 25,   // 番号表示用の幅
   minWindowWidth: 90,      // 最小ウィンドウ幅
+  columnGap: 8,            // 3列レイアウトの列間ギャップ
   offsetX: 10,             // 左端からのオフセット
   offsetY: 80,             // 上端からのオフセット
   // 確率設定セクション
@@ -357,7 +358,7 @@ export const DEBUG_WINDOW_STYLE = {
     sectionMarginTop: 12,   // セクション間のマージン
     iconSize: 22,           // レリックアイコンのサイズ
     iconGap: 4,             // アイコン間のギャップ
-    iconsPerRow: 5,         // 1行あたりのアイコン数
+    iconsPerRow: 10,        // 1行あたりのアイコン数
     ownedOpacity: 1.0,      // 所持時の不透明度
     unownedOpacity: 0.3,    // 未所持時の不透明度
     ownedBgColor: 'rgba(255, 215, 0, 0.3)', // 所持時の背景
@@ -403,21 +404,6 @@ export const PATTERN_COLORS: Record<string, { base: string; highlight: string; s
     highlight: '#32CD32', // ライムグリーン
     shadow: '#006400',    // ダークグリーン
   },
-  combo: {
-    base: '#8B008B',      // ダークマゼンタ
-    highlight: '#BA55D3', // ミディアムオーキッド
-    shadow: '#4B0082',    // インディゴ
-  },
-  aura: {
-    base: '#00CED1',      // ダークターコイズ
-    highlight: '#40E0D0', // ターコイズ
-    shadow: '#008B8B',    // ダークシアン
-  },
-  moss: {
-    base: '#2E8B57',      // シーグリーン
-    highlight: '#3CB371', // ミディアムシーグリーン
-    shadow: '#006400',    // ダークグリーン
-  },
   feather: {
     base: '#F5F5DC',      // ベージュ
     highlight: '#FFFACD', // レモンシフォン
@@ -449,14 +435,39 @@ export const PATTERN_SYMBOL_STYLE = {
   shadowBlur: 2,
 }
 
+// 加護別カラー定義
+export const BLESSING_COLORS: Record<string, string> = {
+  power: '#FF6347',   // 赤系（力）
+  gold: '#FFD700',    // 金色
+  chain: '#4169E1',   // 青系（連鎖）
+  phase: '#00CED1',   // シアン系（透過）
+}
+
+// 加護記号のスタイル設定（ピース上の加護マーク用）
+export const BLESSING_SYMBOL_STYLE = {
+  fontSize: 10,
+  fontFamily: 'serif',
+}
+
+// バフ別カラー定義（セル上の永続効果用）
+export const BUFF_COLORS: Record<string, string> = {
+  enhancement: '#FF6347',   // 赤系（増強）
+  gold_mine: '#FFD700',     // 金色（金鉱）
+  pulsation: '#4169E1',     // 青系（脈動）
+  phase: '#00CED1',         // シアン系（透過）
+}
+
+// バフ記号のスタイル設定
+export const BUFF_SYMBOL_STYLE = {
+  fontSize: 10,
+  fontFamily: 'serif',
+}
+
 // シール別カラー定義
 export const SEAL_COLORS: Record<string, string> = {
   gold: '#FFD700',   // ゴールド
-  score: '#00FF00',  // グリーン
   multi: '#FF69B4',  // ピンク
   stone: '#808080',  // グレー
-  arrow_v: '#1E90FF', // ドジャーブルー
-  arrow_h: '#FF6347', // トマト
 }
 
 // シール記号のスタイル設定
@@ -467,6 +478,14 @@ export const SEAL_SYMBOL_STYLE = {
   borderRadius: 2,
   padding: 1,
 }
+
+// 加護バフ付与確率（透の加護のみ使用、1/4）
+export const BLESSING_STAMP_PROBABILITY = 0.25
+
+// バフ効果値
+export const BUFF_ENHANCEMENT_PER_LEVEL = 0.5  // 増強: ブロック点+0.5 × LV
+export const BUFF_PULSATION_PER_LEVEL = 0.2    // 脈動: 列点+0.2 × LV
+export const BUFF_GOLD_MINE_PROB_PER_LEVEL = 0.25 // 金鉱: LV/4 の確率で1G
 
 // デバッグ用確率設定
 export const DEBUG_PROBABILITY_SETTINGS = {

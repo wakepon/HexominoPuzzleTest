@@ -4,7 +4,7 @@
 
 import type { ShopItem, ShopState, DeckState, MinoCategory, Piece, RelicShopItem, BlockShopItem } from '../Domain'
 import type { AmuletShopItem } from '../Domain/Shop/ShopTypes'
-import type { PatternId, SealId, RelicId } from '../Domain/Core/Id'
+import type { PatternId, SealId, RelicId, BlessingId } from '../Domain/Core/Id'
 import type { RandomGenerator } from '../Utils/Random'
 import { RELIC_DEFINITIONS, RelicType, RelicRarity } from '../Domain/Effect/Relic'
 import { calculatePiecePrice, calculateSalePrice } from './ShopPriceCalculator'
@@ -18,6 +18,8 @@ export interface ProbabilityOverride {
   pattern?: number
   /** シール付与確率 (0-1) */
   seal?: number
+  /** 加護付与確率 (0-1) */
+  blessing?: number
 }
 import { SHOP_STYLE } from '../Data/Constants'
 import { MERCHANT_REROLL_DISCOUNT } from '../Domain/Effect/Relics/Merchant'
@@ -29,9 +31,14 @@ import {
   createPieceWithPattern,
   createPieceWithSeal,
   createPieceWithPatternAndSeal,
+  createPieceWithBlessing,
+  createPieceWithPatternAndBlessing,
+  createPieceWithSealAndBlessing,
+  createPieceWithPatternSealAndBlessing,
 } from './PieceService'
 import { SHOP_AVAILABLE_PATTERNS } from '../Domain/Effect/Pattern'
 import { SHOP_AVAILABLE_SEALS } from '../Domain/Effect/Seal'
+import { SHOP_AVAILABLE_BLESSINGS } from '../Domain/Effect/Blessing'
 import { AMULET_DEFINITIONS, type AmuletType } from '../Domain/Effect/Amulet'
 
 /**
@@ -41,25 +48,19 @@ const SMALL_MEDIUM_CATEGORIES: MinoCategory[] = ['monomino', 'domino', 'tromino'
 const MEDIUM_LARGE_CATEGORIES: MinoCategory[] = ['tetromino', 'pentomino', 'hexomino']
 
 /**
- * ショップ商品サイズ
+ * パターン付与確率（ミノサイズに関わらず一律）
  */
-type ShopItemSize = 'small_medium' | 'medium_large'
+const PATTERN_PROBABILITY = 0.4 // 40%
 
 /**
- * サイズ別のパターン付与確率
+ * シール付与確率（ミノサイズに関わらず一律、パターンとは独立）
  */
-const PATTERN_PROBABILITY: Record<ShopItemSize, number> = {
-  small_medium: 0.3, // 30%
-  medium_large: 0.5, // 50%
-}
+const SEAL_PROBABILITY = 0.25 // 25%
 
 /**
- * サイズ別のシール付与確率（パターンとは独立）
+ * 加護付与確率（パターン・シールとは独立）
  */
-const SEAL_PROBABILITY: Record<ShopItemSize, number> = {
-  small_medium: 0.2, // 20%
-  medium_large: 0.3, // 30%
-}
+const BLESSING_PROBABILITY = 0.15 // 15%
 
 /**
  * 指定カテゴリ群からランダムにミノ定義を取得
@@ -91,32 +92,59 @@ function pickRandomSeal(rng: RandomGenerator): SealId {
   return SHOP_AVAILABLE_SEALS[index] as SealId
 }
 
+/**
+ * ランダムに加護を選択
+ */
+function pickRandomBlessing(rng: RandomGenerator): BlessingId {
+  const index = Math.floor(rng.next() * SHOP_AVAILABLE_BLESSINGS.length)
+  return SHOP_AVAILABLE_BLESSINGS[index] as BlessingId
+}
+
 // 価格計算は ShopPriceCalculator に移動
 
 /**
- * ショップ用のPieceを生成（パターン・シール付与判定含む）
+ * ショップ用のPieceを生成（パターン・シール・加護付与判定含む）
  */
 function createShopPiece(
   categories: MinoCategory[],
-  size: ShopItemSize,
   rng: RandomGenerator,
   override?: ProbabilityOverride
 ): Piece {
   const mino = pickRandomMinoFromCategories(categories, rng)
 
-  // パターンとシールの付与判定（独立）
-  // オーバーライドがあれば使用、なければサイズ別のデフォルト確率
-  const patternProb = override?.pattern ?? PATTERN_PROBABILITY[size]
-  const sealProb = override?.seal ?? SEAL_PROBABILITY[size]
+  // パターン・シール・加護の付与判定（各独立）
+  const patternProb = override?.pattern ?? PATTERN_PROBABILITY
+  const sealProb = override?.seal ?? SEAL_PROBABILITY
+  const blessingProb = override?.blessing ?? BLESSING_PROBABILITY
 
   const addPattern = patternProb > 0 && rng.next() < patternProb
   const addSeal = sealProb > 0 && rng.next() < sealProb
+  const addBlessing = blessingProb > 0 && rng.next() < blessingProb
 
-  // 4パターンで分岐
+  // 8パターンで分岐（pattern × seal × blessing）
+  if (addPattern && addSeal && addBlessing) {
+    const pattern = pickRandomPattern(rng)
+    const seal = pickRandomSeal(rng)
+    const blessing = pickRandomBlessing(rng)
+    return createPieceWithPatternSealAndBlessing(mino, pattern, seal, blessing, rng)
+  }
+
   if (addPattern && addSeal) {
     const pattern = pickRandomPattern(rng)
     const seal = pickRandomSeal(rng)
     return createPieceWithPatternAndSeal(mino, pattern, seal, rng)
+  }
+
+  if (addPattern && addBlessing) {
+    const pattern = pickRandomPattern(rng)
+    const blessing = pickRandomBlessing(rng)
+    return createPieceWithPatternAndBlessing(mino, pattern, blessing, rng)
+  }
+
+  if (addSeal && addBlessing) {
+    const seal = pickRandomSeal(rng)
+    const blessing = pickRandomBlessing(rng)
+    return createPieceWithSealAndBlessing(mino, seal, blessing, rng)
   }
 
   if (addPattern) {
@@ -129,21 +157,27 @@ function createShopPiece(
     return createPieceWithSeal(mino, seal, rng)
   }
 
+  if (addBlessing) {
+    const blessing = pickRandomBlessing(rng)
+    return createPieceWithBlessing(mino, blessing, rng)
+  }
+
   return createPiece(mino)
 }
 
 /**
  * ショップアイテムを生成（2種類）
- * - 小中: モノミノ/ドミノ/トリミノ/テトロミノ（30%でパターン付き）
- * - 中大: テトロミノ/ペントミノ/ヘキソミノ（50%でパターン付き）
+ * - 小中: モノミノ/ドミノ/トリミノ/テトロミノ
+ * - 中大: テトロミノ/ペントミノ/ヘキソミノ
+ * パターン付与確率は一律40%
  * @param override デバッグ用の確率オーバーライド
  */
 export function generateShopItems(
   rng: RandomGenerator,
   override?: ProbabilityOverride
 ): BlockShopItem[] {
-  const smallMediumPiece = createShopPiece(SMALL_MEDIUM_CATEGORIES, 'small_medium', rng, override)
-  const mediumLargePiece = createShopPiece(MEDIUM_LARGE_CATEGORIES, 'medium_large', rng, override)
+  const smallMediumPiece = createShopPiece(SMALL_MEDIUM_CATEGORIES, rng, override)
+  const mediumLargePiece = createShopPiece(MEDIUM_LARGE_CATEGORIES, rng, override)
 
   const smallMediumPrice = calculatePiecePrice(smallMediumPiece)
   const mediumLargePrice = calculatePiecePrice(mediumLargePiece)

@@ -93,12 +93,13 @@ export function renderPiece(
         const cellX = startX + x * cellSize
         const cellY = startY + y * cellSize
 
-        // BlockDataからパターンとシールを取得
+        // BlockDataからパターン・シール・加護を取得
         const blockData = BlockDataMapUtils.get(blocks, y, x)
         const pattern = blockData?.pattern ?? null
         const seal = blockData?.seal ?? null
+        const blessing = blockData?.blessing ?? null
 
-        drawWoodenCellWithBorder(ctx, cellX, cellY, cellSize, pattern, seal)
+        drawWoodenCellWithBorder(ctx, cellX, cellY, cellSize, pattern, seal, 0, blessing)
       }
     }
   } finally {

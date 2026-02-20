@@ -87,6 +87,7 @@ interface GameCanvasProps {
   onDebugAddScore: (amount: number) => void
   onDebugAddAmulet: (amuletType: AmuletType) => void
   onDebugRemoveAmulet: (amuletIndex: number) => void
+  onDebugAddRandomEffects: () => void
 }
 
 export function GameCanvas({
@@ -136,6 +137,7 @@ export function GameCanvas({
   onDebugAddScore,
   onDebugAddAmulet,
   onDebugRemoveAmulet: _onDebugRemoveAmulet,
+  onDebugAddRandomEffects,
 }: GameCanvasProps) {
   const [canvas, setCanvas] = useState<HTMLCanvasElement | null>(null)
   const [showDebugWindow, setShowDebugWindow] = useState(false)
@@ -859,6 +861,22 @@ export function GameCanvas({
         return true
       }
 
+      // 加護確率のマイナスボタン
+      if (isPointInArea(pos, debugResult.blessingMinusButton)) {
+        onUpdateDebugSettings({
+          blessingProbability: Math.max(MIN, debugSettings.blessingProbability - STEP),
+        })
+        return true
+      }
+
+      // 加護確率のプラスボタン
+      if (isPointInArea(pos, debugResult.blessingPlusButton)) {
+        onUpdateDebugSettings({
+          blessingProbability: Math.min(MAX, debugSettings.blessingProbability + STEP),
+        })
+        return true
+      }
+
       // レリックボタンのクリック判定
       for (const relicButton of debugResult.relicButtons) {
         if (isPointInArea(pos, relicButton)) {
@@ -917,12 +935,20 @@ export function GameCanvas({
         return true
       }
 
+      // エフェクト付与ボタン
+      if (isPointInArea(pos, debugResult.addEffectsButton)) {
+        onDebugAddRandomEffects()
+        return true
+      }
+
       // ウィンドウ内のクリックはイベントを消費（貫通しない）
       if (isPointInArea(pos, debugResult.windowBounds)) {
         return true
       }
 
-      return false
+      // ウィンドウ外のクリックでデバッグウィンドウを閉じる
+      setShowDebugWindow(false)
+      return true
     }
 
     // ラウンド進行画面のクリック処理

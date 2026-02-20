@@ -87,7 +87,6 @@ import { phoenixRelic } from './Phoenix'
 import { goldfishRelic } from './Goldfish'
 import { magnetRelic } from './Magnet'
 import { prismRelic } from './Prism'
-import { compassRoseRelic } from './CompassRose'
 import { furnaceRelic } from './Furnace'
 import { jesterRelic } from './Jester'
 
@@ -180,8 +179,6 @@ const allModules: readonly RelicModule[] = [
   magnetRelic,
   // 非スコア系（プリズム）
   prismRelic,
-  // 非スコア系（羅針盤）
-  compassRoseRelic,
   // 加算系（溶鉱炉）
   furnaceRelic,
   // 非スコア系（道化師）

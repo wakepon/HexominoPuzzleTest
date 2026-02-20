@@ -3,7 +3,7 @@
  */
 
 // 型
-export type { PatternId, SealId, RelicId } from './EffectTypes'
+export type { PatternId, SealId, RelicId, BlessingId } from './EffectTypes'
 
 // パターン
 export type { PatternType, PatternDefinition } from './Pattern'
@@ -16,6 +16,22 @@ export {
 // シール
 export type { SealType, SealDefinition } from './Seal'
 export { SEAL_DEFINITIONS, getSealDefinition, SHOP_AVAILABLE_SEALS } from './Seal'
+
+// 加護
+export type { BlessingType, BlessingDefinition } from './Blessing'
+export { BLESSING_DEFINITIONS, getBlessingDefinition, SHOP_AVAILABLE_BLESSINGS } from './Blessing'
+
+// バフ
+export type { BuffType, BuffDefinition } from './Buff'
+export { BUFF_DEFINITIONS, getBuffDefinition, getBuffDescription, blessingToBuffType } from './Buff'
+
+// バフ効果
+export type { BuffScoreResult } from './BlessingEffectHandler'
+export {
+  calculateBuffLevelUp,
+  stampBlessingsOnBoard,
+  calculateBuffScoreEffects,
+} from './BlessingEffectHandler'
 
 // レリック
 export type { RelicRarity, RelicType, RelicDefinition } from './Relic'
@@ -32,10 +48,7 @@ export type {
 } from './PatternEffectTypes'
 export {
   calculateEnhancedBonus,
-  calculateAuraBonus,
-  calculateMossBonus,
   rollLuckyMultiplier,
-  calculateComboBonus,
   calculatePatternEffects,
   calculateScoreBreakdown,
 } from './PatternEffectHandler'
@@ -45,7 +58,6 @@ export type { SealEffectResult } from './SealEffectTypes'
 export {
   filterClearableCells,
   calculateGoldCount,
-  calculateScoreBonus,
   calculateMultiBonus,
   calculateSealEffects,
 } from './SealEffectHandler'

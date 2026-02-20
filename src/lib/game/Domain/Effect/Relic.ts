@@ -69,7 +69,6 @@ export type RelicType =
   | 'goldfish'          // 金魚
   | 'magnet'            // 磁石
   | 'prism'             // プリズム
-  | 'compass_rose'      // 羅針盤
   | 'furnace'           // 溶鉱炉
   | 'jester'            // 道化師
 
@@ -575,15 +574,6 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     rarity: 'rare',
     price: 20,
     icon: '🔻',
-  },
-  compass_rose: {
-    id: 'compass_rose' as RelicId,
-    type: 'compass_rose',
-    name: '羅針盤',
-    description: 'arrow_v/arrow_hシールのボーナスを+10から+20に強化',
-    rarity: 'uncommon',
-    price: 15,
-    icon: '🗺️',
   },
   furnace: {
     id: 'furnace' as RelicId,

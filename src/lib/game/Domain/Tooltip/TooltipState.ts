@@ -2,6 +2,8 @@
  * ツールチップ状態の型定義
  */
 
+import type { RelicRarity } from '../Effect/Relic'
+
 /**
  * ツールチップに表示するエフェクト情報
  */
@@ -10,6 +12,8 @@ export interface EffectInfo {
   readonly name: string
   /** 説明文（例: "このブロックが消えると+1G"） */
   readonly description: string
+  /** レアリティ（レリックのみ） */
+  readonly rarity?: RelicRarity
 }
 
 /**

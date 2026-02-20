@@ -10,6 +10,7 @@ import type { DeckState } from '../Domain/Deck/DeckState'
 import type { MinoId, PatternId, SealId } from '../Domain/Core/Id'
 import type { PieceShape } from '../Domain/Piece/PieceShape'
 import type { RandomGenerator } from '../Utils/Random'
+import type { BlockData } from '../Domain/Piece/BlockData'
 import { BlockDataMapUtils } from '../Domain/Piece/BlockData'
 import { createPieceWithPattern } from './PieceService'
 import { getMinoById } from '../Data/MinoDefinitions'
@@ -93,7 +94,7 @@ export function applySculpt(
   newShape: PieceShape
 ): Piece {
   // 新しい形状に合わせてBlockDataMapを再構築
-  const newBlocks = new Map<string, { pattern: PatternId | null; seal: SealId | null }>()
+  const newBlocks = new Map<string, BlockData>()
   const existingBlocks = piece.blocks
 
   newShape.forEach((row, rowIdx) => {
@@ -110,6 +111,7 @@ export function applySculpt(
           newBlocks.set(key, {
             pattern: firstBlock?.pattern ?? null,
             seal: null,
+            blessing: null,
           })
         }
       }

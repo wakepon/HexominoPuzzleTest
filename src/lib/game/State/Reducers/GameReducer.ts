@@ -39,6 +39,7 @@ import {
   placePieceOnBoard,
   placeObstacleOnBoard,
   incrementChargeValues,
+  preserveBuffsOnBoard,
 } from '../../Services/BoardService'
 import { canPlacePiece, canPieceBePlacedAnywhere } from '../../Services/CollisionService'
 import {
@@ -97,11 +98,16 @@ import type { AmuletModalState } from '../../Domain/Effect/AmuletModalState'
 import { applyPatternAdd, applySealAdd, applyVanish, applySculpt, isShapeConnected } from '../../Services/AmuletEffectService'
 import { OBSTACLE_BLOCK_COUNT } from '../../Data/BossConditions'
 import { RELIC_DEFINITIONS } from '../../Domain/Effect/Relic'
+import { stampBlessingsOnBoard } from '../../Domain/Effect/BlessingEffectHandler'
+import { SHOP_AVAILABLE_PATTERNS } from '../../Domain/Effect/Pattern'
+import { SHOP_AVAILABLE_SEALS } from '../../Domain/Effect/Seal'
+import { SHOP_AVAILABLE_BLESSINGS } from '../../Domain/Effect/Blessing'
+import { BlockDataMapUtils } from '../../Domain/Piece/BlockData'
 import { JESTER_SLOT_REDUCTION } from '../../Domain/Effect/Relics/Jester'
 import { getMinoById } from '../../Data/MinoDefinitions'
 import { saveGameState, clearGameState } from '../../Services/StorageService'
 import type { RelicMultiplierState } from '../../Domain/Effect/RelicState'
-import type { RelicId, PatternId } from '../../Domain/Core/Id'
+import type { RelicId, PatternId, SealId, BlessingId } from '../../Domain/Core/Id'
 import type { RoundInfo } from '../../Domain/Round/RoundTypes'
 import { generateScriptLines } from '../../Domain/Effect/ScriptRelicState'
 import { GOLDFISH_GOLD_BONUS, GOLDFISH_SCORE_MULTIPLIER } from '../../Domain/Effect/Relics/Goldfish'
@@ -149,6 +155,8 @@ function tryPhoenixRestart(state: GameState): GameState | null {
       board = placeObstacleOnBoard(board, rng)
     }
   }
+  // バフをラウンド間で保持
+  board = preserveBuffsOnBoard(board, state.board)
 
   // 台本レリック: 所持時に指定ラインを再抽選
   const scriptRelicLines = hasRelic(playerAfterRemove.ownedRelics, 'script')
@@ -248,17 +256,8 @@ function buildScoreBonuses(breakdown: ScoreBreakdown): ScoreBonus[] {
   if (breakdown.enhancedBonus > 0) {
     bonuses.push({ source: 'pattern:enhanced', amount: breakdown.enhancedBonus })
   }
-  if (breakdown.auraBonus > 0) {
-    bonuses.push({ source: 'pattern:aura', amount: breakdown.auraBonus })
-  }
-  if (breakdown.mossBonus > 0) {
-    bonuses.push({ source: 'pattern:moss', amount: breakdown.mossBonus })
-  }
   if (breakdown.chargeBonus > 0) {
     bonuses.push({ source: 'pattern:charge', amount: breakdown.chargeBonus })
-  }
-  if (breakdown.comboBonus > 0) {
-    bonuses.push({ source: 'pattern:combo', amount: breakdown.comboBonus })
   }
   if (breakdown.luckyMultiplier > 1) {
     bonuses.push({
@@ -266,12 +265,6 @@ function buildScoreBonuses(breakdown: ScoreBreakdown): ScoreBonus[] {
       amount: 0,
       multiplier: breakdown.luckyMultiplier,
     })
-  }
-  if (breakdown.arrowBonus > 0) {
-    bonuses.push({ source: 'seal:arrow', amount: breakdown.arrowBonus })
-  }
-  if (breakdown.sealScoreBonus > 0) {
-    bonuses.push({ source: 'seal:score', amount: breakdown.sealScoreBonus })
   }
   // レリック効果（動的マップから生成）
   for (const [relicId, effectValue] of breakdown.relicEffects) {
@@ -855,6 +848,8 @@ function createNextRoundState(currentState: GameState): GameState {
       board = placeObstacleOnBoard(board, rng)
     }
   }
+  // バフをラウンド間で保持
+  board = preserveBuffsOnBoard(board, currentState.board)
 
   const targetScore = calculateTargetScore(nextRound)
 
@@ -1113,7 +1108,16 @@ function gameReducerInner(state: GameState, action: GameAction): GameState {
     case 'ANIMATION/END_CLEAR': {
       if (!state.clearingAnimation) return state
 
-      const clearedBoard = clearLines(state.board, state.clearingAnimation.cells)
+      // 1. 加護スタンプ（ブロック消去前に実行、1/4確率）
+      const rng = new DefaultRandom()
+      const boardWithBlessings = stampBlessingsOnBoard(
+        state.board,
+        state.clearingAnimation.cells,
+        rng
+      )
+
+      // 2. ライン消去（加護は維持される）
+      const clearedBoard = clearLines(boardWithBlessings, state.clearingAnimation.cells)
 
       // イベント発火: ライン消去完了
       emitLinesCleared(
@@ -2099,6 +2103,50 @@ function gameReducerInner(state: GameState, action: GameAction): GameState {
       const newAmuletStock = state.player.amuletStock.filter((_, i) => i !== amuletIndex)
       const newPlayer = { ...state.player, amuletStock: newAmuletStock }
       const newState = { ...state, player: newPlayer }
+      saveGameState(newState)
+      return newState
+    }
+
+    case 'DEBUG/ADD_RANDOM_EFFECTS': {
+      // 先頭のピースを見つける
+      const slotIndex = state.pieceSlots.findIndex(s => s.piece !== null)
+      if (slotIndex === -1) return state
+
+      const piece = state.pieceSlots[slotIndex].piece!
+      const blockKeys = Array.from(piece.blocks.keys())
+      if (blockKeys.length === 0) return state
+
+      // ランダムなパターンを選択して全ブロックに適用
+      const randomPattern = SHOP_AVAILABLE_PATTERNS[Math.floor(Math.random() * SHOP_AVAILABLE_PATTERNS.length)]
+      let newBlocks = BlockDataMapUtils.createWithPattern(piece.shape, randomPattern as PatternId)
+
+      // 既存のシール・加護を引き継ぐ
+      for (const [key, oldData] of piece.blocks) {
+        const newData = newBlocks.get(key)
+        if (newData && (oldData.seal || oldData.blessing)) {
+          const mutableMap = new Map(newBlocks)
+          mutableMap.set(key, { ...newData, seal: oldData.seal, blessing: oldData.blessing })
+          newBlocks = mutableMap
+        }
+      }
+
+      // ランダムなシールをランダムなブロックに付与
+      const randomSeal = SHOP_AVAILABLE_SEALS[Math.floor(Math.random() * SHOP_AVAILABLE_SEALS.length)]
+      const sealKey = blockKeys[Math.floor(Math.random() * blockKeys.length)]
+      const [sealRow, sealCol] = sealKey.split(',').map(Number)
+      newBlocks = BlockDataMapUtils.setSeal(newBlocks, sealRow, sealCol, randomSeal as SealId)
+
+      // ランダムな加護をランダムなブロックに付与
+      const randomBlessing = SHOP_AVAILABLE_BLESSINGS[Math.floor(Math.random() * SHOP_AVAILABLE_BLESSINGS.length)]
+      const blessingKey = blockKeys[Math.floor(Math.random() * blockKeys.length)]
+      const [blessingRow, blessingCol] = blessingKey.split(',').map(Number)
+      newBlocks = BlockDataMapUtils.setBlessing(newBlocks, blessingRow, blessingCol, randomBlessing as BlessingId)
+
+      const newPiece: Piece = { ...piece, blocks: newBlocks }
+      const newSlots = state.pieceSlots.map((s, i) =>
+        i === slotIndex ? { ...s, piece: newPiece } : s
+      )
+      const newState = { ...state, pieceSlots: newSlots }
       saveGameState(newState)
       return newState
     }

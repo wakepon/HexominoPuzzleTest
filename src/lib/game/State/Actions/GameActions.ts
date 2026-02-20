@@ -94,6 +94,7 @@ export type DebugAction =
   | { type: 'DEBUG/ADD_SCORE'; amount: number }
   | { type: 'DEBUG/ADD_AMULET'; amuletType: AmuletType }
   | { type: 'DEBUG/REMOVE_AMULET'; amuletIndex: number }
+  | { type: 'DEBUG/ADD_RANDOM_EFFECTS' }
 
 /**
  * 全アクション型（判別可能なUnion型）

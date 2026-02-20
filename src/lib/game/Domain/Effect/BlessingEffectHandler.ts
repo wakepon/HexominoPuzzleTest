@@ -1,0 +1,165 @@
+/**
+ * バフ効果ハンドラー
+ *
+ * - stampBlessingsOnBoard: ブロック消去時にセルへバフを刻む（加護→バフ変換）
+ * - calculateBuffScoreEffects: バフがスコアに与える効果を計算
+ */
+
+import type { Board } from '../Board/Board'
+import type { ClearingCell } from '../Animation/AnimationState'
+import type { BuffType } from './Buff'
+import type { RandomGenerator } from '../../Utils/Random'
+import { blessingToBuffType, getBuffDefinition } from './Buff'
+import {
+  BLESSING_STAMP_PROBABILITY,
+  BUFF_ENHANCEMENT_PER_LEVEL,
+  BUFF_PULSATION_PER_LEVEL,
+  BUFF_GOLD_MINE_PROB_PER_LEVEL,
+} from '../../Data/Constants'
+
+/**
+ * バフスコア効果の結果
+ */
+export interface BuffScoreResult {
+  readonly enhancementBonus: number    // ブロック点(A)加算
+  readonly goldMineBonus: number       // ゴールド加算（スコア外）
+  readonly pulsationBonus: number      // 列点(B)加算
+}
+
+/**
+ * レベルアップ計算
+ * - 同種: +1、上限maxLevel
+ * - 異種: 変更なし（既存維持）
+ * - 新規: Lv1
+ * ※ multiシールの効果は呼び出し側で抽選回数として表現
+ */
+export function calculateBuffLevelUp(
+  currentBuff: BuffType | null,
+  currentLevel: number,
+  incomingBuff: BuffType
+): { buff: BuffType; level: number } {
+  const increment = 1
+  const buffDef = getBuffDefinition(incomingBuff)
+  const maxLevel = buffDef?.maxLevel ?? 3
+
+  if (!currentBuff || currentLevel === 0) {
+    // 新規: Lv1
+    return {
+      buff: incomingBuff,
+      level: Math.min(increment, maxLevel),
+    }
+  }
+
+  if (currentBuff === incomingBuff) {
+    // 同種: +increment、上限maxLevel
+    return {
+      buff: currentBuff,
+      level: Math.min(currentLevel + increment, maxLevel),
+    }
+  }
+
+  // 異種: 変更なし
+  return {
+    buff: currentBuff,
+    level: currentLevel,
+  }
+}
+
+/**
+ * ブロック消去時にセルへバフを刻む
+ * ClearingCell の blockBlessing を参照し、バフ種別に変換してセルの buff/buffLevel を更新
+ */
+export function stampBlessingsOnBoard(
+  board: Board,
+  cellsToRemove: readonly ClearingCell[],
+  rng: RandomGenerator
+): Board {
+  // 加護付きブロックがなければ早期リターン
+  const hasBlessings = cellsToRemove.some(c => c.blockBlessing)
+  if (!hasBlessings) return board
+
+  // 新しいボードを作成（immutable）
+  const newBoard = board.map(row => row.map(cell => ({ ...cell })))
+
+  for (const cell of cellsToRemove) {
+    if (!cell.blockBlessing) continue
+
+    const boardCell = newBoard[cell.row][cell.col]
+    const hasMulti = boardCell.seal === 'multi'
+
+    // 加護をバフ種別に変換
+    const incomingBuff = blessingToBuffType(cell.blockBlessing)
+    const isPhase = incomingBuff === 'phase'
+
+    // 透の加護のみ確率抽選（multiシール: 2回独立抽選、通常: 1回）
+    // それ以外は確定付与（multiシール: 2回レベルアップ、通常: 1回）
+    const trials = hasMulti ? 2 : 1
+    let currentBuff = boardCell.buff
+    let currentLevel = boardCell.buffLevel
+
+    for (let i = 0; i < trials; i++) {
+      if (isPhase && rng.next() >= BLESSING_STAMP_PROBABILITY) continue
+
+      const result = calculateBuffLevelUp(currentBuff, currentLevel, incomingBuff)
+      currentBuff = result.buff
+      currentLevel = result.level
+    }
+
+    // 変化があった場合のみ更新
+    if (currentBuff !== boardCell.buff || currentLevel !== boardCell.buffLevel) {
+      newBoard[cell.row][cell.col] = {
+        ...boardCell,
+        buff: currentBuff,
+        buffLevel: currentLevel,
+      }
+    }
+  }
+
+  return newBoard
+}
+
+/**
+ * バフがスコアに与える効果を計算
+ * 消去対象セルの下にあるバフを参照
+ * obstacleパターンが乗っているセルのバフは無効化
+ *
+ * 増強: +0.5 × LV（ブロック点に加算）
+ * 脈動: +0.2 × LV（列点に加算）
+ * 金鉱: LV/4 の確率で1G（確率判定）
+ */
+export function calculateBuffScoreEffects(
+  board: Board,
+  cellsToRemove: readonly ClearingCell[],
+  random: () => number = Math.random
+): BuffScoreResult {
+  let enhancementBonus = 0
+  let goldMineBonus = 0
+  let pulsationBonus = 0
+
+  for (const cell of cellsToRemove) {
+    const boardCell = board[cell.row][cell.col]
+
+    // バフなし or obstacle上は無効
+    if (!boardCell.buff || boardCell.buffLevel === 0) continue
+    if (boardCell.pattern === 'obstacle') continue
+
+    const level = boardCell.buffLevel
+
+    switch (boardCell.buff) {
+      case 'enhancement':
+        enhancementBonus += BUFF_ENHANCEMENT_PER_LEVEL * level
+        break
+      case 'gold_mine':
+        // LV/4 の確率で1G
+        if (random() < BUFF_GOLD_MINE_PROB_PER_LEVEL * level) {
+          goldMineBonus += 1
+        }
+        break
+      case 'pulsation':
+        pulsationBonus += BUFF_PULSATION_PER_LEVEL * level
+        break
+    }
+  }
+
+  return { enhancementBonus, goldMineBonus, pulsationBonus }
+}

@@ -10,9 +10,6 @@ import type { PatternId } from '../Core/Id'
 export type PatternType =
   | 'enhanced' // 強化ブロック
   | 'lucky' // ラッキーブロック
-  | 'combo' // コンボブロック
-  | 'aura' // オーラブロック
-  | 'moss' // 苔ブロック
   | 'feather' // 羽ブロック
   | 'nohand' // ノーハンドブロック
   | 'charge' // チャージブロック
@@ -52,33 +49,6 @@ export const PATTERN_DEFINITIONS: Record<PatternType, PatternDefinition> = {
     symbol: '♣',
     isNegative: false,
     price: 5, // 10%で2倍という高いリターン
-  },
-  combo: {
-    id: 'combo' as PatternId,
-    type: 'combo',
-    name: 'コンボブロック',
-    description: '同時に消えるほどボーナス増加',
-    symbol: 'C',
-    isNegative: false,
-    price: 4, // 同時消去でブロック点ボーナス
-  },
-  aura: {
-    id: 'aura' as PatternId,
-    type: 'aura',
-    name: 'オーラブロック',
-    description: '隣接するブロックのブロック点+1',
-    symbol: '◎',
-    isNegative: false,
-    price: 4, // 隣接バフで安定
-  },
-  moss: {
-    id: 'moss' as PatternId,
-    type: 'moss',
-    name: '苔ブロック',
-    description: 'フィールド端と接している辺の数だけ列点+1',
-    symbol: 'M',
-    isNegative: false,
-    price: 3, // 端配置が必要で条件付き
   },
   feather: {
     id: 'feather' as PatternId,
@@ -133,9 +103,6 @@ export const getPatternDefinition = (
 export const SHOP_AVAILABLE_PATTERNS: PatternType[] = [
   'enhanced',
   'lucky',
-  'combo',
-  'aura',
-  'moss',
   'feather',
   'nohand',
   'charge',

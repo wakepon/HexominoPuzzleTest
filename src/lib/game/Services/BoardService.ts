@@ -16,7 +16,7 @@ export function createEmptyBoard(): Board {
   for (let y = 0; y < GRID_SIZE; y++) {
     const row: Cell[] = []
     for (let x = 0; x < GRID_SIZE; x++) {
-      row.push({ filled: false, blockSetId: null, pattern: null, seal: null, chargeValue: 0 })
+      row.push({ filled: false, blockSetId: null, pattern: null, seal: null, chargeValue: 0, buff: null, buffLevel: 0, blockBlessing: null })
     }
     board.push(row)
   }
@@ -59,6 +59,11 @@ export function placePieceOnBoard(
           pattern: blockData?.pattern ?? null,
           seal: blockData?.seal ?? null,
           chargeValue: 0,
+          // 既存のバフを維持（ブロック配置でバフは消えない）
+          buff: newBoard[boardY][boardX].buff,
+          buffLevel: newBoard[boardY][boardX].buffLevel,
+          // ブロックの加護を一時保持（消去時にセルにバフとしてスタンプされる）
+          blockBlessing: blockData?.blessing ?? null,
         }
       }
     }
@@ -87,6 +92,10 @@ export function placeObstacleOnBoard(
     pattern: 'obstacle' as PatternId,
     seal: null,
     chargeValue: 0,
+    // obstacleは既存のバフを維持
+    buff: newBoard[row][col].buff,
+    buffLevel: newBoard[row][col].buffLevel,
+    blockBlessing: null,
   }
 
   return newBoard
@@ -97,6 +106,23 @@ export function placeObstacleOnBoard(
  * 得点計算後に呼び出すことで「別のブロックが置かれるたび」の仕様を実現
  * デフォルトは+1、magnet所持時は+2
  */
+/**
+ * ソースボードのバフ情報をターゲットボードにコピーする
+ * ラウンド遷移時にバフをラン中永続化するために使用
+ */
+export function preserveBuffsOnBoard(targetBoard: Board, sourceBoard: Board): Board {
+  return targetBoard.map((row, r) =>
+    row.map((cell, c) => {
+      const sourceCell = sourceBoard[r]?.[c]
+      // obstacleセルにはバフをコピーしない
+      if (sourceCell?.buff && cell.pattern !== 'obstacle') {
+        return { ...cell, buff: sourceCell.buff, buffLevel: sourceCell.buffLevel }
+      }
+      return cell
+    })
+  )
+}
+
 export function incrementChargeValues(board: Board, excludeBlockSetId?: BlockSetId | null, increment: number = 1): Board {
   return board.map((row) =>
     row.map((cell) => {
