@@ -23,22 +23,22 @@ export interface BuffScoreResult {
 
 /**
  * レベルアップ計算
- * - 同種: +1 (multi付き: +2)、上限maxLevel
+ * - 同種: +1、上限maxLevel
  * - 異種: 変更なし（既存維持）
- * - 新規: Lv1 (multi付き: Lv2)
+ * - 新規: Lv1
+ * ※ multiシールの効果は呼び出し側で抽選回数として表現
  */
 export function calculateBuffLevelUp(
   currentBuff: BuffType | null,
   currentLevel: number,
-  incomingBuff: BuffType,
-  hasMultiSeal: boolean
+  incomingBuff: BuffType
 ): { buff: BuffType; level: number } {
-  const increment = hasMultiSeal ? 2 : 1
+  const increment = 1
   const buffDef = getBuffDefinition(incomingBuff)
   const maxLevel = buffDef?.maxLevel ?? 3
 
   if (!currentBuff || currentLevel === 0) {
-    // 新規: Lv1 (multi付き: Lv2)
+    // 新規: Lv1
     return {
       buff: incomingBuff,
       level: Math.min(increment, maxLevel),
@@ -79,26 +79,32 @@ export function stampBlessingsOnBoard(
   for (const cell of cellsToRemove) {
     if (!cell.blockBlessing) continue
 
-    // 1/4の確率でバフ付与
-    if (rng.next() >= BLESSING_STAMP_PROBABILITY) continue
-
     const boardCell = newBoard[cell.row][cell.col]
     const hasMulti = boardCell.seal === 'multi'
 
     // 加護をバフ種別に変換
     const incomingBuff = blessingToBuffType(cell.blockBlessing)
 
-    const result = calculateBuffLevelUp(
-      boardCell.buff,
-      boardCell.buffLevel,
-      incomingBuff,
-      hasMulti
-    )
+    // multiシール: 2回独立抽選(各25%)、通常: 1回抽選(25%)
+    const trials = hasMulti ? 2 : 1
+    let currentBuff = boardCell.buff
+    let currentLevel = boardCell.buffLevel
 
-    newBoard[cell.row][cell.col] = {
-      ...boardCell,
-      buff: result.buff,
-      buffLevel: result.level,
+    for (let i = 0; i < trials; i++) {
+      if (rng.next() >= BLESSING_STAMP_PROBABILITY) continue
+
+      const result = calculateBuffLevelUp(currentBuff, currentLevel, incomingBuff)
+      currentBuff = result.buff
+      currentLevel = result.level
+    }
+
+    // 変化があった場合のみ更新
+    if (currentBuff !== boardCell.buff || currentLevel !== boardCell.buffLevel) {
+      newBoard[cell.row][cell.col] = {
+        ...boardCell,
+        buff: currentBuff,
+        buffLevel: currentLevel,
+      }
     }
   }
 
