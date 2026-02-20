@@ -8,6 +8,7 @@ import {
   MULTIPLIER_HIGHLIGHT_COLOR,
   BLOCK_POINT_HIGHLIGHT_COLOR,
   COLUMN_POINT_ADD_HIGHLIGHT_COLOR,
+  RARITY_COLORS,
 } from '../../lib/game/Data/Constants'
 import { drawTextWithMultiplierHighlight } from './TextHighlightUtils'
 import type { HighlightRule } from './TextHighlightUtils'
@@ -107,11 +108,17 @@ export function renderTooltip(
 
   ctx.save()
 
+  // レアリティ行のフォントサイズ
+  const rarityFontSize = 10
+
   // 各エフェクトのテキスト行を計算
   const effectBlocks: Array<{
     nameLines: string[]
+    rarityText: string | null
+    rarityColor: string
     descLines: string[]
     nameHeight: number
+    rarityHeight: number
     descHeight: number
   }> = []
 
@@ -122,18 +129,23 @@ export function renderTooltip(
     const nameLines = wrapText(ctx, effect.name, contentMaxWidth)
     const nameHeight = nameLines.length * nameFontSize * lineHeight
 
+    // レアリティ行（レリックのみ）
+    const rarityText = effect.rarity ?? null
+    const rarityColor = effect.rarity ? (RARITY_COLORS[effect.rarity] ?? '#FFFFFF') : '#FFFFFF'
+    const rarityHeight = rarityText ? rarityFontSize * lineHeight : 0
+
     ctx.font = `${descFontSize}px ${fontFamily}`
     const descLines = wrapText(ctx, effect.description, contentMaxWidth)
     const descHeight = descLines.length * descFontSize * lineHeight
 
-    effectBlocks.push({ nameLines, descLines, nameHeight, descHeight })
+    effectBlocks.push({ nameLines, rarityText, rarityColor, descLines, nameHeight, rarityHeight, descHeight })
   }
 
   // ツールチップ全体の高さを計算
   let contentHeight = 0
   for (let i = 0; i < effectBlocks.length; i++) {
     const block = effectBlocks[i]
-    contentHeight += block.nameHeight + block.descHeight
+    contentHeight += block.nameHeight + block.rarityHeight + block.descHeight
     if (i < effectBlocks.length - 1) {
       contentHeight += effectGap
     }
@@ -191,6 +203,14 @@ export function renderTooltip(
     for (const line of block.nameLines) {
       ctx.fillText(line, x + padding, textY)
       textY += nameFontSize * lineHeight
+    }
+
+    // レアリティ行（レリックのみ）
+    if (block.rarityText) {
+      ctx.font = `${rarityFontSize}px ${fontFamily}`
+      ctx.fillStyle = block.rarityColor
+      ctx.fillText(block.rarityText, x + padding, textY)
+      textY += rarityFontSize * lineHeight
     }
 
     // 説明文

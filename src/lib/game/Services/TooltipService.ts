@@ -278,7 +278,7 @@ function hitTestRelicPanel(
       const relicDef = RELIC_DEFINITIONS[relicType as keyof typeof RELIC_DEFINITIONS]
       const sellPrice = relicDef ? calculateRelicSellPrice(relicDef.price) : 0
       const descWithSellPrice = `${def.description}\n売却額: ${sellPrice}G`
-      return [{ name: def.name, description: descWithSellPrice }]
+      return [{ name: def.name, description: descWithSellPrice, rarity: def.rarity }]
     }
   }
 
@@ -331,7 +331,7 @@ function hitTestShopRelics(
     ) {
       const def = getRelicDefinition(item.relicId)
       if (def) {
-        return [{ name: def.name, description: def.description }]
+        return [{ name: def.name, description: def.description, rarity: def.rarity }]
       }
     }
   }
