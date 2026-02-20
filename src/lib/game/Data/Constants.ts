@@ -479,6 +479,9 @@ export const SEAL_SYMBOL_STYLE = {
   padding: 1,
 }
 
+// 加護バフ付与確率（1/4）
+export const BLESSING_STAMP_PROBABILITY = 0.25
+
 // デバッグ用確率設定
 export const DEBUG_PROBABILITY_SETTINGS = {
   MIN: 0,

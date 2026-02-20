@@ -39,6 +39,7 @@ import {
   placePieceOnBoard,
   placeObstacleOnBoard,
   incrementChargeValues,
+  preserveBuffsOnBoard,
 } from '../../Services/BoardService'
 import { canPlacePiece, canPieceBePlacedAnywhere } from '../../Services/CollisionService'
 import {
@@ -154,6 +155,8 @@ function tryPhoenixRestart(state: GameState): GameState | null {
       board = placeObstacleOnBoard(board, rng)
     }
   }
+  // バフをラウンド間で保持
+  board = preserveBuffsOnBoard(board, state.board)
 
   // 台本レリック: 所持時に指定ラインを再抽選
   const scriptRelicLines = hasRelic(playerAfterRemove.ownedRelics, 'script')
@@ -845,6 +848,8 @@ function createNextRoundState(currentState: GameState): GameState {
       board = placeObstacleOnBoard(board, rng)
     }
   }
+  // バフをラウンド間で保持
+  board = preserveBuffsOnBoard(board, currentState.board)
 
   const targetScore = calculateTargetScore(nextRound)
 
@@ -1103,10 +1108,12 @@ function gameReducerInner(state: GameState, action: GameAction): GameState {
     case 'ANIMATION/END_CLEAR': {
       if (!state.clearingAnimation) return state
 
-      // 1. 加護スタンプ（ブロック消去前に実行）
+      // 1. 加護スタンプ（ブロック消去前に実行、1/4確率）
+      const rng = new DefaultRandom()
       const boardWithBlessings = stampBlessingsOnBoard(
         state.board,
-        state.clearingAnimation.cells
+        state.clearingAnimation.cells,
+        rng
       )
 
       // 2. ライン消去（加護は維持される）

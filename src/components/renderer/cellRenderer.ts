@@ -104,7 +104,8 @@ export function drawWoodenCell(
   size: number,
   pattern: PatternId | null = null,
   seal: SealId | null = null,
-  chargeValue: number = 0
+  chargeValue: number = 0,
+  blessing: BlessingId | null = null
 ): void {
   const { padding, highlightWidth, shadowWidth } = CELL_STYLE
   const colors = getPatternColors(pattern)
@@ -158,6 +159,11 @@ export function drawWoodenCell(
   if (seal) {
     drawSealSymbol(ctx, x, y, size, seal)
   }
+
+  // 加護マークを描画（左上）
+  if (blessing) {
+    drawBlessingOnBlock(ctx, x, y, size, blessing)
+  }
 }
 
 /**
@@ -175,7 +181,7 @@ export function drawWoodenCellWithBorder(
 ): void {
   const { padding } = CELL_STYLE
 
-  drawWoodenCell(ctx, x, y, size, pattern, seal, chargeValue)
+  drawWoodenCell(ctx, x, y, size, pattern, seal, chargeValue, blessing)
 
   // 枠線
   ctx.strokeStyle = COLORS.cellBorder
@@ -186,11 +192,6 @@ export function drawWoodenCellWithBorder(
     size - padding * 2,
     size - padding * 2
   )
-
-  // ブロック上の加護マーク（左上）
-  if (blessing) {
-    drawBlessingOnBlock(ctx, x, y, size, blessing)
-  }
 }
 
 /**

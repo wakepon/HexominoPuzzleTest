@@ -8,7 +8,9 @@
 import type { Board } from '../Board/Board'
 import type { ClearingCell } from '../Animation/AnimationState'
 import type { BuffType } from './Buff'
+import type { RandomGenerator } from '../../Utils/Random'
 import { blessingToBuffType, getBuffDefinition } from './Buff'
+import { BLESSING_STAMP_PROBABILITY } from '../../Data/Constants'
 
 /**
  * バフスコア効果の結果
@@ -64,7 +66,8 @@ export function calculateBuffLevelUp(
  */
 export function stampBlessingsOnBoard(
   board: Board,
-  cellsToRemove: readonly ClearingCell[]
+  cellsToRemove: readonly ClearingCell[],
+  rng: RandomGenerator
 ): Board {
   // 加護付きブロックがなければ早期リターン
   const hasBlessings = cellsToRemove.some(c => c.blockBlessing)
@@ -75,6 +78,9 @@ export function stampBlessingsOnBoard(
 
   for (const cell of cellsToRemove) {
     if (!cell.blockBlessing) continue
+
+    // 1/4の確率でバフ付与
+    if (rng.next() >= BLESSING_STAMP_PROBABILITY) continue
 
     const boardCell = newBoard[cell.row][cell.col]
     const hasMulti = boardCell.seal === 'multi'

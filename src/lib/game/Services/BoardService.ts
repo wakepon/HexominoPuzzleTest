@@ -106,6 +106,23 @@ export function placeObstacleOnBoard(
  * 得点計算後に呼び出すことで「別のブロックが置かれるたび」の仕様を実現
  * デフォルトは+1、magnet所持時は+2
  */
+/**
+ * ソースボードのバフ情報をターゲットボードにコピーする
+ * ラウンド遷移時にバフをラン中永続化するために使用
+ */
+export function preserveBuffsOnBoard(targetBoard: Board, sourceBoard: Board): Board {
+  return targetBoard.map((row, r) =>
+    row.map((cell, c) => {
+      const sourceCell = sourceBoard[r]?.[c]
+      // obstacleセルにはバフをコピーしない
+      if (sourceCell?.buff && cell.pattern !== 'obstacle') {
+        return { ...cell, buff: sourceCell.buff, buffLevel: sourceCell.buffLevel }
+      }
+      return cell
+    })
+  )
+}
+
 export function incrementChargeValues(board: Board, excludeBlockSetId?: BlockSetId | null, increment: number = 1): Board {
   return board.map((row) =>
     row.map((cell) => {
