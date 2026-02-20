@@ -53,6 +53,7 @@ export type RelicType =
   | 'collector'         // 収集家
   | 'merchant'          // 商人
   | 'treasure_hunter'   // トレジャーハンター
+  | 'cross'             // 十字
 
 /**
  * レリック定義
@@ -412,6 +413,15 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     rarity: 'common',
     price: 10,
     icon: '💎',
+  },
+  cross: {
+    id: 'cross' as RelicId,
+    type: 'cross',
+    name: '十字',
+    description: '行と列を同時に消した時、交差セルのブロック点+30',
+    rarity: 'rare',
+    price: 20,
+    icon: '✝️',
   },
 }
 

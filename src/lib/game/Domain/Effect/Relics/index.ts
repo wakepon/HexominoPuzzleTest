@@ -71,6 +71,7 @@ import { gardenerRelic } from './Gardener'
 import { collectorRelic } from './Collector'
 import { merchantRelic } from './Merchant'
 import { treasureHunterRelic } from './TreasureHunter'
+import { crossRelic } from './Cross'
 
 /**
  * 全レリックモジュールの配列
@@ -129,6 +130,8 @@ const allModules: readonly RelicModule[] = [
   merchantRelic,
   // 非スコア系（トレジャーハンター）
   treasureHunterRelic,
+  // 加算系（十字）
+  crossRelic,
 ]
 
 /**
