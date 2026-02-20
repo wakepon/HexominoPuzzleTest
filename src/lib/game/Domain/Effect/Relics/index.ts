@@ -87,6 +87,7 @@ import { phoenixRelic } from './Phoenix'
 import { goldfishRelic } from './Goldfish'
 import { magnetRelic } from './Magnet'
 import { prismRelic } from './Prism'
+import { compassRoseRelic } from './CompassRose'
 
 /**
  * 全レリックモジュールの配列
@@ -177,6 +178,8 @@ const allModules: readonly RelicModule[] = [
   magnetRelic,
   // 非スコア系（プリズム）
   prismRelic,
+  // 非スコア系（羅針盤）
+  compassRoseRelic,
 ]
 
 /**

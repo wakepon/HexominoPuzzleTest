@@ -14,6 +14,7 @@ import { evaluateRelicEffects, evaluateCopyRelicEffect } from './Relics/RelicEff
 import { isCopyRelicInactive } from './CopyRelicResolver'
 import { AMPLIFIED_ENHANCED_BONUS } from './Relics/Amplifier'
 import { PRISM_MULTI_MULTIPLIER } from './Relics/Prism'
+import { COMPASS_ROSE_ARROW_BONUS } from './Relics/CompassRose'
 
 /**
  * 隣接セルの位置（上下左右）
@@ -258,12 +259,16 @@ export function calculateScoreBreakdown(
   const hasPrism = relicContext?.ownedRelics.some(r => r === ('prism' as RelicId)) ?? false
   const multiSealMultiplier = hasPrism ? PRISM_MULTI_MULTIPLIER : 2
 
+  // compass_rose所持チェック → arrowシールボーナス値決定
+  const hasCompassRose = relicContext?.ownedRelics.some(r => r === ('compass_rose' as RelicId)) ?? false
+  const arrowBonusPerSeal = hasCompassRose ? COMPASS_ROSE_ARROW_BONUS : 10
+
   // パターン効果を計算
   const patternEffects = calculatePatternEffects(board, cellsToRemove, enhancedBonusPerBlock, multiSealMultiplier)
   const { enhancedBonus, auraBonus, mossBonus, chargeBonus } = patternEffects
 
   // シール効果を計算
-  const sealEffects = calculateSealEffects(board, cellsToRemove, completedLines, multiSealMultiplier)
+  const sealEffects = calculateSealEffects(board, cellsToRemove, completedLines, multiSealMultiplier, arrowBonusPerSeal)
   const { multiBonus, scoreBonus: sealScoreBonus, goldCount, arrowBonus } = sealEffects
 
   // 合計ブロック数（パターン効果 + multiシール効果 + アローシール効果、chargeブロック基礎分除外）
