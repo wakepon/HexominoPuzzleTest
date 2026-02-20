@@ -71,6 +71,7 @@ export type RelicType =
   | 'prism'             // プリズム
   | 'compass_rose'      // 羅針盤
   | 'furnace'           // 溶鉱炉
+  | 'jester'            // 道化師
 
 /**
  * レリック定義
@@ -592,6 +593,15 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     rarity: 'uncommon',
     price: 15,
     icon: '🏭',
+  },
+  jester: {
+    id: 'jester' as RelicId,
+    type: 'jester',
+    name: '道化師',
+    description: 'レリック枠が1枠減少する代わりに、ショップで全商品が30%OFF',
+    rarity: 'rare',
+    price: 20,
+    icon: '🃎',
   },
 }
 

@@ -97,6 +97,7 @@ import type { AmuletModalState } from '../../Domain/Effect/AmuletModalState'
 import { applyPatternAdd, applySealAdd, applyVanish, applySculpt, isShapeConnected } from '../../Services/AmuletEffectService'
 import { OBSTACLE_BLOCK_COUNT } from '../../Data/BossConditions'
 import { RELIC_DEFINITIONS } from '../../Domain/Effect/Relic'
+import { JESTER_SLOT_REDUCTION } from '../../Domain/Effect/Relics/Jester'
 import { getMinoById } from '../../Data/MinoDefinitions'
 import { saveGameState, clearGameState } from '../../Services/StorageService'
 import type { RelicMultiplierState } from '../../Domain/Effect/RelicState'
@@ -228,6 +229,14 @@ function getPieceBlockCount(piece: Piece): number {
     }
   }
   return count
+}
+
+/**
+ * 有効なレリック枠上限を取得（jester所持時は-1）
+ */
+function getEffectiveMaxRelicSlots(ownedRelics: readonly RelicId[]): number {
+  const hasJester = ownedRelics.includes('jester' as RelicId)
+  return hasJester ? MAX_RELIC_SLOTS - JESTER_SLOT_REDUCTION : MAX_RELIC_SLOTS
 }
 
 /**
@@ -1360,7 +1369,7 @@ function gameReducerInner(state: GameState, action: GameAction): GameState {
       let newRelicMultiplierState = state.relicMultiplierState
       if (isRelicShopItem(item)) {
         // レリック所持上限チェック: 上限に達している場合は入れ替えモードに入る
-        if (state.player.ownedRelics.length >= MAX_RELIC_SLOTS) {
+        if (state.player.ownedRelics.length >= getEffectiveMaxRelicSlots(state.player.ownedRelics)) {
           const updatedState = {
             ...state,
             shopState: {
@@ -1498,7 +1507,7 @@ function gameReducerInner(state: GameState, action: GameAction): GameState {
         const pendingIndex = state.shopState.pendingPurchaseIndex
         const pendingItem = state.shopState.items[pendingIndex]
 
-        if (pendingItem && !pendingItem.purchased && isRelicShopItem(pendingItem) && canAfford(newPlayer.gold, pendingItem.price) && newPlayer.ownedRelics.length < MAX_RELIC_SLOTS) {
+        if (pendingItem && !pendingItem.purchased && isRelicShopItem(pendingItem) && canAfford(newPlayer.gold, pendingItem.price) && newPlayer.ownedRelics.length < getEffectiveMaxRelicSlots(newPlayer.ownedRelics)) {
           // ゴールド消費
           newPlayer = subtractGold(newPlayer, pendingItem.price)
           // レリック追加

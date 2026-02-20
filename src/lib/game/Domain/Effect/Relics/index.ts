@@ -89,6 +89,7 @@ import { magnetRelic } from './Magnet'
 import { prismRelic } from './Prism'
 import { compassRoseRelic } from './CompassRose'
 import { furnaceRelic } from './Furnace'
+import { jesterRelic } from './Jester'
 
 /**
  * 全レリックモジュールの配列
@@ -183,6 +184,8 @@ const allModules: readonly RelicModule[] = [
   compassRoseRelic,
   // 加算系（溶鉱炉）
   furnaceRelic,
+  // 非スコア系（道化師）
+  jesterRelic,
 ]
 
 /**

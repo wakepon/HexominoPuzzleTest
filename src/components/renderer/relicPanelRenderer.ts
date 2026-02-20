@@ -6,6 +6,7 @@ import type { RelicId } from '../../lib/game/Domain/Core/Id'
 import type { CanvasLayout } from '../../lib/game/types'
 import { getRelicDefinition } from '../../lib/game/Domain/Effect/Relic'
 import { HD_LAYOUT, MAX_RELIC_SLOTS, RELIC_PANEL_STYLE } from '../../lib/game/Data/Constants'
+import { JESTER_SLOT_REDUCTION } from '../../lib/game/Domain/Effect/Relics/Jester'
 
 /**
  * レリックアイコンの位置情報（ドラッグ&ドロップ用）
@@ -85,8 +86,12 @@ export function renderRelicPanel(
 
   ctx.save()
 
-  // 5枠分のスロット枠を常に描画
-  for (let i = 0; i < MAX_RELIC_SLOTS; i++) {
+  // jester所持時はスロット数を1減らす
+  const hasJester = ownedRelics.includes('jester' as RelicId)
+  const effectiveSlots = hasJester ? MAX_RELIC_SLOTS - JESTER_SLOT_REDUCTION : MAX_RELIC_SLOTS
+
+  // スロット枠を描画
+  for (let i = 0; i < effectiveSlots; i++) {
     const slotY = getSlotY(i, startY)
     const hasRelic = i < ownedRelics.length
 
