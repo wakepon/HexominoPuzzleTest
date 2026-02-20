@@ -254,7 +254,8 @@ function handlePlacement(
   deck: DeckState,
   skipHandConsumption: boolean = false,
   bandaidTrigger: boolean = false,
-  roundInfo: RoundInfo | null = null
+  roundInfo: RoundInfo | null = null,
+  ownedRelics?: readonly RelicId[]
 ): { finalSlots: PieceSlot[]; finalDeck: DeckState } {
   const updatedDeck = skipHandConsumption ? deck : decrementRemainingHands(deck)
 
@@ -279,7 +280,7 @@ function handlePlacement(
     }
   }
 
-  const drawCount = getDrawCount(roundInfo)
+  const drawCount = getDrawCount(roundInfo, ownedRelics)
   const result = generateNewPieceSlotsFromDeckWithCount(updatedDeck, drawCount)
   return {
     finalSlots: result.slots,
@@ -297,7 +298,8 @@ function resolveUnplaceableHand(
   deck: DeckState,
   score: number,
   targetScore: number,
-  roundInfo: RoundInfo | null = null
+  roundInfo: RoundInfo | null = null,
+  ownedRelics?: readonly RelicId[]
 ): { finalSlots: PieceSlot[]; finalDeck: DeckState; phase: ReturnType<typeof determinePhase> } {
   let currentSlots = slots
   let currentDeck = deck
@@ -337,7 +339,7 @@ function resolveUnplaceableHand(
     }
 
     // 手札をリセットして新しくドロー
-    const drawCount = getDrawCount(roundInfo)
+    const drawCount = getDrawCount(roundInfo, ownedRelics)
     const result = generateNewPieceSlotsFromDeckWithCount(currentDeck, drawCount)
     currentSlots = result.slots
     currentDeck = result.newDeck
@@ -502,7 +504,7 @@ function processPiecePlacement(
   const bandaidTrigger = hookEffects.some(e => e?.type === 'inject_piece')
 
   // 配置後の状態を計算
-  const { finalSlots, finalDeck } = handlePlacement(newSlots, newDeck, isNohand, bandaidTrigger, state.roundInfo)
+  const { finalSlots, finalDeck } = handlePlacement(newSlots, newDeck, isNohand, bandaidTrigger, state.roundInfo, state.player.ownedRelics)
 
   // ライン消去判定
   const completedLines = findCompletedLines(newBoard)
@@ -653,7 +655,7 @@ function processPiecePlacement(
 
   // 配置不可チェック＆リドロー
   const resolved = resolveUnplaceableHand(
-    newBoard, finalSlots, finalDeck, state.score, state.targetScore, state.roundInfo
+    newBoard, finalSlots, finalDeck, state.score, state.targetScore, state.roundInfo, state.player.ownedRelics
   )
 
   // 火山レリック発動判定
@@ -721,7 +723,7 @@ function createNextRoundState(currentState: GameState): GameState {
 
   // ボス条件に基づいた配置回数とドロー枚数を取得
   const maxHands = getMaxPlacements(roundInfo)
-  const drawCount = getDrawCount(roundInfo)
+  const drawCount = getDrawCount(roundInfo, currentState.player.ownedRelics)
 
   // allMinos（初期デッキ + 購入済みブロック）を使って新しいデッキを作成
   // purchasedPiecesも引き継ぐ（パターン/シール情報を維持するため）
@@ -970,7 +972,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       )
 
       // 配置後の状態を計算
-      const { finalSlots, finalDeck } = handlePlacement(newSlots, state.deck, false, false, state.roundInfo)
+      const { finalSlots, finalDeck } = handlePlacement(newSlots, state.deck, false, false, state.roundInfo, state.player.ownedRelics)
       const newPhase = determinePhase(
         state.score,
         state.targetScore,
@@ -1011,7 +1013,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
       // 配置不可チェック＆リドロー
       const resolved = resolveUnplaceableHand(
-        clearedBoard, [...state.pieceSlots], state.deck, state.score, state.targetScore, state.roundInfo
+        clearedBoard, [...state.pieceSlots], state.deck, state.score, state.targetScore, state.roundInfo, state.player.ownedRelics
       )
 
       // スコアアニメーションがまだ再生中の場合はpendingPhaseに保留
@@ -1500,7 +1502,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
       // 手札が全て空になった場合、ドロー処理を実行
       if (areAllSlotsEmpty(newSlots) && newDeck.remainingHands > 0) {
-        const drawCount = getDrawCount(state.roundInfo)
+        const drawCount = getDrawCount(state.roundInfo, state.player.ownedRelics)
         const result = generateNewPieceSlotsFromDeckWithCount(newDeck, drawCount)
         return {
           ...state,
@@ -1587,7 +1589,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
       // 手札が全て空になった場合、ドロー処理を実行
       if (areAllSlotsEmpty(newSlots) && newDeck.remainingHands > 0) {
-        const drawCount = getDrawCount(state.roundInfo)
+        const drawCount = getDrawCount(state.roundInfo, state.player.ownedRelics)
         const result = generateNewPieceSlotsFromDeckWithCount(newDeck, drawCount)
         return {
           ...state,

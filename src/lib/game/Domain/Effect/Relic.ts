@@ -55,6 +55,7 @@ export type RelicType =
   | 'treasure_hunter'   // トレジャーハンター
   | 'cross'             // 十字
   | 'midas'             // ミダス
+  | 'extra_draw'        // 追加ドロー
 
 /**
  * レリック定義
@@ -432,6 +433,15 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     rarity: 'uncommon',
     price: 15,
     icon: '✨',
+  },
+  extra_draw: {
+    id: 'extra_draw' as RelicId,
+    type: 'extra_draw',
+    name: '追加ドロー',
+    description: 'ドロー枚数が+1',
+    rarity: 'epic',
+    price: 25,
+    icon: '🃏',
   },
 }
 

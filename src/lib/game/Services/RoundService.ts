@@ -12,6 +12,9 @@ import {
 import type { BossCondition, RoundInfo, RoundType } from '../Domain/Round/RoundTypes'
 import { calculateRoundInfo } from '../Domain/Round/RoundTypes'
 import type { RandomGenerator } from '../Utils/Random'
+import type { RelicId } from '../Domain/Core/Id'
+import { hasRelic } from '../Domain/Effect/RelicEffectHandler'
+import { EXTRA_DRAW_BONUS } from '../Domain/Effect/Relics/ExtraDraw'
 
 /**
  * 目標スコアを計算
@@ -98,11 +101,18 @@ export function getMaxPlacements(roundInfo: RoundInfo | null): number {
 }
 
 /**
- * ボス条件に基づくドロー枚数を取得
+ * ボス条件とレリックに基づくドロー枚数を取得
  */
-export function getDrawCount(roundInfo: RoundInfo | null): number {
+export function getDrawCount(roundInfo: RoundInfo | null, ownedRelics?: readonly RelicId[]): number {
+  let count: number
   if (roundInfo?.bossCondition?.id === 'two_cards') {
-    return TWO_CARDS_DRAW_COUNT
+    count = TWO_CARDS_DRAW_COUNT
+  } else {
+    count = DECK_CONFIG.drawCount
   }
-  return DECK_CONFIG.drawCount
+  // extra_draw レリック: ドロー枚数+1
+  if (ownedRelics && hasRelic(ownedRelics, 'extra_draw')) {
+    count += EXTRA_DRAW_BONUS
+  }
+  return count
 }
