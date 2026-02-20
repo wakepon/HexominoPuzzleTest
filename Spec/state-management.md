@@ -36,6 +36,7 @@ useGame Hook
 | `relicActivationAnimation` | `RelicActivationAnimationState \| null` | レリック発動アニメーション状態 |
 | `scoreAnimation` | `ScoreAnimationState \| null` | スコア計算アニメーション状態 |
 | `deckViewOpen` | `boolean` | デッキ一覧オーバーレイの開閉状態 |
+| `amuletModal` | `AmuletModalState \| null` | 護符使用モーダルの状態 |
 
 ### ラウンド関連
 
@@ -52,7 +53,7 @@ useGame Hook
 
 | フィールド | 型 | 説明 |
 |---|---|---|
-| `player` | `PlayerState` | プレイヤー状態（ゴールド、所持レリック等） |
+| `player` | `PlayerState` | プレイヤー状態（ゴールド、所持レリック、護符ストック等） |
 
 ### ショップ関連
 
@@ -64,8 +65,7 @@ useGame Hook
 
 | フィールド | 型 | 説明 |
 |---|---|---|
-| `comboCount` | `number` | コンボパターン用のコンボカウンター |
-| `relicMultiplierState` | `RelicMultiplierState` | 倍率系レリックの状態（連射、のびのびタケノコ/カニ、絆創膏、タイミング、コピー） |
+| `relicMultiplierState` | `RelicMultiplierState` | 倍率系レリックの状態（連射、のびのびタケノコ/カニ、絆創膏、タイミング、コピー、リサイクラー） |
 | `scriptRelicLines` | `ScriptRelicLines \| null` | 台本レリックが指定する2本のライン |
 | `volcanoEligible` | `boolean` | 火山レリックの発動可否フラグ（ラウンド中にライン消去がなければ `true`） |
 
@@ -77,6 +77,7 @@ useGame Hook
 | `earnedGold` | `number` | 累計獲得ゴールド |
 | `ownedRelics` | `readonly RelicId[]` | 所持レリックのID一覧 |
 | `relicDisplayOrder` | `readonly RelicId[]` | レリックの表示順序 |
+| `amuletStock` | `readonly Amulet[]` | 護符ストック（最大所持数あり） |
 
 ### DragState の内部フィールド
 
@@ -101,6 +102,17 @@ useGame Hook
 | `timingCounter` | `number` | タイミングカウンター |
 | `timingBonusActive` | `boolean` | タイミングボーナス待機状態かどうか |
 | `copyRelicState` | `CopyRelicState \| null` | コピーレリック用の独立カウンター（未所持時は `null`） |
+| `recyclerUsesRemaining` | `number` | リサイクラーレリックの残り使用回数 |
+
+### AmuletModalState の内部フィールド
+
+| フィールド | 型 | 説明 |
+|---|---|---|
+| `amuletType` | `AmuletType` | 使用中の護符の種類（sculpt, pattern_add, seal_add, vanish） |
+| `amuletIndex` | `number` | 使用中の護符のストック内インデックス |
+| `step` | `AmuletModalStep` | 現在のステップ（select_piece, sculpt_edit） |
+| `selectedMinoId` | `MinoId \| null` | 選択されたミノID（sculpt_edit時） |
+| `editingShape` | `PieceShape \| null` | 編集中の形状（sculpt_edit時） |
 
 ## 初期状態
 
@@ -136,6 +148,7 @@ useGame Hook
 14. `scriptRelicLines` を `null` に設定
 15. `volcanoEligible` を `true` に設定
 16. `deckViewOpen` を `false` に設定
+17. `amuletModal` を `null` に設定
 
 ### 状態復元
 
@@ -207,10 +220,11 @@ useGame Hook
 ライン消去アニメーション完了。
 
 - **処理**:
-  1. 消去アニメーション対象のセルをボードから実際に消去
-  2. `clearingAnimation` を `null` に設定
-  3. 配置不可チェックを行い、必要に応じてリドロー
-  4. スコアアニメーションがまだ再生中かつフェーズ遷移が必要な場合は `pendingPhase` に保留
+  1. 消去対象セルに加護スタンプを実行（確率で加護を付与）
+  2. 加護を維持しつつ消去アニメーション対象のセルをボードから実際に消去
+  3. `clearingAnimation` を `null` に設定
+  4. 配置不可チェックを行い、必要に応じてリドロー
+  5. スコアアニメーションがまだ再生中かつフェーズ遷移が必要な場合は `pendingPhase` に保留
 
 #### ANIMATION/END_RELIC_ACTIVATION
 
@@ -256,8 +270,9 @@ useGame Hook
 
 - **制約**: `round_clear` フェーズでのみ有効
 - **処理**:
-  - 最終ラウンドの場合: ゴールド報酬を加算し `game_clear` に遷移（保存データを削除）
-  - それ以外: ゴールド報酬を加算し、ショップ状態を生成して `shopping` に遷移（保存データを更新）
+  - ゴールド報酬を加算（残りハンド数に応じた基本報酬、利息、goldfishレリックボーナス）
+  - 最終ラウンドの場合: `game_clear` に遷移（保存データを削除）
+  - それ以外: ショップ状態を生成して `shopping` に遷移（保存データを更新）
 - **オプション入力**: `probabilityOverride`（デバッグ用の確率オーバーライド）
 
 #### ROUND/SHOW_PROGRESS
@@ -286,9 +301,12 @@ useGame Hook
   1. 既に購入済みまたはゴールド不足の場合は何もしない
   2. アイテムを購入済みにマーク、ゴールドを減額
   3. ブロックアイテムの場合: ピースをデッキに追加
-  4. レリックアイテムの場合: レリックをプレイヤーに追加
-  5. コピーレリック購入時は `copyRelicState` を初期化
-  6. 購入後に保存データを更新
+  4. 護符アイテムの場合: 護符をストックに追加（ストック満杯時は購入不可）
+  5. レリックアイテムの場合:
+     - 所持上限に達している場合は売却モード（`sellMode: true`）に移行し、`pendingPurchaseIndex` に保留
+     - 上限未達の場合は即座にレリックを追加
+  6. コピーレリック購入時は `copyRelicState` を初期化
+  7. 購入後に保存データを更新
 
 #### SHOP/LEAVE
 
@@ -303,6 +321,34 @@ useGame Hook
 
 - **制約**: `shopping` フェーズでのみ有効、かつ十分なゴールドが必要
 - **処理**: リロールコストを消費し、新しい商品を生成。`rerollCount` を+1
+
+#### SHOP/START_SELL_MODE
+
+レリック売却モードを開始する。
+
+- **制約**: `shopping` フェーズでのみ有効
+- **処理**: `sellMode` を `true` に設定
+
+#### SHOP/CANCEL_SELL_MODE
+
+レリック売却モードをキャンセルする。
+
+- **制約**: `shopping` フェーズでのみ有効
+- **処理**: `sellMode` を `false` に設定し、`pendingPurchaseIndex` をクリア
+
+#### SHOP/SELL_RELIC
+
+レリックを売却する。
+
+- **制約**: `shopping` フェーズでのみ有効
+- **入力**: `relicIndex`（売却するレリックのインデックス）
+- **処理**:
+  1. レリック定義から価格を取得し、売却額を計算
+  2. プレイヤーからレリック削除し、ゴールド加算
+  3. hand_stockを売却した場合、ストック枠もクリア
+  4. コピーレリック関連の状態更新
+  5. `pendingPurchaseIndex` がある場合: 保留していた商品の購入処理を実行
+  6. 売却完了後に `sellMode` を `false` に設定
 
 ### ストックアクション
 
@@ -357,6 +403,72 @@ useGame Hook
 - **入力**: `fromIndex`（移動元インデックス）、`toIndex`（移動先インデックス）
 - **処理**: `relicDisplayOrder` を更新。コピーレリック所持時は対象レリックを再解決し、必要に応じて `copyRelicState` をリセット
 
+#### RELIC/RECYCLE_PIECE
+
+リサイクラーレリック効果を発動する。
+
+- **制約**: `playing` フェーズでのみ有効、リサイクラー所持、残り使用回数が1以上
+- **入力**: `slotIndex`（対象の手札スロット）
+- **処理**:
+  1. 対象スロットのピースを捨てる
+  2. デッキから新しいピースを1枚ドロー
+  3. `recyclerUsesRemaining` を-1
+
+### 護符アクション
+
+#### AMULET/USE
+
+護符を使用してモーダルを開く。
+
+- **制約**: `playing` または `shopping` フェーズでのみ有効
+- **入力**: `amuletIndex`（使用する護符のストック内インデックス）
+- **処理**: 護符モーダル状態を `select_piece` ステップで初期化
+
+#### AMULET/SELECT_PIECE
+
+ピースを選択して護符効果を適用する。
+
+- **制約**: モーダルが開いており、`select_piece` ステップの場合
+- **入力**: `minoId`（対象のミノID）
+- **処理**:
+  - **sculpt**: `sculpt_edit` ステップに移行し、現在の形状を `editingShape` に設定
+  - **vanish**: 即座にデッキから対象ミノを削除し、護符を消費してモーダルを閉じる
+  - **pattern_add**: ランダムなパターンを付与し、`purchasedPieces` に記録して護符を消費
+  - **seal_add**: ランダムなシールを付与し、`purchasedPieces` に記録して護符を消費
+
+#### AMULET/CONFIRM
+
+sculpt護符の形状編集を確定する。
+
+- **制約**: モーダルが開いており、`sculpt_edit` ステップの場合
+- **処理**:
+  1. 編集中の形状が連結しているかチェック
+  2. ブロックが1つ以上あるかチェック
+  3. 形状をピースに適用し、`purchasedPieces` に記録
+  4. 護符を消費してモーダルを閉じる
+
+#### AMULET/CANCEL
+
+護符使用モーダルをキャンセルする。
+
+- **処理**: `amuletModal` を `null` に設定
+
+#### AMULET/SELL
+
+護符を売却する。
+
+- **制約**: `shopping` フェーズでのみ有効
+- **入力**: `amuletIndex`（売却する護符のインデックス）
+- **処理**: 護符をストックから削除し、価格の半額をゴールド加算
+
+#### AMULET/SCULPT_TOGGLE_BLOCK
+
+sculpt護符の形状編集でブロックの有無を切り替える。
+
+- **制約**: モーダルが開いており、`sculpt_edit` ステップの場合
+- **入力**: `row`、`col`（対象のグリッド座標）
+- **処理**: 指定位置のブロックをトグル（true ↔ false）
+
 ### ゲームアクション
 
 #### GAME/RESET
@@ -373,6 +485,9 @@ useGame Hook
 | `DEBUG/REMOVE_RELIC` | レリックを削除（hand_stockの場合はストックもクリア） |
 | `DEBUG/ADD_GOLD` | ゴールドを増減 |
 | `DEBUG/ADD_SCORE` | スコアを増減 |
+| `DEBUG/ADD_AMULET` | 護符を追加（ストック満杯時は追加不可） |
+| `DEBUG/REMOVE_AMULET` | 護符を削除 |
+| `DEBUG/ADD_RANDOM_EFFECTS` | 先頭のピースにランダムなパターン・シール・加護を付与 |
 
 ## アニメーション状態管理
 
@@ -381,11 +496,12 @@ useGame Hook
 | フィールド | 説明 |
 |---|---|
 | `isAnimating` | アニメーション中かどうか |
-| `cells` | 消去対象セルの一覧（row/col） |
+| `cells` | 消去対象セルの一覧（row/col、ディレイ情報を含む） |
 | `startTime` | アニメーション開始時刻 |
 | `duration` | アニメーション時間 |
+| `perCellDuration` | 1セルあたりの消去時間 |
 
-ピース配置時にラインが完成した場合に設定される。`ANIMATION/END_CLEAR` アクションで実際のセル消去が行われる。
+ピース配置時にラインが完成した場合に設定される。`ANIMATION/END_CLEAR` アクションで加護スタンプ→実際のセル消去が行われる。
 
 ### レリック発動アニメーション（RelicActivationAnimationState）
 
@@ -429,17 +545,47 @@ useGame Hook
 
 1. ボードにピースを配置
 2. nohandパターンの場合はハンド消費をスキップ
-3. 絆創膏・タイミングカウンターの更新
-4. ハンド消費後のスロット・デッキ状態を計算
-5. 完成ラインを検出
-6. **ラインあり**:
+3. ハンド消費イベントをディスパッチ（絆創膏カウンター等が更新される）
+4. onPiecePlacedフックを実行（絆創膏注入判定等）
+5. ハンド消費後のスロット・デッキ状態を計算
+6. 完成ラインを検出
+7. **ラインあり**:
+   - 消去対象セルを取得し、順次消去用にソート＋ディレイ割り当て
    - レリック効果コンテキストを構築してスコアを計算
    - スコアアニメーション、消去アニメーション、レリック発動アニメーションを設定
    - フェーズ遷移が必要かつスコアアニメーションがある場合は `pendingPhase` に保留
+   - チャージ値をインクリメント（magnetレリック所持時は+2）
    - `volcanoEligible` を `false` に設定
-7. **ラインなし**:
+8. **ラインなし**:
+   - レリック状態を更新（rensha リセット等）
    - 配置不可チェックを行い、全ピースが配置不可なら残りハンドを消費してリドロー
+   - チャージ値をインクリメント
    - 火山レリック発動条件を確認（`game_over` かつ `volcanoEligible: true` の場合）
+
+## 火山レリック発動処理（tryVolcanoActivation）
+
+ゲームオーバー時に火山レリック所持かつ未発動なら、盤面の全ブロックを消去してスコア加算を行う。
+
+- **条件**: `game_over` フェーズ、火山レリック所持、`volcanoEligible: true`
+- **処理**:
+  1. 盤面の全filledセルを取得
+  2. 全消去として扱い、スコア計算（全行+全列=12ライン扱い）
+  3. クリアリングアニメーション、レリック発動アニメーション、スコアアニメーションを設定
+  4. ゴールド加算（treasure_hunter, midasの効果も適用）
+  5. `volcanoEligible` を `false` に設定
+
+## フェニックスレリック（tryPhoenixRestart）
+
+game_over状態でphoenixレリック所持時、現在のラウンドを最初からやり直す。
+
+- **条件**: `game_over` フェーズ、フェニックスレリック所持
+- **処理**:
+  1. phoenixレリックを削除
+  2. デッキを再シャッフル
+  3. ボスレイアウトを再生成
+  4. バフをラウンド間で保持
+  5. 台本レリック所持時は指定ラインを再抽選
+  6. `round_progress` フェーズに遷移
 
 ## 状態遷移図
 
@@ -466,6 +612,7 @@ useGame Hook
   │              │                  │            └─ 通常 → [shopping]
   │              │                  │                         │ SHOP/BUY_ITEM (0回以上)
   │              │                  │                         │ SHOP/REROLL (0回以上)
+  │              │                  │                         │ SHOP/SELL_RELIC (0回以上)
   │              │                  │                         │ ROUND/SHOW_PROGRESS または SHOP/LEAVE
   │              │                  │                         ↓
   │              │                  │                     [round_progress]
@@ -474,9 +621,13 @@ useGame Hook
   │              │                  │                     [playing]
   │              │                  │
   │              │                  └─ 残りハンド0 → [game_over]
+  │              │                                       ├─ phoenixあり → tryPhoenixRestart → [round_progress]
+  │              │                                       └─ 火山発動 → tryVolcanoActivation → スコア判定
   │              │
   │              └─ ラインなし → [スコア判定（残りハンドのみ確認）]
   │                               ├─ 残りハンド0 → [game_over]
+  │                               │                  ├─ phoenixあり → [round_progress]
+  │                               │                  └─ 火山発動 → スコア判定
   │                               └─ 継続 → [playing]
   │
   └─ 配置不可 → ドラッグ状態クリア → [playing]
@@ -516,6 +667,7 @@ useGame Hook
 - ライン消去とスコア加算が行われる
 - 全ピース配置不可時に自動リドロー
 - デッキ一覧オーバーレイは開ける
+- 護符使用モーダルは開ける
 
 ### round_clear
 
@@ -529,13 +681,17 @@ useGame Hook
 - ミノの配置は不可
 - ショップアイテムのクリックで購入（`SHOP/BUY_ITEM`）
 - リロールが可能（`SHOP/REROLL`）
+- レリック売却が可能（`SHOP/SELL_RELIC`）
+- 護符売却が可能（`AMULET/SELL`）
 - `ROUND/SHOW_PROGRESS`（次ラウンド準備画面に遷移）または `SHOP/LEAVE`（ショップ退出）で次フェーズへ
 - デッキ一覧オーバーレイは開けない
+- 護符使用モーダルは開ける
 
 ### game_over
 
 - ミノの配置は不可
 - 「リセット」ボタンでゲーム再開のみ可能（`GAME/RESET`）
+- フェニックスレリック所持時は自動的にラウンドリスタート
 - デッキ一覧オーバーレイは開けない
 
 ### game_clear
@@ -551,9 +707,11 @@ useGame Hook
 - ショップへの遷移時（`ROUND/ADVANCE`）
 - ショップでのアイテム購入後（`SHOP/BUY_ITEM`）
 - ショップでのリロール後（`SHOP/REROLL`）
+- ショップでの売却モード開始/終了（`SHOP/START_SELL_MODE`, `SHOP/CANCEL_SELL_MODE`, `SHOP/SELL_RELIC`）
 - ショップ退出・次ラウンド開始時（`SHOP/LEAVE`）
 - ラウンド進行画面移行時（`ROUND/SHOW_PROGRESS`）
 - ゲームプレイ開始時（`ROUND/START`）
+- 護符使用時（`AMULET/SELECT_PIECE`, `AMULET/CONFIRM`, `AMULET/SELL`）
 - デバッグ操作時（`DEBUG/*` アクション）
 
 ゲームクリア時およびリセット時は保存データが削除される。
@@ -582,6 +740,8 @@ return {
 
 **アクション:**
 - `startDrag(slotIndex, startPos)`: 手札からのドラッグ開始
+- `startDragFromStock(startPos)`: ストックからのドラッグ開始
+- `startDragFromStock2(startPos)`: ストック2からのドラッグ開始
 - `updateDrag(currentPos, boardPos)`: ドラッグ更新
 - `endDrag()`: ドラッグ終了
 - `resetGame()`: ゲームリセット
@@ -590,6 +750,7 @@ return {
 - `buyItem(itemIndex)`: ショップアイテム購入
 - `leaveShop()`: ショップ退出
 - `startRound()`: ラウンド開始
+- `showRoundProgress()`: ラウンド進行画面へ遷移
 - `advanceScoreStep()`: スコアアニメーションステップ進行
 - `endScoreAnimation()`: スコアアニメーション終了
 - `setFastForward(isFastForward)`: スコアアニメーション早送り切替
@@ -601,8 +762,19 @@ return {
 - `moveFromStock2(targetSlotIndex)`: ストック2→手札移動
 - `swapStock2(slotIndex)`: 手札とストック2の交換
 - `reorderRelic(fromIndex, toIndex)`: レリック表示順序変更
+- `recyclePiece(slotIndex)`: リサイクラーレリック発動
+- `rerollShop()`: ショップリロール
+- `startSellMode()`: 売却モード開始
+- `cancelSellMode()`: 売却モードキャンセル
+- `sellRelic(relicIndex)`: レリック売却
 - `openDeckView()`: デッキ一覧オーバーレイを開く
 - `closeDeckView()`: デッキ一覧オーバーレイを閉じる
+- `useAmulet(amuletIndex)`: 護符使用
+- `selectPieceForAmulet(minoId)`: 護符対象ピース選択
+- `confirmAmuletEffect()`: 護符効果確定
+- `cancelAmuletModal()`: 護符モーダルキャンセル
+- `sellAmulet(amuletIndex)`: 護符売却
+- `sculptToggleBlock(row, col)`: sculpt編集でブロックトグル
 
 ## パフォーマンス最適化
 
@@ -629,6 +801,7 @@ useReducer(gameReducer, null, createInitialState)
 - `src/lib/game/Domain/Animation/AnimationState.ts` - 消去・レリック発動アニメーション状態
 - `src/lib/game/Domain/Animation/ScoreAnimationState.ts` - スコアアニメーション状態
 - `src/lib/game/Domain/Player/PlayerState.ts` - プレイヤー状態型定義
+- `src/lib/game/Domain/Effect/AmuletModalState.ts` - 護符モーダル状態型定義
 - `src/lib/game/Services/StorageService.ts` - ゲーム状態の永続化
 
 ## 更新履歴
@@ -637,4 +810,5 @@ useReducer(gameReducer, null, createInitialState)
 - 2026-02-01: ライン消去、スコア、アニメーション、ミノ自動生成を追加
 - 2026-02-02: デッキシステム、ラウンド制、ADVANCE_ROUND、BUY_ITEM、LEAVE_SHOPアクション、フェーズ遷移を追加
 - 2026-02-06: ローグライト要素追加（round_progressフェーズ、START_ROUND/ADD_RELIC/CANNOT_PLACEアクション、レリック状態、ボス条件対応、BUY_ITEM拡張）
-- 2026-02-17: GameStateフィールド全体を最新コードに同期。pendingPhase/volcanoEligible/scriptRelicLines/relicMultiplierState/comboCount/deckViewOpen/scoreAnimation等を追加。STOCK2系/RELIC/REORDER/PHASE/APPLY_PENDING/ROUND/SHOW_PROGRESS/SHOP/REROLL/DEBUG/UI/OPEN_DECK_VIEW等の新アクションを追加。スコアアニメーションの詳細な状態管理、永続化タイミング、DragSourceフィールドを追記
+- 2026-02-17: GameStateフィールド全体を最新コードに同期。pendingPhase/volcanoEligible/scriptRelicLines/relicMultiplierState/deckViewOpen/scoreAnimation等を追加。STOCK2系/RELIC/REORDER/PHASE/APPLY_PENDING/ROUND/SHOW_PROGRESS/SHOP/REROLL/DEBUG/UI/OPEN_DECK_VIEW等の新アクションを追加。スコアアニメーションの詳細な状態管理、永続化タイミング、DragSourceフィールドを追記
+- 2026-02-20: 護符システム全般を追加（AMULET/*アクション、amuletModal状態、PlayerStateのamuletStock、SHOP/START_SELL_MODE/CANCEL_SELL_MODE/SELL_RELIC、RELIC/RECYCLE_PIECE、DEBUG/ADD_AMULET/REMOVE_AMULET/ADD_RANDOM_EFFECTS）。ANIMATION/END_CLEARに加護スタンプ処理を追記。RelicMultiplierStateにrecyclerUsesRemaining追加。フェニックスレリックによるラウンドリスタート、火山レリック発動処理の詳細を追加

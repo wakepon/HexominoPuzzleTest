@@ -1,5 +1,5 @@
 # データモデル詳細
-<!-- Updated: 2026-02-20 -->
+<!-- Updated: 2026-02-20T2 -->
 
 ## ID型（ブランド型）
 ```typescript
@@ -10,6 +10,7 @@ type BlockSetId = number & { __brand?: 'BlockSetId' }
 type RelicId = string & { __brand?: 'RelicId' }
 type PatternId = string & { __brand?: 'PatternId' }
 type SealId = string & { __brand?: 'SealId' }
+type BlessingId = string & { __brand?: 'BlessingId' }
 ```
 
 ## ゲーム状態（GameState）
@@ -52,6 +53,9 @@ interface Cell {
   pattern: PatternId | null
   seal: SealId | null
   chargeValue: number
+  buff: BuffType | null           // バフ（永続効果、消去後もセルに残る）
+  buffLevel: number               // バフレベル
+  blockBlessing: BlessingId | null // 配置時の加護（消去時にバフへ変換される一時フィールド）
 }
 ```
 
@@ -67,6 +71,7 @@ interface Piece {
 interface BlockData {
   pattern: PatternId | null
   seal: SealId | null
+  blessing: BlessingId | null     // ピース上の加護（消去時にセルにバフとして刻まれる）
 }
 ```
 
@@ -84,17 +89,17 @@ interface PlayerState {
 ### DeckState
 ```typescript
 interface DeckState {
-  drawPile: readonly string[]      // 山札（MinoId）
-  discardPile: readonly string[]   // 捨て札
-  allCards: readonly string[]      // 全カード
-  remainingHands: number
-  stockPiece: Piece | null         // ストック枠1
-  stockPiece2: Piece | null        // ストック枠2（コピー用）
+  cards: readonly MinoId[]                        // 山札（残りカード）
+  allMinos: readonly MinoId[]                     // 全カード（再シャッフル用）
+  remainingHands: number                          // 残り配置回数
+  purchasedPieces: ReadonlyMap<MinoId, Piece>     // 購入Piece情報（パターン/シール復元用）
+  stockSlot: Piece | null                         // ストック枠（hand_stockレリック用）
+  stockSlot2: Piece | null                        // ストック枠2（コピーレリック用）
 }
 
 interface PieceSlot {
   piece: Piece | null
-  used: boolean
+  position: Position              // スロットの画面上の位置
 }
 ```
 
@@ -135,30 +140,40 @@ interface BossCondition {
 
 ## Effect全種別
 
-### Pattern（ブロック効果）- 9種
+### Pattern（ブロック効果）- 6種
 | PatternType | 名前 | 記号 | 効果 |
 |------------|------|------|------|
 | enhanced | 強化ブロック | ★ | ブロック点+2（amplifier所持時+5） |
 | lucky | ラッキーブロック | ♣ | 10%で列点×2 |
-| combo | コンボブロック | C | 同時消去ボーナス |
-| aura | オーラブロック | ◎ | 隣接ブロック点+1 |
-| moss | 苔ブロック | M | 端接触で列点+1 |
 | feather | 羽ブロック | F | 重ね配置可能 |
 | nohand | ノーハンドブロック | N | ハンド消費なし |
 | charge | チャージブロック | ⚡ | 配置ごとにブロック点+1蓄積（magnet所持時+2） |
 | obstacle | おじゃまブロック | × | 消去不可（ボス条件） |
 
-### Seal（シール効果）- 6種
+### Seal（シール効果）- 3種
 | SealType | 名前 | 記号 | 効果 |
 |----------|------|------|------|
 | gold | ゴールドシール | G | 消去時+1G（treasure_hunter所持時+2G） |
-| score | スコアシール | +5 | ブロック点+5 |
 | multi | マルチシール | ×2 | 2回発動（prism所持時×3） |
 | stone | 石 | 石 | 消去不可（furnace所持時消去でブロック点+15） |
-| arrow_v | アローシール(縦) | ↕ | 縦消去時ブロック点+10（compass_rose所持時+20） |
-| arrow_h | アローシール(横) | ↔ | 横消去時ブロック点+10（compass_rose所持時+20） |
 
-### Relic（レリック）- 52種（サイズボーナス6種 + 個別46種）
+### Blessing（加護）- 4種（ピース上の効果、消去時にセルにバフとして刻まれる）
+| BlessingType | 名前 | 記号 | 効果 |
+|-------------|------|------|------|
+| power | 力の加護 | 力 | 消滅時にセルに+1増強を付与 |
+| gold | 金の加護 | 金 | 消滅時にセルに+1金鉱を付与 |
+| chain | 連の加護 | 連 | 消滅時にセルに+1脈動を付与 |
+| phase | 透の加護 | 透 | 消滅時に25%の確率でセルに透過を付与 |
+
+### Buff（バフ）- 4種（セル上の永続効果、消去後もセルに残る）
+| BuffType | 名前 | 記号 | 効果 | 上限LV |
+|----------|------|------|------|--------|
+| enhancement | 増強 | 増 | ブロック点+0.5×LV | ∞ |
+| gold_mine | 金鉱 | 鉱 | LV/4確率で1G | 4 |
+| pulsation | 脈動 | 脈 | ライン点+0.2×LV | ∞ |
+| phase | 透過 | 透 | 重ね配置可能 | 1 |
+
+### Relic（レリック）- 45種（サイズボーナス6種 + 個別39種）
 
 #### スコア系: 加算（additive） - ブロック点(A)に加算
 | RelicType | 名前 | レアリティ | 価格 | 効果概要 |
@@ -225,7 +240,6 @@ interface BossCondition {
 | amplifier | アンプリファイア | epic | 25 | enhanced(★)ボーナスを+2→+5に強化 |
 | magnet | 磁石 | uncommon | 15 | charge(⚡)蓄積速度2倍 |
 | prism | プリズム | rare | 20 | multiシール(×2)を×3に強化 |
-| compass_rose | 羅針盤 | uncommon | 15 | arrowシールボーナスを+10→+20に強化 |
 | jester | 道化師 | rare | 20 | レリック枠-1、ショップ全商品30%OFF |
 
 ### Amulet（護符）- 4種
@@ -242,18 +256,13 @@ interface ScoreBreakdown {
   // パターン・シール効果（レリック非依存）
   baseBlocks: number              // 基本消去ブロック数
   enhancedBonus: number           // enhanced効果
-  auraBonus: number               // aura効果
-  mossBonus: number               // moss効果
-  multiBonus: number              // multiシール効果
-  arrowBonus: number              // アローシール効果
-  chargeBonus: number             // charge効果
-  totalBlocks: number             // 合計ブロック数
+  multiBonus: number              // multiシール効果（追加ブロック数）
+  chargeBonus: number             // charge効果による追加ブロック数
+  totalBlocks: number             // 合計ブロック数（乗算対象）
   linesCleared: number            // 消去ライン数
   baseScore: number               // 基本スコア（totalBlocks × linesCleared）
-  comboBonus: number              // comboボーナス
   luckyMultiplier: number         // lucky倍率（1 or 2）
-  sealScoreBonus: number          // scoreシール加算
-  goldCount: number               // goldシール数
+  goldCount: number               // goldシール数（スコア外、Reducerで使用）
 
   // レリック効果（動的マップ）
   relicEffects: ReadonlyMap<string, number>  // relicId → 効果値
@@ -261,9 +270,14 @@ interface ScoreBreakdown {
   copyTargetRelicId: string | null           // コピー対象ID
   relicBonusTotal: number                    // レリック加算合計
 
+  // バフ効果
+  buffEnhancementBonus: number    // 増強バフボーナス（ブロック点加算）
+  buffGoldMineBonus: number       // 金鉱バフゴールド（スコア外）
+  buffPulsationBonus: number      // 脈動バフボーナス（列点加算）
+
   // 最終計算値
-  blockPoints: number             // ブロック点(A)
-  linePoints: number              // 列点(B)
+  blockPoints: number             // ブロック点(A): パターン+シール+加算レリック+増強バフ
+  linePoints: number              // 列点(B): ライン数×lucky×乗算レリック+脈動バフ
   finalScore: number              // Math.floor(A × B)
 }
 ```
@@ -373,6 +387,7 @@ type RelicStateEvent =
 - `DEBUG/ADD_GOLD` / `DEBUG/ADD_SCORE` { amount }
 - `DEBUG/ADD_AMULET` { amuletType }
 - `DEBUG/REMOVE_AMULET` { amuletIndex }
+- `DEBUG/ADD_RANDOM_EFFECTS`
 
 ## ミノカテゴリ
 | カテゴリ | セル数 | 種類数（向き込み） |
