@@ -46,6 +46,10 @@ export interface RelicContext {
   readonly remainingHands: number
   readonly patternBlockCount: number  // 消去セル内のパターン付きブロック数
   readonly sealBlockCount: number     // 消去セル内のシール付きブロック数
+  readonly deckSize: number           // デッキの全カード枚数
+  readonly boardFilledCount: number   // 盤面の埋まっているセル数（消去前）
+  readonly patternAndSealBlockCount: number  // 消去セル内のパターン+シール両方持ちブロック数
+  readonly distinctPatternTypeCount: number  // 消去セル内の異なるパターン種類数
 
   /**
    * このレリック自身の累積状態

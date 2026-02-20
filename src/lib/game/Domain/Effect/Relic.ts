@@ -59,6 +59,10 @@ export type RelicType =
   | 'extra_hand'        // 追加ハンド
   | 'recycler'          // リサイクラー
   | 'twin'              // 双子
+  | 'minimalist'        // ミニマリスト
+  | 'overload'          // 過負荷
+  | 'alchemist'         // 錬金術師
+  | 'orchestra'         // オーケストラ
 
 /**
  * レリック定義
@@ -472,6 +476,42 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     rarity: 'common',
     price: 10,
     icon: '👯',
+  },
+  minimalist: {
+    id: 'minimalist' as RelicId,
+    type: 'minimalist',
+    name: 'ミニマリスト',
+    description: 'デッキ枚数が5枚以下の時、全ブロック点+5',
+    rarity: 'uncommon',
+    price: 15,
+    icon: '🔳',
+  },
+  overload: {
+    id: 'overload' as RelicId,
+    type: 'overload',
+    name: '過負荷',
+    description: '盤面の75%以上が埋まっている状態でライン消去すると列点×2',
+    rarity: 'rare',
+    price: 20,
+    icon: '⚡',
+  },
+  alchemist: {
+    id: 'alchemist' as RelicId,
+    type: 'alchemist',
+    name: '錬金術師',
+    description: 'パターンとシール両方持ちのブロック消去時、1個につきブロック点+10',
+    rarity: 'rare',
+    price: 20,
+    icon: '⚗️',
+  },
+  orchestra: {
+    id: 'orchestra' as RelicId,
+    type: 'orchestra',
+    name: 'オーケストラ',
+    description: '1回の消去で3種類以上の異なるパターンが含まれると列点×2',
+    rarity: 'uncommon',
+    price: 15,
+    icon: '🎵',
   },
 }
 

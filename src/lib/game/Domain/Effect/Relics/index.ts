@@ -77,6 +77,10 @@ import { extraDrawRelic } from './ExtraDraw'
 import { extraHandRelic } from './ExtraHand'
 import { recyclerRelic } from './Recycler'
 import { twinRelic } from './Twin'
+import { minimalistRelic } from './Minimalist'
+import { overloadRelic } from './Overload'
+import { alchemistRelic } from './Alchemist'
+import { orchestraRelic } from './Orchestra'
 
 /**
  * 全レリックモジュールの配列
@@ -147,6 +151,14 @@ const allModules: readonly RelicModule[] = [
   recyclerRelic,
   // 加算系（双子）
   twinRelic,
+  // 加算系（ミニマリスト）
+  minimalistRelic,
+  // 乗算系（過負荷）
+  overloadRelic,
+  // 加算系（錬金術師）
+  alchemistRelic,
+  // 乗算系（オーケストラ）
+  orchestraRelic,
 ]
 
 /**

@@ -393,6 +393,8 @@ function tryVolcanoActivation(
     remainingHands: resolved.finalDeck.remainingHands,
     patternBlockCount: 0,
     sealBlockCount: 0,
+    deckSize: state.deck.allMinos.length,
+    boardFilledCount: rawFilledCells.length,
   }
 
   // スコア計算（linesCleared=GRID_SIZE で他レリック倍率も適用）
@@ -538,6 +540,14 @@ function processPiecePlacement(
 
     // レリック効果コンテキストを作成
     // patternBlockCount/sealBlockCountは calculateScoreBreakdown 内で board から計算されるため、ここでは0初期値
+    // 盤面の埋まりセル数を計算（消去前の配置後盤面）
+    let boardFilledCount = 0
+    for (const row of newBoard) {
+      for (const cell of row) {
+        if (cell.filled) boardFilledCount++
+      }
+    }
+
     const relicContext: RelicEffectContext = {
       ownedRelics: state.player.ownedRelics,
       totalLines,
@@ -553,6 +563,8 @@ function processPiecePlacement(
       remainingHands: finalDeck.remainingHands,
       patternBlockCount: 0,
       sealBlockCount: 0,
+      deckSize: state.deck.allMinos.length,
+      boardFilledCount,
     }
 
     const scoreBreakdown = calculateScoreWithEffects(

@@ -19,6 +19,10 @@ function createContext(overrides: Partial<RelicContext> = {}): RelicContext {
     remainingHands: 5,
     patternBlockCount: 0,
     sealBlockCount: 0,
+    deckSize: 10,
+    boardFilledCount: 0,
+    patternAndSealBlockCount: 0,
+    distinctPatternTypeCount: 0,
     relicState: null,
     ...overrides,
   }

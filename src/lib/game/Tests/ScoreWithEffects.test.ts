@@ -129,6 +129,8 @@ function createDefaultRelicContext(
     remainingHands: 5,
     patternBlockCount: 0,
     sealBlockCount: 0,
+    deckSize: 10,
+    boardFilledCount: 0,
     ...overrides,
   }
 }
