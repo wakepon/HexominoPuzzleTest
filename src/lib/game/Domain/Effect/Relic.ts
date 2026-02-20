@@ -64,6 +64,7 @@ export type RelicType =
   | 'alchemist'         // 錬金術師
   | 'orchestra'         // オーケストラ
   | 'amplifier'         // アンプリファイア
+  | 'gambler'           // ギャンブラー
 
 /**
  * レリック定義
@@ -522,6 +523,15 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     rarity: 'epic',
     price: 25,
     icon: '🔊',
+  },
+  gambler: {
+    id: 'gambler' as RelicId,
+    type: 'gambler',
+    name: 'ギャンブラー',
+    description: 'ライン消去時、ランダムに列数+0〜3',
+    rarity: 'uncommon',
+    price: 15,
+    icon: '🎰',
   },
 }
 

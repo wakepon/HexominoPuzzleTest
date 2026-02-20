@@ -82,6 +82,7 @@ import { overloadRelic } from './Overload'
 import { alchemistRelic } from './Alchemist'
 import { orchestraRelic } from './Orchestra'
 import { amplifierRelic } from './Amplifier'
+import { gamblerRelic } from './Gambler'
 
 /**
  * 全レリックモジュールの配列
@@ -162,6 +163,8 @@ const allModules: readonly RelicModule[] = [
   orchestraRelic,
   // 非スコア系（アンプリファイア）
   amplifierRelic,
+  // ライン加算系（ギャンブラー）
+  gamblerRelic,
 ]
 
 /**
