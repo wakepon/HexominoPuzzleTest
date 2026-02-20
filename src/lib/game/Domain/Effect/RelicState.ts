@@ -5,6 +5,7 @@
 
 import type { RelicId } from '../Core/Id'
 import { BANDAID_TRIGGER_COUNT } from './Relics/Bandaid'
+import { RECYCLER_MAX_USES } from './Relics/Recycler'
 
 /**
  * コピーレリック専用の状態（独立カウンター管理）
@@ -62,6 +63,7 @@ export interface RelicMultiplierState {
   readonly gardenerAccumulatedBonus: number         // 庭師: 累積ブロック点ボーナス
   readonly collectorCollectedPatterns: readonly string[]  // 収集家: 収集済みパターン種類
   readonly collectorAccumulatedBonus: number              // 収集家: 累積列点ボーナス
+  readonly recyclerUsesRemaining: number            // リサイクラー: 残り使用回数
   readonly copyRelicState: CopyRelicState | null  // コピーレリック状態（未所持時はnull）
 }
 
@@ -79,6 +81,7 @@ export const INITIAL_RELIC_MULTIPLIER_STATE: RelicMultiplierState = {
   gardenerAccumulatedBonus: 0,
   collectorCollectedPatterns: [],
   collectorAccumulatedBonus: 0,
+  recyclerUsesRemaining: RECYCLER_MAX_USES,
   copyRelicState: null,
 }
 

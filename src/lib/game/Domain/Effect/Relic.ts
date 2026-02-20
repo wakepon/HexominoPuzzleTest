@@ -57,6 +57,7 @@ export type RelicType =
   | 'midas'             // ミダス
   | 'extra_draw'        // 追加ドロー
   | 'extra_hand'        // 追加ハンド
+  | 'recycler'          // リサイクラー
 
 /**
  * レリック定義
@@ -452,6 +453,15 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     rarity: 'epic',
     price: 25,
     icon: '✋',
+  },
+  recycler: {
+    id: 'recycler' as RelicId,
+    type: 'recycler',
+    name: 'リサイクラー',
+    description: 'ラウンド中3回まで手札1枚を入替可能',
+    rarity: 'uncommon',
+    price: 15,
+    icon: '♻️',
   },
 }
 

@@ -3,7 +3,7 @@ import { GameState, CanvasLayout, Position } from '../lib/game/types'
 import { COLORS, HD_LAYOUT, ROUND_CLEAR_STYLE, DEBUG_PROBABILITY_SETTINGS } from '../lib/game/Data/Constants'
 import { SCORE_ANIMATION } from '../lib/game/Domain/Animation/ScoreAnimationState'
 import { renderBoard, renderScriptMarkers } from './renderer/boardRenderer'
-import { renderPieceSlots, renderDraggingPiece } from './renderer/pieceRenderer'
+import { renderPieceSlots, renderDraggingPiece, renderRecycleButtons, hitTestRecycleButton } from './renderer/pieceRenderer'
 import { renderPlacementPreview } from './renderer/previewRenderer'
 import { renderClearAnimation } from './renderer/clearAnimationRenderer'
 import { renderStatusPanel, StatusPanelRenderResult } from './renderer/statusPanelRenderer'
@@ -72,6 +72,7 @@ interface GameCanvasProps {
   onMoveFromStock2: (targetSlotIndex: number) => void
   onSwapWithStock2: (slotIndex: number) => void
   onReorderRelic: (fromIndex: number, toIndex: number) => void
+  onRecyclePiece: (slotIndex: number) => void
   onApplyPendingPhase: () => void
   // 護符操作
   onUseAmulet: (amuletIndex: number) => void
@@ -122,6 +123,7 @@ export function GameCanvas({
   onMoveFromStock2,
   onSwapWithStock2,
   onReorderRelic,
+  onRecyclePiece,
   onApplyPendingPhase,
   onUseAmulet,
   onAmuletSelectPiece,
@@ -261,6 +263,11 @@ export function GameCanvas({
 
     renderPlacementPreview(ctx, state.board, state.pieceSlots, state.dragState, layout)
     renderPieceSlots(ctx, state.pieceSlots, layout, state.dragState)
+
+    // リサイクルボタン描画（recyclerレリック所持時のみ）
+    if (state.phase === 'playing' && hasRelic(state.player.ownedRelics, 'recycler')) {
+      renderRecycleButtons(ctx, state.pieceSlots, layout, state.relicMultiplierState.recyclerUsesRemaining)
+    }
 
     // ストック枠描画（hand_stockレリック所持時のみ）
     stockSlotResultRef.current = renderStockSlot(ctx, state.deck.stockSlot, layout, state.dragState)
@@ -1072,6 +1079,15 @@ export function GameCanvas({
         }
       }
 
+      // リサイクルボタンのクリック判定（playing 時）
+      if (state.phase === 'playing' && hasRelic(state.player.ownedRelics, 'recycler') && state.relicMultiplierState.recyclerUsesRemaining > 0) {
+        const recycleHit = hitTestRecycleButton(pos, state.pieceSlots, layout)
+        if (recycleHit) {
+          onRecyclePiece(recycleHit.slotIndex)
+          return
+        }
+      }
+
       // デッキボタンのクリック判定（playing 時のみ）
       if (state.phase === 'playing') {
         if (handleDeckButtonClick(pos)) {
@@ -1355,6 +1371,15 @@ export function GameCanvas({
       // 護符スロットのクリック判定（playing 時）
       if (state.phase === 'playing') {
         if (handleAmuletSlotClick(pos)) {
+          return
+        }
+      }
+
+      // リサイクルボタンのクリック判定（playing 時）
+      if (state.phase === 'playing' && hasRelic(state.player.ownedRelics, 'recycler') && state.relicMultiplierState.recyclerUsesRemaining > 0) {
+        const recycleHit = hitTestRecycleButton(pos, state.pieceSlots, layout)
+        if (recycleHit) {
+          onRecyclePiece(recycleHit.slotIndex)
           return
         }
       }

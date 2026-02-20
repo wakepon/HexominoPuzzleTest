@@ -508,6 +508,7 @@ export function restoreGameState(
       gardenerAccumulatedBonus: saved.relicMultiplierState?.gardenerAccumulatedBonus ?? INITIAL_RELIC_MULTIPLIER_STATE.gardenerAccumulatedBonus,
       collectorCollectedPatterns: saved.relicMultiplierState?.collectorCollectedPatterns ?? INITIAL_RELIC_MULTIPLIER_STATE.collectorCollectedPatterns,
       collectorAccumulatedBonus: saved.relicMultiplierState?.collectorAccumulatedBonus ?? INITIAL_RELIC_MULTIPLIER_STATE.collectorAccumulatedBonus,
+      recyclerUsesRemaining: (saved.relicMultiplierState as Record<string, unknown>)?.recyclerUsesRemaining as number ?? INITIAL_RELIC_MULTIPLIER_STATE.recyclerUsesRemaining,
       // copyRelicStateのマイグレーション（timingCounter/timingBonusActiveを除外）
       copyRelicState: saved.relicMultiplierState?.copyRelicState
         ? {

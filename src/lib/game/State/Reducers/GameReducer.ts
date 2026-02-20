@@ -55,6 +55,7 @@ import {
 import { getRelicModule } from '../../Domain/Effect/Relics/RelicRegistry'
 import { TREASURE_HUNTER_GOLD_BONUS } from '../../Domain/Effect/Relics/TreasureHunter'
 import { MIDAS_GOLD_BONUS } from '../../Domain/Effect/Relics/Midas'
+// RECYCLER_MAX_USES は INITIAL_RELIC_MULTIPLIER_STATE 経由で使用
 import {
   INITIAL_RELIC_MULTIPLIER_STATE,
   createInitialCopyRelicState,
@@ -1120,6 +1121,35 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         relicMultiplierState: {
           ...state.relicMultiplierState,
           copyRelicState: newCopyRelicState,
+        },
+      }
+    }
+
+    case 'RELIC/RECYCLE_PIECE': {
+      // リサイクラー: 手札1枚を捨てて新しい1枚をドロー（ハンド消費なし）
+      if (state.phase !== 'playing') return state
+      if (!hasRelic(state.player.ownedRelics, 'recycler')) return state
+      if (state.relicMultiplierState.recyclerUsesRemaining <= 0) return state
+
+      const targetSlot = state.pieceSlots[action.slotIndex]
+      if (!targetSlot?.piece) return state
+
+      // デッキから1枚ドロー
+      const { slots: drawnSlots, newDeck } = generateNewPieceSlotsFromDeckWithCount(state.deck, 1)
+      const drawnPiece = drawnSlots[0]?.piece ?? null
+
+      // 対象スロットのピースを入れ替え
+      const newSlots = state.pieceSlots.map((slot, i) =>
+        i === action.slotIndex ? { ...slot, piece: drawnPiece } : slot
+      )
+
+      return {
+        ...state,
+        pieceSlots: newSlots,
+        deck: newDeck,
+        relicMultiplierState: {
+          ...state.relicMultiplierState,
+          recyclerUsesRemaining: state.relicMultiplierState.recyclerUsesRemaining - 1,
         },
       }
     }
