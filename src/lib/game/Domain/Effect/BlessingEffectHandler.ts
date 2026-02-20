@@ -10,7 +10,12 @@ import type { ClearingCell } from '../Animation/AnimationState'
 import type { BuffType } from './Buff'
 import type { RandomGenerator } from '../../Utils/Random'
 import { blessingToBuffType, getBuffDefinition } from './Buff'
-import { BLESSING_STAMP_PROBABILITY } from '../../Data/Constants'
+import {
+  BLESSING_STAMP_PROBABILITY,
+  BUFF_ENHANCEMENT_PER_LEVEL,
+  BUFF_PULSATION_PER_LEVEL,
+  BUFF_GOLD_MINE_PROB_PER_LEVEL,
+} from '../../Data/Constants'
 
 /**
  * バフスコア効果の結果
@@ -84,14 +89,16 @@ export function stampBlessingsOnBoard(
 
     // 加護をバフ種別に変換
     const incomingBuff = blessingToBuffType(cell.blockBlessing)
+    const isPhase = incomingBuff === 'phase'
 
-    // multiシール: 2回独立抽選(各25%)、通常: 1回抽選(25%)
+    // 透の加護のみ確率抽選（multiシール: 2回独立抽選、通常: 1回）
+    // それ以外は確定付与（multiシール: 2回レベルアップ、通常: 1回）
     const trials = hasMulti ? 2 : 1
     let currentBuff = boardCell.buff
     let currentLevel = boardCell.buffLevel
 
     for (let i = 0; i < trials; i++) {
-      if (rng.next() >= BLESSING_STAMP_PROBABILITY) continue
+      if (isPhase && rng.next() >= BLESSING_STAMP_PROBABILITY) continue
 
       const result = calculateBuffLevelUp(currentBuff, currentLevel, incomingBuff)
       currentBuff = result.buff
@@ -115,10 +122,15 @@ export function stampBlessingsOnBoard(
  * バフがスコアに与える効果を計算
  * 消去対象セルの下にあるバフを参照
  * obstacleパターンが乗っているセルのバフは無効化
+ *
+ * 増強: +0.5 × LV（ブロック点に加算）
+ * 脈動: +0.2 × LV（列点に加算）
+ * 金鉱: LV/4 の確率で1G（確率判定）
  */
 export function calculateBuffScoreEffects(
   board: Board,
-  cellsToRemove: readonly ClearingCell[]
+  cellsToRemove: readonly ClearingCell[],
+  random: () => number = Math.random
 ): BuffScoreResult {
   let enhancementBonus = 0
   let goldMineBonus = 0
@@ -135,13 +147,16 @@ export function calculateBuffScoreEffects(
 
     switch (boardCell.buff) {
       case 'enhancement':
-        enhancementBonus += level
+        enhancementBonus += BUFF_ENHANCEMENT_PER_LEVEL * level
         break
       case 'gold_mine':
-        goldMineBonus += level
+        // LV/4 の確率で1G
+        if (random() < BUFF_GOLD_MINE_PROB_PER_LEVEL * level) {
+          goldMineBonus += 1
+        }
         break
       case 'pulsation':
-        pulsationBonus += level
+        pulsationBonus += BUFF_PULSATION_PER_LEVEL * level
         break
     }
   }

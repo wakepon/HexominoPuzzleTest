@@ -82,7 +82,7 @@ export function buildFormulaSteps(
     a += breakdown.buffEnhancementBonus
     steps.push({
       type: 'buff',
-      label: `増強 +${breakdown.buffEnhancementBonus}`,
+      label: `増強 +${formatNum(breakdown.buffEnhancementBonus)}`,
       formula: buildABFormula(a, b),
       relicId: null,
     })
@@ -150,7 +150,7 @@ export function buildFormulaSteps(
     b += breakdown.buffPulsationBonus
     steps.push({
       type: 'buff',
-      label: `脈動 +${breakdown.buffPulsationBonus}`,
+      label: `脈動 +${formatNum(breakdown.buffPulsationBonus)}`,
       formula: buildABFormula(a, b),
       relicId: null,
     })

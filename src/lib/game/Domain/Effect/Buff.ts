@@ -6,6 +6,10 @@
  */
 
 import type { BlessingId } from '../Core/Id'
+import {
+  BUFF_ENHANCEMENT_PER_LEVEL,
+  BUFF_PULSATION_PER_LEVEL,
+} from '../../Data/Constants'
 
 /**
  * バフの種類
@@ -30,23 +34,23 @@ export const BUFF_DEFINITIONS: Record<BuffType, BuffDefinition> = {
   enhancement: {
     type: 'enhancement',
     name: '増強',
-    description: 'ブロック点+Lv',
+    description: 'ブロック点+0.5xLv',
     symbol: '増',
-    maxLevel: 3,
+    maxLevel: Infinity,
   },
   gold_mine: {
     type: 'gold_mine',
     name: '金鉱',
-    description: '消去時+LvG',
+    description: 'Lv/4確率で1G',
     symbol: '鉱',
-    maxLevel: 3,
+    maxLevel: 4,
   },
   pulsation: {
     type: 'pulsation',
     name: '脈動',
-    description: 'ライン点+Lv',
+    description: 'ライン点+0.2xLv',
     symbol: '脈',
-    maxLevel: 3,
+    maxLevel: Infinity,
   },
   phase: {
     type: 'phase',
@@ -86,14 +90,18 @@ export const getBuffDefinition = (buffType: BuffType): BuffDefinition | undefine
  * バフの効果テキストをレベル込みで取得
  * 例: "ブロック点+2"
  */
+function formatBuffNum(n: number): string {
+  return Number.isInteger(n) ? String(n) : n.toFixed(1)
+}
+
 function getBuffEffectText(type: BuffType, level: number): string {
   switch (type) {
     case 'enhancement':
-      return `ブロック点+${level}`
+      return `ブロック点+${formatBuffNum(level * BUFF_ENHANCEMENT_PER_LEVEL)}`
     case 'gold_mine':
-      return `消去時+${level}G`
+      return `${level * 25}%で1G`
     case 'pulsation':
-      return `ライン点+${level}`
+      return `ライン点+${formatBuffNum(level * BUFF_PULSATION_PER_LEVEL)}`
     case 'phase':
       return '重ね配置可能'
     default:

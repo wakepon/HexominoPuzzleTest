@@ -479,8 +479,13 @@ export const SEAL_SYMBOL_STYLE = {
   padding: 1,
 }
 
-// 加護バフ付与確率（1/4）
+// 加護バフ付与確率（透の加護のみ使用、1/4）
 export const BLESSING_STAMP_PROBABILITY = 0.25
+
+// バフ効果値
+export const BUFF_ENHANCEMENT_PER_LEVEL = 0.5  // 増強: ブロック点+0.5 × LV
+export const BUFF_PULSATION_PER_LEVEL = 0.2    // 脈動: 列点+0.2 × LV
+export const BUFF_GOLD_MINE_PROB_PER_LEVEL = 0.25 // 金鉱: LV/4 の確率で1G
 
 // デバッグ用確率設定
 export const DEBUG_PROBABILITY_SETTINGS = {

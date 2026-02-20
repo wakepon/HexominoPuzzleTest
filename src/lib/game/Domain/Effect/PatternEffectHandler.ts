@@ -142,7 +142,7 @@ export function calculateScoreBreakdown(
   const { multiBonus, goldCount } = sealEffects
 
   // バフ効果を計算
-  const buffEffects = calculateBuffScoreEffects(board, cellsToRemove)
+  const buffEffects = calculateBuffScoreEffects(board, cellsToRemove, luckyRandom)
   const { enhancementBonus: buffEnhancementBonus, goldMineBonus: buffGoldMineBonus, pulsationBonus: buffPulsationBonus } = buffEffects
 
   // 合計ブロック数（パターン効果 + multiシール効果 + 増強バフ、chargeブロック基礎分除外）
