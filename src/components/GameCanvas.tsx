@@ -87,6 +87,7 @@ interface GameCanvasProps {
   onDebugAddScore: (amount: number) => void
   onDebugAddAmulet: (amuletType: AmuletType) => void
   onDebugRemoveAmulet: (amuletIndex: number) => void
+  onDebugAddRandomEffects: () => void
 }
 
 export function GameCanvas({
@@ -136,6 +137,7 @@ export function GameCanvas({
   onDebugAddScore,
   onDebugAddAmulet,
   onDebugRemoveAmulet: _onDebugRemoveAmulet,
+  onDebugAddRandomEffects,
 }: GameCanvasProps) {
   const [canvas, setCanvas] = useState<HTMLCanvasElement | null>(null)
   const [showDebugWindow, setShowDebugWindow] = useState(false)
@@ -930,6 +932,12 @@ export function GameCanvas({
       // セーブデータ削除ボタン
       if (isPointInArea(pos, debugResult.deleteSaveButton)) {
         onDeleteSave()
+        return true
+      }
+
+      // エフェクト付与ボタン
+      if (isPointInArea(pos, debugResult.addEffectsButton)) {
+        onDebugAddRandomEffects()
         return true
       }
 

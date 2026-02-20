@@ -46,6 +46,7 @@ export interface DebugWindowRenderResult {
   blessingPlusButton: ButtonArea
   blessingMinusButton: ButtonArea
   deleteSaveButton: ButtonArea
+  addEffectsButton: ButtonArea
   windowBounds: ButtonArea
   // レリック操作ボタン
   relicButtons: RelicButtonArea[]
@@ -406,14 +407,16 @@ export function renderDebugWindow(
   const windowWidth = col1Width + col2Width + col3Width + columnGap * 2
 
   // === Column 高さ計算 ===
-  // Column 1: 確率行(3行) + セパレータ + 値調整行(2行) + セパレータ + 削除ボタン
+  // Column 1: 確率行(3行) + セパレータ + 値調整行(2行) + セパレータ + 削除ボタン + エフェクト付与ボタン
   const deleteButtonHeight = 22
+  const addEffectsButtonHeight = 22
+  const buttonGapY = 4
   const col1Height =
     ps.sectionMarginTop + ps.rowHeight * 3 +
     padding +
     vs.sectionMarginTop + vs.rowHeight * 2 +
     padding +
-    deleteButtonHeight
+    deleteButtonHeight + buttonGapY + addEffectsButtonHeight
 
   // Column 2: レリックセクション + セパレータ + 護符セクション
   const allRelicTypes = Object.keys(RELIC_DEFINITIONS) as RelicType[]
@@ -575,6 +578,16 @@ export function renderDebugWindow(
     'Delete Save', '#CC3333', '#FFFFFF', 11
   )
 
+  // エフェクト付与ボタン
+  const addEffectsButtonWidth = deleteButtonWidth
+  const addEffectsButtonX = deleteButtonX
+  const addEffectsButtonY = deleteButtonY + deleteButtonHeight + buttonGapY
+
+  drawProbabilityButton(
+    ctx, addEffectsButtonX, addEffectsButtonY, addEffectsButtonWidth, addEffectsButtonHeight,
+    'Add Effects', '#6A5ACD', '#FFFFFF', 11
+  )
+
   // === Column 2 描画 (Items) ===
   const col2X = offsetX + col1Width + columnGap
   let y2 = offsetY + padding
@@ -664,6 +677,7 @@ export function renderDebugWindow(
     blessingPlusButton: blessingButtons.plusButton,
     blessingMinusButton: blessingButtons.minusButton,
     deleteSaveButton: { x: deleteButtonX, y: deleteButtonY, width: deleteButtonWidth, height: deleteButtonHeight },
+    addEffectsButton: { x: addEffectsButtonX, y: addEffectsButtonY, width: addEffectsButtonWidth, height: addEffectsButtonHeight },
     windowBounds: { x: offsetX, y: offsetY, width: windowWidth, height: windowHeight },
     relicButtons: relicResult.relicButtons,
     goldMinus50Button: goldButtons.minus50,

@@ -81,6 +81,7 @@ export function GameContainer() {
         onDebugAddScore={actions.debugAddScore}
         onDebugAddAmulet={actions.debugAddAmulet}
         onDebugRemoveAmulet={actions.debugRemoveAmulet}
+        onDebugAddRandomEffects={actions.debugAddRandomEffects}
       />
     </div>
   )

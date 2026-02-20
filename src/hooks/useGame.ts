@@ -205,6 +205,11 @@ export function useGame() {
     dispatch({ type: 'DEBUG/REMOVE_AMULET', amuletIndex })
   }, [])
 
+  // デバッグ用: 先頭ピースにランダムなエフェクト付与
+  const debugAddRandomEffects = useCallback(() => {
+    dispatch({ type: 'DEBUG/ADD_RANDOM_EFFECTS' })
+  }, [])
+
   return {
     state,
     debugSettings,
@@ -253,6 +258,7 @@ export function useGame() {
       amuletSculptToggleBlock,
       debugAddAmulet,
       debugRemoveAmulet,
+      debugAddRandomEffects,
     },
   }
 }

@@ -98,11 +98,15 @@ import { applyPatternAdd, applySealAdd, applyVanish, applySculpt, isShapeConnect
 import { OBSTACLE_BLOCK_COUNT } from '../../Data/BossConditions'
 import { RELIC_DEFINITIONS } from '../../Domain/Effect/Relic'
 import { stampBlessingsOnBoard } from '../../Domain/Effect/BlessingEffectHandler'
+import { SHOP_AVAILABLE_PATTERNS } from '../../Domain/Effect/Pattern'
+import { SHOP_AVAILABLE_SEALS } from '../../Domain/Effect/Seal'
+import { SHOP_AVAILABLE_BLESSINGS } from '../../Domain/Effect/Blessing'
+import { BlockDataMapUtils } from '../../Domain/Piece/BlockData'
 import { JESTER_SLOT_REDUCTION } from '../../Domain/Effect/Relics/Jester'
 import { getMinoById } from '../../Data/MinoDefinitions'
 import { saveGameState, clearGameState } from '../../Services/StorageService'
 import type { RelicMultiplierState } from '../../Domain/Effect/RelicState'
-import type { RelicId, PatternId } from '../../Domain/Core/Id'
+import type { RelicId, PatternId, SealId, BlessingId } from '../../Domain/Core/Id'
 import type { RoundInfo } from '../../Domain/Round/RoundTypes'
 import { generateScriptLines } from '../../Domain/Effect/ScriptRelicState'
 import { GOLDFISH_GOLD_BONUS, GOLDFISH_SCORE_MULTIPLIER } from '../../Domain/Effect/Relics/Goldfish'
@@ -2092,6 +2096,50 @@ function gameReducerInner(state: GameState, action: GameAction): GameState {
       const newAmuletStock = state.player.amuletStock.filter((_, i) => i !== amuletIndex)
       const newPlayer = { ...state.player, amuletStock: newAmuletStock }
       const newState = { ...state, player: newPlayer }
+      saveGameState(newState)
+      return newState
+    }
+
+    case 'DEBUG/ADD_RANDOM_EFFECTS': {
+      // 先頭のピースを見つける
+      const slotIndex = state.pieceSlots.findIndex(s => s.piece !== null)
+      if (slotIndex === -1) return state
+
+      const piece = state.pieceSlots[slotIndex].piece!
+      const blockKeys = Array.from(piece.blocks.keys())
+      if (blockKeys.length === 0) return state
+
+      // ランダムなパターンを選択して全ブロックに適用
+      const randomPattern = SHOP_AVAILABLE_PATTERNS[Math.floor(Math.random() * SHOP_AVAILABLE_PATTERNS.length)]
+      let newBlocks = BlockDataMapUtils.createWithPattern(piece.shape, randomPattern as PatternId)
+
+      // 既存のシール・加護を引き継ぐ
+      for (const [key, oldData] of piece.blocks) {
+        const newData = newBlocks.get(key)
+        if (newData && (oldData.seal || oldData.blessing)) {
+          const mutableMap = new Map(newBlocks)
+          mutableMap.set(key, { ...newData, seal: oldData.seal, blessing: oldData.blessing })
+          newBlocks = mutableMap
+        }
+      }
+
+      // ランダムなシールをランダムなブロックに付与
+      const randomSeal = SHOP_AVAILABLE_SEALS[Math.floor(Math.random() * SHOP_AVAILABLE_SEALS.length)]
+      const sealKey = blockKeys[Math.floor(Math.random() * blockKeys.length)]
+      const [sealRow, sealCol] = sealKey.split(',').map(Number)
+      newBlocks = BlockDataMapUtils.setSeal(newBlocks, sealRow, sealCol, randomSeal as SealId)
+
+      // ランダムな加護をランダムなブロックに付与
+      const randomBlessing = SHOP_AVAILABLE_BLESSINGS[Math.floor(Math.random() * SHOP_AVAILABLE_BLESSINGS.length)]
+      const blessingKey = blockKeys[Math.floor(Math.random() * blockKeys.length)]
+      const [blessingRow, blessingCol] = blessingKey.split(',').map(Number)
+      newBlocks = BlockDataMapUtils.setBlessing(newBlocks, blessingRow, blessingCol, randomBlessing as BlessingId)
+
+      const newPiece: Piece = { ...piece, blocks: newBlocks }
+      const newSlots = state.pieceSlots.map((s, i) =>
+        i === slotIndex ? { ...s, piece: newPiece } : s
+      )
+      const newState = { ...state, pieceSlots: newSlots }
       saveGameState(newState)
       return newState
     }
