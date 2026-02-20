@@ -39,6 +39,7 @@ export function evaluateRelicEffects(
     readonly boardFilledCount: number
     readonly patternAndSealBlockCount: number
     readonly distinctPatternTypeCount: number
+    readonly stoneBlockCount?: number
   },
   relicMultiplierState: RelicMultiplierState
 ): ReadonlyMap<string, RelicActivation> {
@@ -87,6 +88,7 @@ export function evaluateCopyRelicEffect(
     readonly boardFilledCount: number
     readonly patternAndSealBlockCount: number
     readonly distinctPatternTypeCount: number
+    readonly stoneBlockCount?: number
   },
   relicMultiplierState: RelicMultiplierState
 ): { multiplier: number; bonus: number; lineBonus: number } {

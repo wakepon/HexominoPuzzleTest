@@ -50,6 +50,7 @@ export interface RelicContext {
   readonly boardFilledCount: number   // 盤面の埋まっているセル数（消去前）
   readonly patternAndSealBlockCount: number  // 消去セル内のパターン+シール両方持ちブロック数
   readonly distinctPatternTypeCount: number  // 消去セル内の異なるパターン種類数
+  readonly stoneBlockCount?: number           // 消去セル内のstoneシール付きブロック数
 
   /**
    * このレリック自身の累積状態

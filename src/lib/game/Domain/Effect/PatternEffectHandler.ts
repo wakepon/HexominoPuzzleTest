@@ -294,6 +294,7 @@ export function calculateScoreBreakdown(
     let patternBlockCount = 0
     let sealBlockCount = 0
     let patternAndSealBlockCount = 0
+    let stoneBlockCount = 0
     const patternTypeSet = new Set<string>()
     for (const cell of cellsToRemove) {
       const boardCell = board[cell.row][cell.col]
@@ -301,7 +302,10 @@ export function calculateScoreBreakdown(
         patternBlockCount++
         patternTypeSet.add(boardCell.pattern as string)
       }
-      if (boardCell.seal) sealBlockCount++
+      if (boardCell.seal) {
+        sealBlockCount++
+        if (boardCell.seal === ('stone' as SealId)) stoneBlockCount++
+      }
       if (boardCell.pattern && boardCell.seal) patternAndSealBlockCount++
     }
     const distinctPatternTypeCount = patternTypeSet.size
@@ -325,6 +329,7 @@ export function calculateScoreBreakdown(
         boardFilledCount: relicContext.boardFilledCount,
         patternAndSealBlockCount,
         distinctPatternTypeCount,
+        stoneBlockCount,
       },
       relicContext.relicMultiplierState
     )
@@ -370,6 +375,7 @@ export function calculateScoreBreakdown(
             boardFilledCount: relicContext.boardFilledCount,
             patternAndSealBlockCount,
             distinctPatternTypeCount,
+            stoneBlockCount,
           },
           relicContext.relicMultiplierState
         )

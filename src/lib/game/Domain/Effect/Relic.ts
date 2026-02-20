@@ -70,6 +70,7 @@ export type RelicType =
   | 'magnet'            // 磁石
   | 'prism'             // プリズム
   | 'compass_rose'      // 羅針盤
+  | 'furnace'           // 溶鉱炉
 
 /**
  * レリック定義
@@ -582,6 +583,15 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     rarity: 'uncommon',
     price: 15,
     icon: '🗺️',
+  },
+  furnace: {
+    id: 'furnace' as RelicId,
+    type: 'furnace',
+    name: '溶鉱炉',
+    description: 'stoneシール付きブロック消去時、1個につきブロック点+15',
+    rarity: 'uncommon',
+    price: 15,
+    icon: '🏭',
   },
 }
 
