@@ -76,6 +76,7 @@ import { midasRelic } from './Midas'
 import { extraDrawRelic } from './ExtraDraw'
 import { extraHandRelic } from './ExtraHand'
 import { recyclerRelic } from './Recycler'
+import { twinRelic } from './Twin'
 
 /**
  * 全レリックモジュールの配列
@@ -144,6 +145,8 @@ const allModules: readonly RelicModule[] = [
   extraHandRelic,
   // 非スコア系（リサイクラー）
   recyclerRelic,
+  // 加算系（双子）
+  twinRelic,
 ]
 
 /**

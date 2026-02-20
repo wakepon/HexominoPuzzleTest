@@ -509,6 +509,7 @@ export function restoreGameState(
       collectorCollectedPatterns: saved.relicMultiplierState?.collectorCollectedPatterns ?? INITIAL_RELIC_MULTIPLIER_STATE.collectorCollectedPatterns,
       collectorAccumulatedBonus: saved.relicMultiplierState?.collectorAccumulatedBonus ?? INITIAL_RELIC_MULTIPLIER_STATE.collectorAccumulatedBonus,
       recyclerUsesRemaining: (saved.relicMultiplierState as Record<string, unknown>)?.recyclerUsesRemaining as number ?? INITIAL_RELIC_MULTIPLIER_STATE.recyclerUsesRemaining,
+      twinLastPlacedBlockSize: (saved.relicMultiplierState as Record<string, unknown>)?.twinLastPlacedBlockSize as number ?? INITIAL_RELIC_MULTIPLIER_STATE.twinLastPlacedBlockSize,
       // copyRelicStateのマイグレーション（timingCounter/timingBonusActiveを除外）
       copyRelicState: saved.relicMultiplierState?.copyRelicState
         ? {
@@ -526,6 +527,7 @@ export function restoreGameState(
             gardenerAccumulatedBonus: saved.relicMultiplierState.copyRelicState.gardenerAccumulatedBonus ?? 0,
             collectorCollectedPatterns: saved.relicMultiplierState.copyRelicState.collectorCollectedPatterns ?? [],
             collectorAccumulatedBonus: saved.relicMultiplierState.copyRelicState.collectorAccumulatedBonus ?? 0,
+            twinLastPlacedBlockSize: (saved.relicMultiplierState.copyRelicState as Record<string, unknown>)?.twinLastPlacedBlockSize as number ?? 0,
           }
         : null,
     },

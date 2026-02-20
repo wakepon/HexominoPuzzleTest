@@ -51,6 +51,8 @@ export function extractRelicState(
       return { accumulatedBonus: legacy.gardenerAccumulatedBonus }
     case 'collector':
       return { collectedPatterns: legacy.collectorCollectedPatterns, accumulatedBonus: legacy.collectorAccumulatedBonus }
+    case 'twin':
+      return { lastPlacedBlockSize: legacy.twinLastPlacedBlockSize }
     default:
       return null
   }
@@ -96,6 +98,8 @@ function applyRelicState(
         collectorCollectedPatterns: (newState as { collectedPatterns: readonly string[] }).collectedPatterns,
         collectorAccumulatedBonus: (newState as { accumulatedBonus: number }).accumulatedBonus,
       }
+    case 'twin':
+      return { ...legacy, twinLastPlacedBlockSize: (newState as { lastPlacedBlockSize: number }).lastPlacedBlockSize }
     default:
       return legacy
   }
@@ -131,6 +135,8 @@ export function extractCopyRelicState(
       return { accumulatedBonus: copyState.gardenerAccumulatedBonus }
     case 'collector':
       return { collectedPatterns: copyState.collectorCollectedPatterns, accumulatedBonus: copyState.collectorAccumulatedBonus }
+    case 'twin':
+      return { lastPlacedBlockSize: copyState.twinLastPlacedBlockSize }
     default:
       return null
   }
@@ -176,6 +182,8 @@ function applyCopyRelicState(
         collectorCollectedPatterns: (newState as { collectedPatterns: readonly string[] }).collectedPatterns,
         collectorAccumulatedBonus: (newState as { accumulatedBonus: number }).accumulatedBonus,
       }
+    case 'twin':
+      return { ...copyState, twinLastPlacedBlockSize: (newState as { lastPlacedBlockSize: number }).lastPlacedBlockSize }
     default:
       return copyState
   }

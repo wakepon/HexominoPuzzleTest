@@ -25,6 +25,7 @@ export interface CopyRelicState {
   readonly gardenerAccumulatedBonus: number
   readonly collectorCollectedPatterns: readonly string[]
   readonly collectorAccumulatedBonus: number
+  readonly twinLastPlacedBlockSize: number
 }
 
 /**
@@ -46,6 +47,7 @@ export function createInitialCopyRelicState(targetRelicId: RelicId | null): Copy
     gardenerAccumulatedBonus: 0,
     collectorCollectedPatterns: [],
     collectorAccumulatedBonus: 0,
+    twinLastPlacedBlockSize: 0,
   }
 }
 
@@ -64,6 +66,7 @@ export interface RelicMultiplierState {
   readonly collectorCollectedPatterns: readonly string[]  // 収集家: 収集済みパターン種類
   readonly collectorAccumulatedBonus: number              // 収集家: 累積列点ボーナス
   readonly recyclerUsesRemaining: number            // リサイクラー: 残り使用回数
+  readonly twinLastPlacedBlockSize: number          // 双子: 直前配置ブロック数
   readonly copyRelicState: CopyRelicState | null  // コピーレリック状態（未所持時はnull）
 }
 
@@ -82,6 +85,7 @@ export const INITIAL_RELIC_MULTIPLIER_STATE: RelicMultiplierState = {
   collectorCollectedPatterns: [],
   collectorAccumulatedBonus: 0,
   recyclerUsesRemaining: RECYCLER_MAX_USES,
+  twinLastPlacedBlockSize: 0,
   copyRelicState: null,
 }
 

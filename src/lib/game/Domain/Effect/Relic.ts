@@ -58,6 +58,7 @@ export type RelicType =
   | 'extra_draw'        // 追加ドロー
   | 'extra_hand'        // 追加ハンド
   | 'recycler'          // リサイクラー
+  | 'twin'              // 双子
 
 /**
  * レリック定義
@@ -462,6 +463,15 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     rarity: 'uncommon',
     price: 15,
     icon: '♻️',
+  },
+  twin: {
+    id: 'twin' as RelicId,
+    type: 'twin',
+    name: '双子',
+    description: '同サイズのピースを連続配置してライン消去時、ブロック点+4',
+    rarity: 'common',
+    price: 10,
+    icon: '👯',
   },
 }
 
