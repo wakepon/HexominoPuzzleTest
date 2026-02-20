@@ -41,25 +41,14 @@ const SMALL_MEDIUM_CATEGORIES: MinoCategory[] = ['monomino', 'domino', 'tromino'
 const MEDIUM_LARGE_CATEGORIES: MinoCategory[] = ['tetromino', 'pentomino', 'hexomino']
 
 /**
- * ショップ商品サイズ
+ * パターン付与確率（ミノサイズに関わらず一律）
  */
-type ShopItemSize = 'small_medium' | 'medium_large'
+const PATTERN_PROBABILITY = 0.4 // 40%
 
 /**
- * サイズ別のパターン付与確率
+ * シール付与確率（ミノサイズに関わらず一律、パターンとは独立）
  */
-const PATTERN_PROBABILITY: Record<ShopItemSize, number> = {
-  small_medium: 0.3, // 30%
-  medium_large: 0.5, // 50%
-}
-
-/**
- * サイズ別のシール付与確率（パターンとは独立）
- */
-const SEAL_PROBABILITY: Record<ShopItemSize, number> = {
-  small_medium: 0.2, // 20%
-  medium_large: 0.3, // 30%
-}
+const SEAL_PROBABILITY = 0.25 // 25%
 
 /**
  * 指定カテゴリ群からランダムにミノ定義を取得
@@ -98,7 +87,6 @@ function pickRandomSeal(rng: RandomGenerator): SealId {
  */
 function createShopPiece(
   categories: MinoCategory[],
-  size: ShopItemSize,
   rng: RandomGenerator,
   override?: ProbabilityOverride
 ): Piece {
@@ -106,8 +94,8 @@ function createShopPiece(
 
   // パターンとシールの付与判定（独立）
   // オーバーライドがあれば使用、なければサイズ別のデフォルト確率
-  const patternProb = override?.pattern ?? PATTERN_PROBABILITY[size]
-  const sealProb = override?.seal ?? SEAL_PROBABILITY[size]
+  const patternProb = override?.pattern ?? PATTERN_PROBABILITY
+  const sealProb = override?.seal ?? SEAL_PROBABILITY
 
   const addPattern = patternProb > 0 && rng.next() < patternProb
   const addSeal = sealProb > 0 && rng.next() < sealProb
@@ -134,16 +122,17 @@ function createShopPiece(
 
 /**
  * ショップアイテムを生成（2種類）
- * - 小中: モノミノ/ドミノ/トリミノ/テトロミノ（30%でパターン付き）
- * - 中大: テトロミノ/ペントミノ/ヘキソミノ（50%でパターン付き）
+ * - 小中: モノミノ/ドミノ/トリミノ/テトロミノ
+ * - 中大: テトロミノ/ペントミノ/ヘキソミノ
+ * パターン付与確率は一律40%
  * @param override デバッグ用の確率オーバーライド
  */
 export function generateShopItems(
   rng: RandomGenerator,
   override?: ProbabilityOverride
 ): BlockShopItem[] {
-  const smallMediumPiece = createShopPiece(SMALL_MEDIUM_CATEGORIES, 'small_medium', rng, override)
-  const mediumLargePiece = createShopPiece(MEDIUM_LARGE_CATEGORIES, 'medium_large', rng, override)
+  const smallMediumPiece = createShopPiece(SMALL_MEDIUM_CATEGORIES, rng, override)
+  const mediumLargePiece = createShopPiece(MEDIUM_LARGE_CATEGORIES, rng, override)
 
   const smallMediumPrice = calculatePiecePrice(smallMediumPiece)
   const mediumLargePrice = calculatePiecePrice(mediumLargePiece)
