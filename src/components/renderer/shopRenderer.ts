@@ -88,6 +88,54 @@ function renderStrikethroughText(
 }
 
 /**
+ * テキストを指定幅で折り返し、最大行数に制限する
+ */
+function wrapText(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  maxWidth: number,
+  maxLines: number
+): string[] {
+  const lines: string[] = []
+  let remaining = text
+
+  while (remaining.length > 0 && lines.length < maxLines) {
+    // 1行に収まるならそのまま追加
+    if (ctx.measureText(remaining).width <= maxWidth) {
+      lines.push(remaining)
+      break
+    }
+
+    // 1文字ずつ切って収まる位置を探す
+    let breakIdx = remaining.length
+    for (let i = 1; i <= remaining.length; i++) {
+      if (ctx.measureText(remaining.slice(0, i)).width > maxWidth) {
+        breakIdx = i - 1
+        break
+      }
+    }
+
+    // 最低1文字は進める（1文字でもはみ出す場合への対応）
+    if (breakIdx <= 0) breakIdx = 1
+
+    // 最終行で残りが入りきらない場合は省略記号
+    if (lines.length === maxLines - 1 && ctx.measureText(remaining).width > maxWidth) {
+      let truncIdx = breakIdx
+      while (truncIdx > 1 && ctx.measureText(remaining.slice(0, truncIdx) + '…').width > maxWidth) {
+        truncIdx--
+      }
+      lines.push(remaining.slice(0, truncIdx) + '…')
+      break
+    }
+
+    lines.push(remaining.slice(0, breakIdx))
+    remaining = remaining.slice(breakIdx)
+  }
+
+  return lines
+}
+
+/**
  * BlockDataMapから効果名（パターン/シール）を取得
  */
 function getEffectLabels(blocks: BlockDataMap): string[] {
@@ -487,21 +535,32 @@ function renderRelicShopItem(
   ctx.font = `${SHOP_STYLE.relicIconSize}px Arial, sans-serif`
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
-  ctx.fillText(def.icon, boxX + boxWidth / 2, boxY + 30)
+  ctx.fillText(def.icon, boxX + boxWidth / 2, boxY + 40)
   ctx.restore()
 
   // レリック名
-  ctx.font = `bold 12px Arial, sans-serif`
+  ctx.font = `bold 14px Arial, sans-serif`
   ctx.fillStyle = '#FFD700'
-  ctx.fillText(def.name, boxX + boxWidth / 2, boxY + 55)
+  ctx.fillText(def.name, boxX + boxWidth / 2, boxY + 75)
 
   // レアリティ表示
   ctx.font = `10px Arial, sans-serif`
   ctx.fillStyle = RARITY_COLORS[def.rarity] ?? '#FFFFFF'
-  ctx.fillText(def.rarity, boxX + boxWidth / 2, boxY + 70)
+  ctx.fillText(def.rarity, boxX + boxWidth / 2, boxY + 92)
+
+  // 説明文（最大2行、ボックス幅に収まるよう折り返し）
+  if (def.description) {
+    ctx.font = `${SHOP_STYLE.relicDescFontSize}px Arial, sans-serif`
+    ctx.fillStyle = '#CCCCCC'
+    const maxLineWidth = boxWidth - 16
+    const descLines = wrapText(ctx, def.description, maxLineWidth, 2)
+    descLines.forEach((line, lineIdx) => {
+      ctx.fillText(line, boxX + boxWidth / 2, boxY + 110 + lineIdx * 15)
+    })
+  }
 
   // 価格表示
-  const priceY = boxY + boxHeight - 15
+  const priceY = boxY + boxHeight - 18
   renderPriceDisplay(
     ctx,
     boxX + boxWidth / 2,
@@ -554,13 +613,13 @@ function renderAmuletShopItem(
     ctx.save()
     ctx.fillStyle = '#7B2FBE'
     ctx.beginPath()
-    ctx.roundRect(boxX + boxWidth - 42, boxY + 3, 38, 16, 3)
+    ctx.roundRect(boxX + boxWidth - 45, boxY + 5, 40, 18, 3)
     ctx.fill()
-    ctx.font = 'bold 10px Arial, sans-serif'
+    ctx.font = 'bold 11px Arial, sans-serif'
     ctx.fillStyle = '#FFFFFF'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
-    ctx.fillText('護符', boxX + boxWidth - 23, boxY + 11)
+    ctx.fillText('護符', boxX + boxWidth - 25, boxY + 14)
     ctx.restore()
   }
 
@@ -572,24 +631,35 @@ function renderAmuletShopItem(
   ctx.font = `${SHOP_STYLE.relicIconSize}px Arial, sans-serif`
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
-  ctx.fillText(item.icon, boxX + boxWidth / 2, boxY + 30)
+  ctx.fillText(item.icon, boxX + boxWidth / 2, boxY + 40)
   ctx.restore()
 
   // 名前
-  ctx.font = 'bold 12px Arial, sans-serif'
+  ctx.font = 'bold 14px Arial, sans-serif'
   ctx.textAlign = 'center'
   ctx.fillStyle = '#DDA0DD'
-  ctx.fillText(item.name, boxX + boxWidth / 2, boxY + 55)
+  ctx.fillText(item.name, boxX + boxWidth / 2, boxY + 75)
+
+  // 説明文（護符の説明）
+  if (item.description) {
+    ctx.font = `${SHOP_STYLE.relicDescFontSize}px Arial, sans-serif`
+    ctx.fillStyle = '#CCCCCC'
+    const maxLineWidth = boxWidth - 16
+    const descLines = wrapText(ctx, item.description, maxLineWidth, 2)
+    descLines.forEach((line, lineIdx) => {
+      ctx.fillText(line, boxX + boxWidth / 2, boxY + 100 + lineIdx * 15)
+    })
+  }
 
   // ストック満杯表示
   if (stockFull && !purchased) {
     ctx.font = 'bold 10px Arial, sans-serif'
     ctx.fillStyle = '#FF6666'
-    ctx.fillText('ストック満杯', boxX + boxWidth / 2, boxY + 70)
+    ctx.fillText('ストック満杯', boxX + boxWidth / 2, boxY + 92)
   }
 
   // 価格
-  const priceY = boxY + boxHeight - 15
+  const priceY = boxY + boxHeight - 18
   renderPriceDisplay(
     ctx,
     boxX + boxWidth / 2,
@@ -798,7 +868,6 @@ export function renderShop(
     backgroundColor,
     titleFontSize,
     titleColor,
-    itemBoxPadding,
     itemBoxGap,
     leaveButtonWidth,
     leaveButtonHeight,
@@ -809,7 +878,6 @@ export function renderShop(
     titleOffsetY,
     itemsOffsetY,
     goldDisplayOffsetY,
-    cellSizeRatio,
   } = SHOP_STYLE
 
   ctx.save()
@@ -850,60 +918,26 @@ export function renderShop(
   ctx.font = `bold ${titleFontSize}px Arial, sans-serif`
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
-  ctx.fillText('ブロックを購入しますか？', centerX, centerY + titleOffsetY)
+  ctx.fillText('ショップ', centerX, centerY + titleOffsetY)
 
   // ブロック商品とレリック/護符商品を分離
   const blockItems = shopState.items.filter(isBlockShopItem)
   const relicItems = shopState.items.filter(isRelicShopItem)
   const amuletItems = shopState.items.filter(isAmuletShopItem)
-  const bottomRowItems = [...relicItems, ...amuletItems]
-
-  // アイテムボックスのサイズ計算
-  const cellSize = layout.cellSize * cellSizeRatio
-  const boxWidth = 7 * cellSize + itemBoxPadding * 2 // ヘキソミノ(最大6x6)が収まるサイズ
-  const boxHeight = 7 * cellSize + itemBoxPadding * 2 + 30 // 価格表示分の余裕
-
-  // ブロック行の配置
-  const blockTotalWidth = boxWidth * blockItems.length + itemBoxGap * (blockItems.length - 1)
-  const blockStartX = centerX - blockTotalWidth / 2
-  const blockBoxY = centerY + itemsOffsetY - boxHeight / 2
+  const topRowItems = [...relicItems, ...amuletItems]
 
   const itemAreas: ShopItemArea[] = []
 
-  // ブロック商品を描画
-  blockItems.forEach((item, blockIndex) => {
-    const boxX = blockStartX + blockIndex * (boxWidth + itemBoxGap)
-    const originalIndex = shopState.items.indexOf(item)
+  // レリック/護符行の配置（上段 - メイン）
+  const { relicBoxWidth, relicBoxHeight: relicBoxH, relicRowOffsetY } = SHOP_STYLE
+  const relicRowY = centerY + itemsOffsetY - relicBoxH / 2
 
-    renderBlockShopItem(
-      ctx,
-      item,
-      gold,
-      boxX,
-      blockBoxY,
-      boxWidth,
-      boxHeight,
-      cellSize
-    )
+  if (topRowItems.length > 0) {
+    const topTotalWidth = relicBoxWidth * topRowItems.length + itemBoxGap * (topRowItems.length - 1)
+    const topStartX = centerX - topTotalWidth / 2
 
-    itemAreas.push({
-      itemIndex: originalIndex,
-      x: boxX,
-      y: blockBoxY,
-      width: boxWidth,
-      height: boxHeight,
-    })
-  })
-
-  // レリック/護符行の配置（ブロック行の下）
-  if (bottomRowItems.length > 0) {
-    const { relicBoxWidth, relicBoxHeight: relicBoxH, relicRowOffsetY } = SHOP_STYLE
-    const bottomTotalWidth = relicBoxWidth * bottomRowItems.length + itemBoxGap * (bottomRowItems.length - 1)
-    const bottomStartX = centerX - bottomTotalWidth / 2
-    const bottomBoxY = blockBoxY + boxHeight + relicRowOffsetY
-
-    bottomRowItems.forEach((item, idx) => {
-      const boxX = bottomStartX + idx * (relicBoxWidth + itemBoxGap)
+    topRowItems.forEach((item, idx) => {
+      const boxX = topStartX + idx * (relicBoxWidth + itemBoxGap)
       const originalIndex = shopState.items.indexOf(item)
 
       if (isRelicShopItem(item)) {
@@ -912,7 +946,7 @@ export function renderShop(
           item,
           gold,
           boxX,
-          bottomBoxY,
+          relicRowY,
           relicBoxWidth,
           relicBoxH
         )
@@ -923,7 +957,7 @@ export function renderShop(
           gold,
           amuletStockCount,
           boxX,
-          bottomBoxY,
+          relicRowY,
           relicBoxWidth,
           relicBoxH
         )
@@ -932,12 +966,51 @@ export function renderShop(
       itemAreas.push({
         itemIndex: originalIndex,
         x: boxX,
-        y: bottomBoxY,
+        y: relicRowY,
         width: relicBoxWidth,
         height: relicBoxH,
       })
     })
   }
+
+  // ブロック行の配置（下段 - レリックと同じボックスサイズ）
+  const boxWidth = relicBoxWidth
+  const boxHeight = relicBoxH
+  // ボックス内にピース形状が収まるようcellSizeを算出（最大6セル幅/高さ）
+  // 形状は中央配置されるため、マージンは最小限でよい
+  const maxCellW = boxWidth / 7
+  const maxCellH = (boxHeight - 40) / 6 // ラベル+価格分の余白
+  const cellSize = Math.min(maxCellW, maxCellH)
+
+  // ブロック行は常にレリック行の下に配置（レリック行がなくても位置を維持）
+  const blockRowY = relicRowY + relicBoxH + relicRowOffsetY
+
+  const blockTotalWidth = boxWidth * blockItems.length + itemBoxGap * (blockItems.length - 1)
+  const blockStartX = centerX - blockTotalWidth / 2
+
+  blockItems.forEach((item, blockIndex) => {
+    const boxX = blockStartX + blockIndex * (boxWidth + itemBoxGap)
+    const originalIndex = shopState.items.indexOf(item)
+
+    renderBlockShopItem(
+      ctx,
+      item,
+      gold,
+      boxX,
+      blockRowY,
+      boxWidth,
+      boxHeight,
+      cellSize
+    )
+
+    itemAreas.push({
+      itemIndex: originalIndex,
+      x: boxX,
+      y: blockRowY,
+      width: boxWidth,
+      height: boxHeight,
+    })
+  })
 
   // ボタンエリア - 商品の下に動的に配置（リロール + 店を出る を横並び）
   const {
@@ -950,11 +1023,8 @@ export function renderShop(
     rerollButtonGap,
   } = SHOP_STYLE
 
-  // レリック/護符行がある場合はその下端、ない場合はブロック行の下端を基準にする
-  const { relicBoxWidth: _rw, relicBoxHeight: bottomRowBoxHeight, relicRowOffsetY: bottomRowOffsetY } = SHOP_STYLE
-  const contentBottomY = bottomRowItems.length > 0
-    ? blockBoxY + boxHeight + bottomRowOffsetY + bottomRowBoxHeight  // レリック/護符行の下端
-    : blockBoxY + boxHeight                                           // ブロック行の下端
+  // ブロック行の下端を基準にする
+  const contentBottomY = blockRowY + boxHeight
   const buttonY = contentBottomY + leaveButtonGap
 
   // 売却ボタンの表示判定（レリックを所持している場合のみ）
