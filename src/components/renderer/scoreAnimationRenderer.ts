@@ -48,16 +48,19 @@ export function renderScoreAnimation(
     const animElapsed = Math.max(0, elapsed - holdDuration)
     const progress = Math.min(1, animElapsed / animDuration)
     const eased = 1 - Math.pow(1 - progress, 3)  // ease-out cubic
-    const remaining = Math.ceil(scoreAnimation.scoreGain * (1 - eased))
+    const remaining = Math.round(scoreAnimation.scoreGain * (1 - eased))
 
-    const labelY = counterArea.y - 8
-    ctx.font = 'bold 26px Arial, sans-serif'
-    ctx.fillStyle = '#FFD700'
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'bottom'
-    ctx.shadowColor = '#000000'
-    ctx.shadowBlur = 6
-    ctx.fillText(`${remaining}`, counterArea.x + counterArea.width / 2, labelY)
+    // 0になったら非表示
+    if (remaining > 0) {
+      const labelY = counterArea.y - 8
+      ctx.font = 'bold 26px Arial, sans-serif'
+      ctx.fillStyle = '#FFD700'
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'bottom'
+      ctx.shadowColor = '#000000'
+      ctx.shadowBlur = 6
+      ctx.fillText(`${remaining}`, counterArea.x + counterArea.width / 2, labelY)
+    }
 
     ctx.restore()
     return { fastForwardButton: null }
