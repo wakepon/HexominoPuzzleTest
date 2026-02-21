@@ -143,8 +143,9 @@ export const CLEAR_ANIMATION = {
   finalScale: 0,                 // 最終スケール
   // 効果ラベル表示パラメータ
   effectLabelRise: 40,           // 効果ラベルの上昇距離（px）
-  // 列点ポップ表示パラメータ
-  linePointPopDuration: 300,     // 列点ポップの表示時間（ms）
+  // ポイントポップ表示パラメータ
+  blockPointPopDuration: 900,    // ブロック点ポップの表示時間（ms）
+  linePointPopDuration: 800,     // 列点ポップの表示時間（ms）
 }
 
 // HDレイアウト用ステータスパネルスタイル
@@ -287,18 +288,28 @@ export const SHOP_STYLE = {
   leaveButtonColor: '#8B7355',
   leaveButtonTextColor: '#FFFFFF',
   leaveButtonFontSize: 20,
-  leaveButtonGap: 50,             // 商品とボタンの間隔
+  leaveButtonGap: 30,             // 商品とボタンの間隔
   titleOffsetY: -250,
-  itemsOffsetY: -50,
+  itemsOffsetY: -120,
   goldDisplayOffsetY: -280,
-  cellSizeRatio: 0.6,
   shapeVerticalOffset: 15,      // ミノ形状の垂直オフセット
   priceVerticalOffset: 20,      // 価格表示の下からのオフセット
   // レリック行（ブロック行の下）
-  relicRowOffsetY: 20,          // ブロック行からのオフセット
-  relicBoxWidth: 100,
-  relicBoxHeight: 100,
-  relicIconSize: 32,
+  relicRowOffsetY: 30,          // 行間のオフセット
+  relicBoxWidth: 180,
+  relicBoxHeight: 170,
+  relicIconSize: 48,
+  relicDescFontSize: 11,
+  // セクション枠
+  sectionPadding: 12,
+  sectionBorderRadius: 8,
+  sectionBorderWidth: 2,
+  // レリックセクション
+  relicSectionBorderColor: '#8B7355',
+  relicSectionBgColor: 'rgba(210, 180, 140, 0.1)',
+  // ピースセクション
+  pieceSectionBorderColor: '#6B5344',
+  pieceSectionBgColor: 'rgba(139, 115, 85, 0.1)',
   // セール表示
   saleColor: '#FF4444',               // セール価格の色（赤）
   saleBadgeColor: '#FF0000',          // SALEバッジ背景色
@@ -495,6 +506,12 @@ export const BLESSING_SYMBOL_STYLE = {
   fontFamily: 'serif',
 }
 
+// 加護アウトラインスタイル（ブロック上のカラー枠線）
+export const BLESSING_OUTLINE_STYLE = {
+  lineWidth: 2,   // アウトライン太さ
+  inset: 1,       // padding境界からさらに内側のオフセット
+}
+
 // バフ別カラー定義（セル上の永続効果用）
 export const BUFF_COLORS: Record<string, string> = {
   enhancement: '#FF6347',   // 赤系（増強）
@@ -507,6 +524,16 @@ export const BUFF_COLORS: Record<string, string> = {
 export const BUFF_SYMBOL_STYLE = {
   fontSize: 10,
   fontFamily: 'serif',
+}
+
+// バフオーバーレイスタイル（セル上のカラー枠線＋半透明塗り）
+export const BUFF_OVERLAY_STYLE = {
+  outlineWidth: 2,
+  fillAlphaBase: 0.08,       // オーバーレイ塗りの基本alpha
+  fillAlphaPerLevel: 0.04,   // レベルごとの追加alpha
+  outlineAlphaBase: 0.4,     // アウトラインの基本alpha
+  outlineAlphaPerLevel: 0.1, // レベルごとの追加alpha
+  levelFontSizeRatio: 0.18,
 }
 
 // シール別カラー定義

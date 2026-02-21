@@ -82,3 +82,7 @@ doc-updater エージェントを使用してコードから仕様書を生成�
   - state-management.md: 護符アクション（AMULET/*）、売却モード、加護スタンプ処理を追加
   - data-structures.md: Cell型バフフィールド、Blessing/Buff型、護符型、RelicType 52種に更新
   - data-structures-effect-types.md: 削除パターン/シール効果を除去、レリック効果を動的Map化
+- 2026-02-22: 加護・バフ・護符の仕様書をコードに合わせて更新
+  - blessing-system.md: 透過バフ（phase）配置ルール効果の未実装を注記
+  - pattern-system.md: ショップ確率表に加護付与確率15%を追加
+  - amulet-system.md: 実装済みに全面更新（価格帯・ショップ出現・使用フロー・GameAction・データ構造）

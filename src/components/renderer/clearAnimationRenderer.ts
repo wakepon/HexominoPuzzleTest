@@ -78,7 +78,6 @@ export function renderClearAnimation(
 ): boolean {
   const now = Date.now()
   const elapsed = now - animation.startTime
-  const overallProgress = Math.min(elapsed / animation.duration, 1)
 
   const { maxRotation, maxRise, initialScale, finalScale, effectLabelRise } = CLEAR_ANIMATION
   const { boardOffsetX, boardOffsetY, cellSize } = layout
@@ -164,14 +163,19 @@ export function renderClearAnimation(
     }
 
     // ブロック点ポップ表示（全ブロック）
-    if (cell.blockPoint !== undefined && cell.blockPoint > 0 && cellProgress > 0 && cellProgress < 1) {
-      const popProgress = Math.min(1, cellProgress / 0.15)
-      const popScale = popProgress < 1
-        ? 1 + (1 - popProgress) * 0.3  // 1.3→1.0
+    const bpDuration = CLEAR_ANIMATION.blockPointPopDuration
+    if (cell.blockPoint !== undefined && cell.blockPoint > 0 && cellElapsed > 0 && cellElapsed < bpDuration) {
+      const bpProgress = cellElapsed / bpDuration
+
+      // ポップイン(最初60ms) → 表示維持 → フェードアウト(最後30%)
+      const popInMs = 60
+      const popInProgress = Math.min(1, cellElapsed / popInMs)
+      const popScale = popInProgress < 1
+        ? 1 + (1 - popInProgress) * 0.3  // 1.3→1.0
         : 1.0
-      const pointAlpha = cellProgress < 0.7
+      const pointAlpha = bpProgress < 0.7
         ? 1.0
-        : 1.0 - (cellProgress - 0.7) / 0.3
+        : 1.0 - (bpProgress - 0.7) / 0.3
 
       ctx.save()
       ctx.globalAlpha = pointAlpha
@@ -182,7 +186,10 @@ export function renderClearAnimation(
       ctx.shadowBlur = 4
       ctx.fillStyle = '#88CCFF'
 
-      const pointY = cellY + cellSize / 2 - effectLabelRise * eased * 0.6
+      // 上昇は最初のperCellDuration中のみ（セル消去アニメに連動）
+      const riseProgress = Math.min(cellElapsed / perCellDuration, 1)
+      const riseEased = 1 - Math.pow(1 - riseProgress, 3)
+      const pointY = cellY + cellSize / 2 - effectLabelRise * riseEased * 0.6
       ctx.translate(cellX + cellSize / 2, pointY)
       ctx.scale(popScale, popScale)
       const pointText = Number.isInteger(cell.blockPoint)
@@ -239,12 +246,18 @@ export function renderClearAnimation(
     }
   }
 
-  // ラインポイントポップがある場合、最後のポップ完了まで待つ
+  // ブロック点・ラインポイントポップの完了まで待つ
+  const lastCellDelay = animation.cells.length > 0
+    ? Math.max(...animation.cells.map(c => c.delay ?? 0))
+    : 0
+  const blockPointEnd = lastCellDelay + CLEAR_ANIMATION.blockPointPopDuration
+
+  let linePointEnd = 0
   if (animation.linePoints && animation.linePoints.length > 0) {
     const lastCompletionTime = Math.max(...animation.linePoints.map(lp => lp.completionTime))
-    const totalWithPop = lastCompletionTime + CLEAR_ANIMATION.linePointPopDuration
-    return elapsed >= totalWithPop
+    linePointEnd = lastCompletionTime + CLEAR_ANIMATION.linePointPopDuration
   }
 
-  return overallProgress >= 1
+  const totalRequired = Math.max(animation.duration, blockPointEnd, linePointEnd)
+  return elapsed >= totalRequired
 }

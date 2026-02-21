@@ -90,6 +90,16 @@ function getEffectsFromBoardCell(
         })
       }
     }
+
+    if (cell.blockBlessing) {
+      const blessingDef = getBlessingDefinition(cell.blockBlessing)
+      if (blessingDef) {
+        effects.push({
+          name: blessingDef.name,
+          description: blessingDef.description,
+        })
+      }
+    }
   }
 
   // バフは空セルでも表示（消去後もセルに残る永続効果）
@@ -190,11 +200,6 @@ function hitTestSlots(
   return []
 }
 
-/** ショップアイテムボックスのセル数（ヘキソミノ最大6x6 + 余白で7） */
-const SHOP_BOX_CELLS = 7
-/** ショップアイテムボックスの価格表示用追加高さ */
-const SHOP_BOX_PRICE_HEIGHT = 30
-
 /**
  * ショップ領域のヒットテスト
  * 座標計算はshopRenderer.tsのrenderShop/renderBlockShopItem/renderPieceShapeと同一
@@ -204,21 +209,30 @@ function hitTestShop(
   shopState: ShopState,
   layout: CanvasLayout
 ): EffectInfo[] {
-  const { canvasWidth, canvasHeight, cellSize } = layout
+  const { canvasWidth, canvasHeight } = layout
   const centerX = canvasWidth / 2
   const centerY = canvasHeight / 2
 
-  const shopCellSize = cellSize * SHOP_STYLE.cellSizeRatio
+  const { relicBoxWidth, relicBoxHeight, relicRowOffsetY } = SHOP_STYLE
 
-  // shopRenderer.tsと同じボックスサイズ計算
-  const boxWidth = SHOP_BOX_CELLS * shopCellSize + SHOP_STYLE.itemBoxPadding * 2
-  const boxHeight = SHOP_BOX_CELLS * shopCellSize + SHOP_STYLE.itemBoxPadding * 2 + SHOP_BOX_PRICE_HEIGHT
+  // ブロック行はレリックと同じボックスサイズ
+  const boxWidth = relicBoxWidth
+  const boxHeight = relicBoxHeight
+
+  // ボックス内のcellSize算出（shopRenderer.tsと同一）
+  const maxCellW = boxWidth / 7
+  const maxCellH = (boxHeight - 40) / 6
+  const shopCellSize = Math.min(maxCellW, maxCellH)
+
+  // レリック行Y → ブロック行Y（shopRenderer.tsと同一）
+  const relicRowY = centerY + SHOP_STYLE.itemsOffsetY - relicBoxHeight / 2
+  const blockRowY = relicRowY + relicBoxHeight + relicRowOffsetY
 
   // shopRenderer.tsと同じレイアウト計算（ブロックアイテムのみをフィルタ）
   const blockItems = shopState.items.filter(isBlockShopItem)
   const blockTotalWidth = boxWidth * blockItems.length + SHOP_STYLE.itemBoxGap * (blockItems.length - 1)
   const startX = centerX - blockTotalWidth / 2
-  const boxY = centerY + SHOP_STYLE.itemsOffsetY - boxHeight / 2
+  const boxY = blockRowY
 
   // フィルタ後のインデックスで座標計算
   for (let blockIndex = 0; blockIndex < blockItems.length; blockIndex++) {
@@ -319,28 +333,20 @@ function hitTestShopRelics(
   shopState: ShopState,
   layout: CanvasLayout
 ): EffectInfo[] {
-  const { canvasWidth, canvasHeight, cellSize } = layout
+  const { canvasWidth, canvasHeight } = layout
   const centerX = canvasWidth / 2
   const centerY = canvasHeight / 2
-
-  const shopCellSize = cellSize * SHOP_STYLE.cellSizeRatio
-
-  // shopRenderer.tsと同じボックスサイズ計算（ブロック行の高さに必要）
-  const blockBoxHeight = SHOP_BOX_CELLS * shopCellSize + SHOP_STYLE.itemBoxPadding * 2 + SHOP_BOX_PRICE_HEIGHT
 
   // レリックアイテムをフィルタ
   const relicItems = shopState.items.filter(isRelicShopItem)
 
   if (relicItems.length === 0) return []
 
-  // ブロック行の配置（レリック行の基準位置計算に必要）
-  const blockBoxY = centerY + SHOP_STYLE.itemsOffsetY - blockBoxHeight / 2
-
-  // レリック行の配置
-  const { relicBoxWidth, relicBoxHeight, relicRowOffsetY } = SHOP_STYLE
+  // レリック行の配置（上段 - shopRenderer.tsと同一）
+  const { relicBoxWidth, relicBoxHeight } = SHOP_STYLE
   const relicTotalWidth = relicBoxWidth * relicItems.length + SHOP_STYLE.itemBoxGap * (relicItems.length - 1)
   const relicStartX = centerX - relicTotalWidth / 2
-  const relicBoxY = blockBoxY + blockBoxHeight + relicRowOffsetY
+  const relicBoxY = centerY + SHOP_STYLE.itemsOffsetY - relicBoxHeight / 2
 
   // レリック商品のヒットテスト
   for (let i = 0; i < relicItems.length; i++) {

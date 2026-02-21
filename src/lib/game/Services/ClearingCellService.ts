@@ -149,8 +149,22 @@ export function calculateLineCompletionTimes(
 }
 
 /**
+ * ライン内セルのstagger間隔を計算する
+ * 最後の2セルのdelay差から算出。セルが1つ以下の場合はfallbackを返す
+ */
+function calculateLineStagger(
+  lineCells: readonly ClearingCell[],
+  fallback: number
+): number {
+  if (lineCells.length < 2) return fallback
+  const delays = lineCells.map(c => c.delay ?? 0).sort((a, b) => a - b)
+  return delays[delays.length - 1] - delays[delays.length - 2]
+}
+
+/**
  * 各ラインの列点ポップ表示データを生成する
- * 各ラインが消え終わるタイミングで「+1」ポップを表示するためのデータ
+ * ブロック点カスケードの延長線上に列点ポップが出るよう、
+ * 最後のブロック開始 + staggerDelay のタイミングで表示する
  */
 export function createLinePointDisplays(
   sortedCells: readonly ClearingCell[],
@@ -161,32 +175,26 @@ export function createLinePointDisplays(
 
   // 列（columns）ごとに完了時刻を計算
   for (const col of completedLines.columns) {
-    let maxDelay = 0
-    for (const cell of sortedCells) {
-      if (cell.col === col && (cell.delay ?? 0) > maxDelay) {
-        maxDelay = cell.delay ?? 0
-      }
-    }
+    const lineCells = sortedCells.filter(c => c.col === col)
+    const maxDelay = Math.max(0, ...lineCells.map(c => c.delay ?? 0))
+    const stagger = calculateLineStagger(lineCells, perCellDuration)
     displays.push({
       type: 'col',
       index: col,
-      completionTime: maxDelay + perCellDuration,
+      completionTime: maxDelay + stagger,
       point: 1,
     })
   }
 
   // 行（rows）ごとに完了時刻を計算
   for (const row of completedLines.rows) {
-    let maxDelay = 0
-    for (const cell of sortedCells) {
-      if (cell.row === row && (cell.delay ?? 0) > maxDelay) {
-        maxDelay = cell.delay ?? 0
-      }
-    }
+    const lineCells = sortedCells.filter(c => c.row === row)
+    const maxDelay = Math.max(0, ...lineCells.map(c => c.delay ?? 0))
+    const stagger = calculateLineStagger(lineCells, perCellDuration)
     displays.push({
       type: 'row',
       index: row,
-      completionTime: maxDelay + perCellDuration,
+      completionTime: maxDelay + stagger,
       point: 1,
     })
   }

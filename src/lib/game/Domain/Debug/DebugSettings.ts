@@ -13,7 +13,7 @@ export interface DebugSettings {
 
 /** デバッグ設定のデフォルト値 */
 export const DEFAULT_DEBUG_SETTINGS: DebugSettings = {
-  patternProbability: 30,
-  sealProbability: 20,
-  blessingProbability: 15,
+  patternProbability: 75,
+  sealProbability: 3,
+  blessingProbability: 3,
 }
