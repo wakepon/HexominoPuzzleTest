@@ -532,6 +532,7 @@ function renderRelicShopItem(
   ctx.font = `${SHOP_STYLE.relicIconSize}px Arial, sans-serif`
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
+  ctx.fillStyle = '#FFFFFF'
   ctx.fillText(def.icon, boxX + boxWidth / 2, boxY + 40)
   ctx.restore()
 
@@ -630,6 +631,7 @@ function renderAmuletShopItem(
   ctx.font = `${SHOP_STYLE.relicIconSize}px Arial, sans-serif`
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
+  ctx.fillStyle = '#FFFFFF'
   ctx.fillText(item.icon, boxX + boxWidth / 2, boxY + 40)
   ctx.restore()
 
@@ -785,6 +787,7 @@ function renderSellMode(
     ctx.font = `${sellModeIconSize}px Arial, sans-serif`
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
+    ctx.fillStyle = '#FFFFFF'
     ctx.fillText(def.icon, boxX + sellModeRelicBoxWidth / 2, boxY + 35)
 
     // 名前
