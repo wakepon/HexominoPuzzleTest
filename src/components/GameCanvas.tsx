@@ -50,6 +50,7 @@ interface GameCanvasProps {
   onClearAnimationEnd: () => void
   onRelicActivationAnimationEnd: () => void
   onAdvanceScoreStep: () => void
+  onEndScoreAnimation: () => void
   onSetFastForward: (isFastForward: boolean) => void
   onAdvanceRound: () => void
   onReset: () => void
@@ -101,6 +102,7 @@ export function GameCanvas({
   onClearAnimationEnd,
   onRelicActivationAnimationEnd,
   onAdvanceScoreStep,
+  onEndScoreAnimation,
   onSetFastForward,
   onAdvanceRound,
   onReset,
@@ -505,15 +507,32 @@ export function GameCanvas({
       if (!anim || !anim.isAnimating) return
 
       const now = Date.now()
-      const currentStep = anim.steps[anim.currentStepIndex]
-      const stepDuration = currentStep?.duration
-        ? (anim.isFastForward ? SCORE_ANIMATION.countFastForwardDuration : currentStep.duration)
-        : (anim.isFastForward ? SCORE_ANIMATION.fastForwardDuration : anim.stepDuration)
 
-      // ステップ時間経過で次のステップへ
-      const elapsed = now - anim.stepStartTime
-      if (elapsed >= stepDuration) {
-        onAdvanceScoreStep()
+      if (anim.isTransferring) {
+        // 転送フェーズ: 保持 + 減少で完了
+        const holdDuration = anim.isFastForward
+          ? SCORE_ANIMATION.transferFastForwardHoldDuration
+          : SCORE_ANIMATION.transferHoldDuration
+        const animDuration = anim.isFastForward
+          ? SCORE_ANIMATION.transferFastForwardDuration
+          : SCORE_ANIMATION.transferDuration
+        const elapsed = now - anim.transferStartTime
+        if (elapsed >= holdDuration + animDuration) {
+          onEndScoreAnimation()
+          return
+        }
+      } else {
+        // 式ステップフェーズ
+        const currentStep = anim.steps[anim.currentStepIndex]
+        const stepDuration = currentStep?.duration
+          ? (anim.isFastForward ? SCORE_ANIMATION.countFastForwardDuration : currentStep.duration)
+          : (anim.isFastForward ? SCORE_ANIMATION.fastForwardDuration : anim.stepDuration)
+
+        // ステップ時間経過で次のステップへ
+        const elapsed = now - anim.stepStartTime
+        if (elapsed >= stepDuration) {
+          onAdvanceScoreStep()
+        }
       }
 
       render()
@@ -525,7 +544,7 @@ export function GameCanvas({
     return () => {
       cancelAnimationFrame(animationId)
     }
-  }, [state.scoreAnimation?.isAnimating, state.scoreAnimation?.currentStepIndex, state.scoreAnimation?.isFastForward, render, onAdvanceScoreStep])
+  }, [state.scoreAnimation?.isAnimating, state.scoreAnimation?.isTransferring, state.scoreAnimation?.currentStepIndex, state.scoreAnimation?.isFastForward, render, onAdvanceScoreStep, onEndScoreAnimation])
 
 
   // キーボードイベントリスナー（Shift + 1 でデバッグウィンドウのトグル）

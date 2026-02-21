@@ -284,16 +284,5 @@ export function buildFormulaSteps(
     }
   }
 
-  // === 8. 最終結果 ===
-  steps.push({
-    type: 'result',
-    label: '最終スコア',
-    formula: `+${breakdown.finalScore}`,
-    relicId: null,
-    blockPoints: a,
-    linePoints: effectiveLines,
-    effectCategory: 'result',
-  })
-
   return steps
 }

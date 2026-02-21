@@ -56,6 +56,8 @@ export interface ScoreAnimationState {
   readonly finalScore: number
   readonly scoreGain: number          // 獲得スコア
   readonly startingScore: number      // アニメーション前のスコア
+  readonly isTransferring: boolean    // スコア転送アニメーション中
+  readonly transferStartTime: number  // 転送開始時刻
 }
 
 /**
@@ -69,4 +71,8 @@ export const SCORE_ANIMATION = {
   fadeInDuration: 150,          // フェードイン時間（ms）
   popDuration: 300,             // ポップアニメーション時間（ms）
   postAnimationDelay: 1500,     // アニメーション完了後の遅延時間（ms）
+  transferHoldDuration: 1000,   // C値を保持する時間（ms）
+  transferDuration: 800,        // スコア転送アニメーション時間（ms）
+  transferFastForwardHoldDuration: 200, // 早送り時のC値保持時間（ms）
+  transferFastForwardDuration: 200, // 早送り時のスコア転送時間（ms）
 } as const

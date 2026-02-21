@@ -46,6 +46,7 @@ export function GameContainer() {
         onClearAnimationEnd={actions.endClearAnimation}
         onRelicActivationAnimationEnd={actions.endRelicActivationAnimation}
         onAdvanceScoreStep={actions.advanceScoreStep}
+        onEndScoreAnimation={actions.endScoreAnimation}
         onSetFastForward={actions.setFastForward}
         onAdvanceRound={actions.advanceRound}
         onReset={actions.resetGame}

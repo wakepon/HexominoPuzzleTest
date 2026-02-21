@@ -35,6 +35,34 @@ export function renderScoreAnimation(
 
   const cs = SCORE_COUNTER_STYLE
   const now = Date.now()
+
+  // 転送フェーズ: C値をカウンター上部に描画
+  if (scoreAnimation.isTransferring) {
+    const holdDuration = scoreAnimation.isFastForward
+      ? SCORE_ANIMATION.transferFastForwardHoldDuration
+      : SCORE_ANIMATION.transferHoldDuration
+    const animDuration = scoreAnimation.isFastForward
+      ? SCORE_ANIMATION.transferFastForwardDuration
+      : SCORE_ANIMATION.transferDuration
+    const elapsed = now - scoreAnimation.transferStartTime
+    const animElapsed = Math.max(0, elapsed - holdDuration)
+    const progress = Math.min(1, animElapsed / animDuration)
+    const eased = 1 - Math.pow(1 - progress, 3)  // ease-out cubic
+    const remaining = Math.ceil(scoreAnimation.scoreGain * (1 - eased))
+
+    const labelY = counterArea.y - 8
+    ctx.font = 'bold 26px Arial, sans-serif'
+    ctx.fillStyle = '#FFD700'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'bottom'
+    ctx.shadowColor = '#000000'
+    ctx.shadowBlur = 6
+    ctx.fillText(`${remaining}`, counterArea.x + counterArea.width / 2, labelY)
+
+    ctx.restore()
+    return { fastForwardButton: null }
+  }
+
   const step = scoreAnimation.steps[scoreAnimation.currentStepIndex]
 
   if (!step) {

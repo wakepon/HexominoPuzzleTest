@@ -17,6 +17,30 @@ import type { ButtonArea } from './overlayRenderer'
 import type { Amulet } from '../../lib/game/Domain/Effect/Amulet'
 import { MAX_AMULET_STOCK } from '../../lib/game/Domain/Effect/Amulet'
 
+/**
+ * ease-out cubic イージング
+ */
+function easeOutCubic(progress: number): number {
+  return 1 - Math.pow(1 - progress, 3)
+}
+
+/**
+ * 転送アニメーション中の表示スコアを計算
+ */
+function calculateTransferDisplayScore(anim: ScoreAnimationState): number {
+  const holdDuration = anim.isFastForward
+    ? SCORE_ANIMATION.transferFastForwardHoldDuration
+    : SCORE_ANIMATION.transferHoldDuration
+  const animDuration = anim.isFastForward
+    ? SCORE_ANIMATION.transferFastForwardDuration
+    : SCORE_ANIMATION.transferDuration
+  const elapsed = Date.now() - anim.transferStartTime
+  const animElapsed = Math.max(0, elapsed - holdDuration)
+  const progress = Math.min(1, animElapsed / animDuration)
+  const eased = easeOutCubic(progress)
+  return Math.floor(anim.startingScore + anim.scoreGain * eased)
+}
+
 interface StatusPanelData {
   targetScore: number
   roundScore: number
@@ -213,7 +237,7 @@ function determineRoundScoreColor(
   data: StatusPanelData,
   style: typeof HD_STATUS_PANEL_STYLE
 ): string {
-  const { pendingPhase, scoreAnimation } = data
+  const { pendingPhase, scoreAnimation, targetScore } = data
 
   if (pendingPhase === 'game_over' && scoreAnimation === null) {
     return style.roundScoreFailColor
@@ -223,6 +247,12 @@ function determineRoundScoreColor(
     if (scoreAnimation === null) {
       // アニメーション完了後の遅延中
       return style.roundScoreClearColor
+    }
+
+    if (scoreAnimation.isTransferring) {
+      // 転送中: 表示値が目標以上ならクリア色
+      const displayScore = calculateTransferDisplayScore(scoreAnimation)
+      return displayScore >= targetScore ? style.roundScoreClearColor : style.roundScoreColor
     }
 
     // 式ステップ表示中
@@ -274,16 +304,22 @@ export function renderStatusPanel(
   ctx.fillText('ラウンドスコア', padding, y)
   y += style.roundScoreLabelFontSize + itemGap
 
+  // 転送アニメーション中はスコアを補間表示
+  let displayScore = data.roundScore
+  if (data.scoreAnimation?.isTransferring) {
+    displayScore = calculateTransferDisplayScore(data.scoreAnimation)
+  }
+
   ctx.font = `${style.fontWeight} ${style.roundScoreFontSize}px ${style.fontFamily}`
   ctx.fillStyle = determineRoundScoreColor(data, style)
-  ctx.fillText(`${data.roundScore}点`, padding, y)
+  ctx.fillText(`${displayScore}点`, padding, y)
   y += style.roundScoreFontSize
   const formulaY = y
 
-  // カウンター領域
+  // カウンター領域（C表示用のスペースを上部に確保）
   const counterArea: CounterArea = {
     x: padding,
-    y: formulaY + 4,
+    y: formulaY + 36,
     width: HD_LAYOUT.leftPanelWidth - padding * 2,
     height: SCORE_COUNTER_STYLE.counterHeight,
   }
@@ -291,7 +327,7 @@ export function renderStatusPanel(
   // A × B カウンター描画
   drawScoreCounter(ctx, data, counterArea)
 
-  y += groupGap + 60
+  y += groupGap + 92
 
   // === ゴールドセクション ===
   ctx.font = `${style.fontWeight} ${style.goldFontSize}px ${style.fontFamily}`

@@ -223,6 +223,8 @@ function createScoreAnimation(
     finalScore: scoreBreakdown.finalScore,
     scoreGain: scoreBreakdown.finalScore,
     startingScore: currentScore,
+    isTransferring: false,
+    transferStartTime: 0,
   }
 }
 
@@ -1168,12 +1170,18 @@ function gameReducerInner(state: GameState, action: GameAction): GameState {
 
     case 'ANIMATION/ADVANCE_SCORE_STEP': {
       if (!state.scoreAnimation?.isAnimating) return state
+      // 転送フェーズ中は進行しない（転送完了はEND_SCOREで処理）
+      if (state.scoreAnimation.isTransferring) return state
       const nextIndex = state.scoreAnimation.currentStepIndex + 1
       if (nextIndex >= state.scoreAnimation.steps.length) {
-        // 全ステップ完了 → アニメーション終了
+        // 全ステップ完了 → 転送フェーズへ移行
         return {
           ...state,
-          scoreAnimation: null,
+          scoreAnimation: {
+            ...state.scoreAnimation,
+            isTransferring: true,
+            transferStartTime: Date.now(),
+          },
         }
       }
       const nextStep = state.scoreAnimation.steps[nextIndex]
