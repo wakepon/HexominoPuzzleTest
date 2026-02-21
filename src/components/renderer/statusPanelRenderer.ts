@@ -8,7 +8,7 @@
  */
 
 import type { CanvasLayout, RoundInfo } from '../../lib/game/types'
-import { HD_LAYOUT, HD_STATUS_PANEL_STYLE, ROUND_CONFIG, DECK_BUTTON_STYLE } from '../../lib/game/Data/Constants'
+import { HD_LAYOUT, HD_STATUS_PANEL_STYLE, ROUND_CONFIG, DECK_BUTTON_STYLE, SCORE_COUNTER_STYLE } from '../../lib/game/Data/Constants'
 import { getBaseReward } from '../../lib/game/Services/RoundService'
 import { SCORE_ANIMATION } from '../../lib/game/Domain/Animation/ScoreAnimationState'
 import type { ScoreAnimationState } from '../../lib/game/Domain/Animation/ScoreAnimationState'
@@ -39,12 +39,168 @@ export interface AmuletSlotArea extends ButtonArea {
 }
 
 /**
+ * カウンター領域情報
+ */
+export interface CounterArea {
+  readonly x: number
+  readonly y: number
+  readonly width: number
+  readonly height: number
+}
+
+/**
  * ステータスパネルの描画結果
  */
 export interface StatusPanelRenderResult {
   deckButtonArea: ButtonArea
   formulaY: number
+  counterArea: CounterArea
   amuletSlotAreas: AmuletSlotArea[]
+}
+
+/**
+ * カウンター値を描画するヘルパー
+ */
+function drawCounterValue(
+  ctx: CanvasRenderingContext2D,
+  value: string,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  bgColor: string,
+  textColor: string,
+  scale: number,
+  alpha: number
+): void {
+  const cs = SCORE_COUNTER_STYLE
+  ctx.save()
+  ctx.globalAlpha = alpha
+
+  // スケールをかける（中心基準）
+  const cx = x + width / 2
+  const cy = y + height / 2
+  ctx.translate(cx, cy)
+  ctx.scale(scale, scale)
+  ctx.translate(-cx, -cy)
+
+  // 背景描画
+  ctx.fillStyle = bgColor
+  ctx.beginPath()
+  ctx.roundRect(x, y, width, height, cs.counterRadius)
+  ctx.fill()
+
+  // テキスト描画
+  ctx.font = `bold ${cs.valueFontSize}px Arial, sans-serif`
+  ctx.fillStyle = textColor
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.shadowColor = '#000000'
+  ctx.shadowBlur = 4
+  ctx.fillText(value, cx, cy)
+
+  ctx.restore()
+}
+
+/**
+ * カウンター表示状態
+ */
+interface CounterDisplayState {
+  readonly blockPts: number
+  readonly linePts: number
+  readonly scaleA: number
+  readonly scaleB: number
+  readonly alpha: number
+}
+
+/**
+ * ポップスケール値を計算（前半で拡大、後半で縮小）
+ */
+function calculatePopScale(progress: number, maxScale: number): number {
+  return progress < 0.5
+    ? 1 + (progress * 2) * (maxScale - 1)
+    : 1 + ((1 - progress) * 2) * (maxScale - 1)
+}
+
+/**
+ * アニメーション状態からカウンター表示値を算出
+ */
+function calculateCounterDisplayState(
+  anim: ScoreAnimationState | null
+): CounterDisplayState {
+  const cs = SCORE_COUNTER_STYLE
+  if (!anim || !anim.isAnimating) {
+    return { blockPts: 0, linePts: 0, scaleA: 1, scaleB: 1, alpha: cs.dimmedAlpha }
+  }
+
+  const step = anim.steps[anim.currentStepIndex]
+  if (!step) {
+    return { blockPts: 0, linePts: 0, scaleA: 1, scaleB: 1, alpha: cs.dimmedAlpha }
+  }
+
+  const elapsed = Date.now() - anim.stepStartTime
+  const popProgress = Math.min(1, elapsed / SCORE_ANIMATION.popDuration)
+  const popValue = calculatePopScale(popProgress, cs.popScale)
+  const popValueMult = calculatePopScale(popProgress, cs.popScaleMult)
+
+  let scaleA = 1.0
+  let scaleB = 1.0
+
+  if (step.effectCategory === 'addA' || step.effectCategory === 'base') scaleA = popValue
+  if (step.effectCategory === 'countA') scaleA = popValue
+  if (step.effectCategory === 'addB') scaleB = popValue
+  if (step.effectCategory === 'countB') scaleB = popValue
+  if (step.effectCategory === 'multB') scaleB = popValueMult
+  if (step.effectCategory === 'result') { scaleA = popValue; scaleB = popValue }
+
+  return { blockPts: step.blockPoints, linePts: step.linePoints, scaleA, scaleB, alpha: 1 }
+}
+
+/**
+ * A × B カウンターを描画
+ */
+function drawScoreCounter(
+  ctx: CanvasRenderingContext2D,
+  data: StatusPanelData,
+  counterArea: CounterArea
+): void {
+  const cs = SCORE_COUNTER_STYLE
+  const ds = calculateCounterDisplayState(data.scoreAnimation)
+
+  const blockStr = formatCounterValue(ds.blockPts)
+  const lineStr = formatCounterValue(ds.linePts)
+
+  const operatorSpace = 40
+  const boxWidth = (counterArea.width - operatorSpace) / 2
+  const boxHeight = cs.counterHeight
+  const boxY = counterArea.y
+  const boxAX = counterArea.x
+
+  drawCounterValue(ctx, blockStr, boxAX, boxY, boxWidth, boxHeight,
+    cs.blockPointBg, cs.blockPointColor, ds.scaleA, ds.alpha)
+
+  // 演算子 ×
+  ctx.save()
+  ctx.globalAlpha = ds.alpha
+  ctx.font = `bold ${cs.operatorFontSize}px Arial, sans-serif`
+  ctx.fillStyle = cs.operatorColor
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.shadowColor = '#000000'
+  ctx.shadowBlur = 3
+  ctx.fillText('×', boxAX + boxWidth + operatorSpace / 2, boxY + boxHeight / 2)
+  ctx.restore()
+
+  const boxBX = boxAX + boxWidth + operatorSpace
+  drawCounterValue(ctx, lineStr, boxBX, boxY, boxWidth, boxHeight,
+    cs.linePointBg, cs.linePointColor, ds.scaleB, ds.alpha)
+}
+
+/**
+ * 数値を表示用にフォーマット
+ */
+function formatCounterValue(n: number): string {
+  return Number.isInteger(n) ? String(n) : n.toFixed(1)
 }
 
 /**
@@ -57,31 +213,19 @@ function determineRoundScoreColor(
   data: StatusPanelData,
   style: typeof HD_STATUS_PANEL_STYLE
 ): string {
-  const { pendingPhase, scoreAnimation, targetScore } = data
+  const { pendingPhase, scoreAnimation } = data
 
   if (pendingPhase === 'game_over' && scoreAnimation === null) {
     return style.roundScoreFailColor
   }
 
   if (pendingPhase === 'round_clear') {
-    if (scoreAnimation?.isCountingUp) {
-      // カウントアップ中: 表示スコアが目標を超えたら赤色
-      const now = Date.now()
-      const countElapsed = now - scoreAnimation.countStartTime
-      const countProgress = Math.min(1, countElapsed / SCORE_ANIMATION.countUpDuration)
-      const eased = 1 - Math.pow(1 - countProgress, 3)
-      const displayScore = Math.floor(
-        scoreAnimation.startingScore + scoreAnimation.scoreGain * eased
-      )
-      return displayScore >= targetScore ? style.roundScoreClearColor : style.roundScoreColor
-    }
-
     if (scoreAnimation === null) {
       // アニメーション完了後の遅延中
       return style.roundScoreClearColor
     }
 
-    // 式ステップ表示中（まだカウントアップに到達していない）
+    // 式ステップ表示中
     return style.roundScoreColor
   }
 
@@ -135,7 +279,19 @@ export function renderStatusPanel(
   ctx.fillText(`${data.roundScore}点`, padding, y)
   y += style.roundScoreFontSize
   const formulaY = y
-  y += groupGap + 40
+
+  // カウンター領域
+  const counterArea: CounterArea = {
+    x: padding,
+    y: formulaY + 4,
+    width: HD_LAYOUT.leftPanelWidth - padding * 2,
+    height: SCORE_COUNTER_STYLE.counterHeight,
+  }
+
+  // A × B カウンター描画
+  drawScoreCounter(ctx, data, counterArea)
+
+  y += groupGap + 60
 
   // === ゴールドセクション ===
   ctx.font = `${style.fontWeight} ${style.goldFontSize}px ${style.fontFamily}`
@@ -260,6 +416,7 @@ export function renderStatusPanel(
       height: btnStyle.height,
     },
     formulaY,
+    counterArea,
     amuletSlotAreas,
   }
 }

@@ -42,6 +42,7 @@ import {
   preserveBuffsOnBoard,
 } from '../../Services/BoardService'
 import { canPlacePiece, canPieceBePlacedAnywhere } from '../../Services/CollisionService'
+import type { CompletedLines } from '../../Services/LineService'
 import {
   findCompletedLines,
   getCellsToRemoveWithFilter,
@@ -91,7 +92,7 @@ import { calculateRelicSellPrice } from '../../Services/ShopPriceCalculator'
 import { getPiecePattern, createPieceWithPattern, createPiece } from '../../Services/PieceService'
 import { DefaultRandom } from '../../Utils/Random'
 import { CLEAR_ANIMATION, RELIC_EFFECT_STYLE, GRID_SIZE, MAX_RELIC_SLOTS } from '../../Data/Constants'
-import { createSequentialClearingCells } from '../../Services/ClearingCellService'
+import { createSequentialClearingCells, calculateLineCompletionTimes } from '../../Services/ClearingCellService'
 import type { Amulet } from '../../Domain/Effect/Amulet'
 import { AMULET_DEFINITIONS, MAX_AMULET_STOCK } from '../../Domain/Effect/Amulet'
 import type { AmuletModalState } from '../../Domain/Effect/AmuletModalState'
@@ -202,9 +203,10 @@ function tryPhoenixRestart(state: GameState): GameState | null {
 function createScoreAnimation(
   scoreBreakdown: ScoreBreakdown,
   relicDisplayOrder: readonly RelicId[],
-  currentScore: number
+  currentScore: number,
+  lineCompletionTimes?: readonly number[]
 ): ScoreAnimationState | null {
-  const steps = buildFormulaSteps(scoreBreakdown, relicDisplayOrder)
+  const steps = buildFormulaSteps(scoreBreakdown, relicDisplayOrder, lineCompletionTimes)
   if (steps.length === 0) {
     // ステップなし（異常系）→ アニメーションスキップ
     return null
@@ -221,8 +223,6 @@ function createScoreAnimation(
     finalScore: scoreBreakdown.finalScore,
     scoreGain: scoreBreakdown.finalScore,
     startingScore: currentScore,
-    isCountingUp: false,
-    countStartTime: 0,
   }
 }
 
@@ -458,7 +458,11 @@ function tryVolcanoActivation(
 
   const rawFilledCells = getAllFilledCells(newBoard)
   if (rawFilledCells.length === 0) return null
-  const { sortedCells: filledCells, totalDuration: volcanoClearDuration } = createSequentialClearingCells(rawFilledCells, newBoard)
+  const volcanoCompletedLines: CompletedLines = {
+    rows: Array.from({ length: GRID_SIZE }, (_, i) => i),
+    columns: Array.from({ length: GRID_SIZE }, (_, i) => i),
+  }
+  const { sortedCells: filledCells, totalDuration: volcanoClearDuration } = createSequentialClearingCells(rawFilledCells, newBoard, volcanoCompletedLines)
 
   // RelicEffectContext を構築（火山は全消去なので全行+全列=12ライン扱い）
   // patternBlockCount/sealBlockCountは calculateScoreBreakdown 内で board から計算されるため、ここでは0初期値
@@ -526,11 +530,15 @@ function tryVolcanoActivation(
     RELIC_EFFECT_STYLE.duration
   )
 
-  // スコアアニメーション
+  // スコアアニメーション（火山は全行+全列消去）
+  const volcanoLineCompletionTimes = calculateLineCompletionTimes(
+    filledCells, volcanoCompletedLines, CLEAR_ANIMATION.perCellDuration
+  )
   const scoreAnim = createScoreAnimation(
     volcanoBreakdown,
     state.player.relicDisplayOrder,
-    state.score
+    state.score,
+    volcanoLineCompletionTimes
   )
 
   return {
@@ -672,11 +680,15 @@ function processPiecePlacement(
     const newPlayer = addGold(state.player, goldGain)
     const newPhase = determinePhase(newScore, state.targetScore, finalDeck.remainingHands)
 
-    // スコアアニメーション作成
+    // スコアアニメーション作成（ライン消去タイミングに同期）
+    const lineCompletionTimes = calculateLineCompletionTimes(
+      cells, completedLines, CLEAR_ANIMATION.perCellDuration
+    )
     const scoreAnim = createScoreAnimation(
       scoreBreakdown,
       state.player.relicDisplayOrder,
-      state.score
+      state.score,
+      lineCompletionTimes
     )
 
     emitScoreCalculated(scoreBreakdown.baseScore, buildScoreBonuses(scoreBreakdown), scoreGain)
@@ -1158,14 +1170,10 @@ function gameReducerInner(state: GameState, action: GameAction): GameState {
       if (!state.scoreAnimation?.isAnimating) return state
       const nextIndex = state.scoreAnimation.currentStepIndex + 1
       if (nextIndex >= state.scoreAnimation.steps.length) {
-        // 全ステップ完了 → カウントアップ開始
+        // 全ステップ完了 → アニメーション終了
         return {
           ...state,
-          scoreAnimation: {
-            ...state.scoreAnimation,
-            isCountingUp: true,
-            countStartTime: Date.now(),
-          },
+          scoreAnimation: null,
         }
       }
       const nextStep = state.scoreAnimation.steps[nextIndex]

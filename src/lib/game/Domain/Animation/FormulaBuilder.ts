@@ -8,6 +8,7 @@
 import type { RelicId } from '../Core/Id'
 import type { ScoreBreakdown } from '../Effect/PatternEffectTypes'
 import type { FormulaStep } from './ScoreAnimationState'
+import { SCORE_ANIMATION } from './ScoreAnimationState'
 import { getRelicModule } from '../Effect/Relics/RelicRegistry'
 import { getRelicDefinition } from '../Effect/Relic'
 
@@ -40,7 +41,8 @@ function buildABFormula(blockPoints: number, linePoints: number): string {
  */
 export function buildFormulaSteps(
   breakdown: ScoreBreakdown,
-  relicDisplayOrder: readonly RelicId[]
+  relicDisplayOrder: readonly RelicId[],
+  lineCompletionTimes?: readonly number[]
 ): FormulaStep[] {
   const steps: FormulaStep[] = []
 
@@ -48,13 +50,40 @@ export function buildFormulaSteps(
   let a = breakdown.baseBlocks
   let b = breakdown.linesCleared
 
-  // === 1. 基本式: (ブロック数) × ライン数 ===
-  steps.push({
-    type: 'base',
-    label: '基本スコア',
-    formula: buildABFormula(a, b),
-    relicId: null,
-  })
+  // === 1. 基本式: ブロック点カウントアップ → 列点カウントアップ ===
+  const countDuration = SCORE_ANIMATION.countStepDuration
+  // ブロック点を1ずつカウントアップ (1→2→...→a)
+  for (let i = 1; i <= a; i++) {
+    steps.push({
+      type: 'base',
+      label: '',
+      formula: buildABFormula(i, 0),
+      relicId: null,
+      blockPoints: i,
+      linePoints: 0,
+      effectCategory: 'countA',
+      duration: countDuration,
+    })
+  }
+  // 列点を1ずつカウントアップ (1→2→...→b)
+  // lineCompletionTimes が指定されている場合、各ラインの消去完了タイミングに同期
+  let cursor = a * countDuration // countA完了時刻をカーソルとして初期化
+  for (let j = 1; j <= b; j++) {
+    const stepDur = (lineCompletionTimes && j <= lineCompletionTimes.length)
+      ? Math.max(countDuration, lineCompletionTimes[j - 1] - cursor)
+      : countDuration as number
+    steps.push({
+      type: 'base',
+      label: '',
+      formula: buildABFormula(a, j),
+      relicId: null,
+      blockPoints: a,
+      linePoints: j,
+      effectCategory: 'countB',
+      duration: stepDur,
+    })
+    cursor += stepDur
+  }
 
   // === 2. パターン効果 → Aが増加 ===
   if (breakdown.enhancedBonus > 0) {
@@ -64,6 +93,9 @@ export function buildFormulaSteps(
       label: 'エンハンスド',
       formula: buildABFormula(a, b),
       relicId: null,
+      blockPoints: a,
+      linePoints: b,
+      effectCategory: 'addA',
     })
   }
 
@@ -74,6 +106,9 @@ export function buildFormulaSteps(
       label: 'チャージ',
       formula: buildABFormula(a, b),
       relicId: null,
+      blockPoints: a,
+      linePoints: b,
+      effectCategory: 'addA',
     })
   }
 
@@ -85,6 +120,9 @@ export function buildFormulaSteps(
       label: `増強 +${formatNum(breakdown.buffEnhancementBonus)}`,
       formula: buildABFormula(a, b),
       relicId: null,
+      blockPoints: a,
+      linePoints: b,
+      effectCategory: 'addA',
     })
   }
 
@@ -97,6 +135,9 @@ export function buildFormulaSteps(
       label: 'マルチシール',
       formula: buildABFormula(a, b),
       relicId: null,
+      blockPoints: a,
+      linePoints: b,
+      effectCategory: 'addA',
     })
   }
 
@@ -115,6 +156,9 @@ export function buildFormulaSteps(
         label: `${label} +${effectValue}`,
         formula: buildABFormula(a, b),
         relicId,
+        blockPoints: a,
+        linePoints: b,
+        effectCategory: 'addA',
       })
     }
 
@@ -129,6 +173,9 @@ export function buildFormulaSteps(
           label: `コピー (${targetName}) +${copyValue}`,
           formula: buildABFormula(a, b),
           relicId: 'copy' as RelicId,
+          blockPoints: a,
+          linePoints: b,
+          effectCategory: 'addA',
         })
       }
     }
@@ -142,6 +189,9 @@ export function buildFormulaSteps(
       label: 'ラッキー ×2!',
       formula: buildABFormula(a, b),
       relicId: null,
+      blockPoints: a,
+      linePoints: b,
+      effectCategory: 'multB',
     })
   }
 
@@ -153,6 +203,9 @@ export function buildFormulaSteps(
       label: `脈動 +${formatNum(breakdown.buffPulsationBonus)}`,
       formula: buildABFormula(a, b),
       relicId: null,
+      blockPoints: a,
+      linePoints: b,
+      effectCategory: 'addB',
     })
   }
 
@@ -171,6 +224,9 @@ export function buildFormulaSteps(
         label: `${label} +${effectValue}列`,
         formula: buildABFormula(a, effectiveLines),
         relicId,
+        blockPoints: a,
+        linePoints: effectiveLines,
+        effectCategory: 'addB',
       })
     }
 
@@ -185,6 +241,9 @@ export function buildFormulaSteps(
           label: `コピー (${targetName}) +${copyValue}列`,
           formula: buildABFormula(a, effectiveLines),
           relicId: 'copy' as RelicId,
+          blockPoints: a,
+          linePoints: effectiveLines,
+          effectCategory: 'addB',
         })
       }
     }
@@ -199,6 +258,9 @@ export function buildFormulaSteps(
         label: `${label} 列点×${formatNum(effectValue)}`,
         formula: `${formatNum(beforeLines)}列 → ${formatNum(effectiveLines)}列`,
         relicId,
+        blockPoints: a,
+        linePoints: effectiveLines,
+        effectCategory: 'multB',
       })
     }
 
@@ -214,6 +276,9 @@ export function buildFormulaSteps(
           label: `コピー (${targetName}) 列点×${formatNum(copyValue)}`,
           formula: `${formatNum(beforeLines)}列 → ${formatNum(effectiveLines)}列`,
           relicId: 'copy' as RelicId,
+          blockPoints: a,
+          linePoints: effectiveLines,
+          effectCategory: 'multB',
         })
       }
     }
@@ -225,6 +290,9 @@ export function buildFormulaSteps(
     label: '最終スコア',
     formula: `+${breakdown.finalScore}`,
     relicId: null,
+    blockPoints: a,
+    linePoints: effectiveLines,
+    effectCategory: 'result',
   })
 
   return steps

@@ -82,6 +82,45 @@ export const HD_LAYOUT = {
   relicAreaHeight: 490,          // レリック置き場の高さ
 }
 
+// Balatro風スコアカウンタースタイル
+export const SCORE_COUNTER_STYLE = {
+  // ブロック点(A)の色
+  blockPointColor: '#4488FF',
+  blockPointBg: 'rgba(30,60,120,0.7)',
+  // 列点(B)の色
+  linePointColor: '#FF4444',
+  linePointBg: 'rgba(120,30,30,0.7)',
+  // 演算子
+  operatorColor: '#FFFFFF',
+  // フォントサイズ
+  valueFontSize: 32,
+  operatorFontSize: 24,
+  labelFontSize: 12,
+  // ポップスケール
+  popScale: 1.3,
+  popScaleMult: 1.5,
+  // 非アニメーション時の透明度
+  dimmedAlpha: 0.3,
+  // 効果ラベルの色
+  effectLabelColors: {
+    addA: '#6699FF',
+    addB: '#FFD700',
+    multB: '#FF4444',
+    base: '#FFFFFF',
+    countA: '#4488FF',
+    countB: '#FF4444',
+    result: '#FFD700',
+  } as Record<string, string>,
+  // カウンター背景
+  counterPadding: 8,
+  counterRadius: 6,
+  counterHeight: 44,
+  // 効果ラベル
+  effectLabelFontSize: 14,
+  effectLabelOffsetY: -22,
+  effectLabelSlideDistance: 8,
+}
+
 // セル描画スタイル
 export const CELL_STYLE = {
   padding: 2,                    // セル内パディング

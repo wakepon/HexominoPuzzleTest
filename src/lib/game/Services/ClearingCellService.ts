@@ -108,3 +108,41 @@ export function createSequentialClearingCells(
 
   return { sortedCells, totalDuration }
 }
+
+/**
+ * 各完成ラインの視覚的消去完了時刻を計算する
+ * 各ラインに属するセルの max(delay) + perCellDuration が完了時刻
+ * @returns 昇順ソートされた完了時刻の配列（ms）
+ */
+export function calculateLineCompletionTimes(
+  sortedCells: readonly ClearingCell[],
+  completedLines: CompletedLines,
+  perCellDuration: number
+): number[] {
+  const lineMaxDelays: number[] = []
+
+  // 列（columns）ごとに所属セルの最大 delay を求める
+  for (const col of completedLines.columns) {
+    let maxDelay = 0
+    for (const cell of sortedCells) {
+      if (cell.col === col && (cell.delay ?? 0) > maxDelay) {
+        maxDelay = cell.delay ?? 0
+      }
+    }
+    lineMaxDelays.push(maxDelay + perCellDuration)
+  }
+
+  // 行（rows）ごとに所属セルの最大 delay を求める
+  for (const row of completedLines.rows) {
+    let maxDelay = 0
+    for (const cell of sortedCells) {
+      if (cell.row === row && (cell.delay ?? 0) > maxDelay) {
+        maxDelay = cell.delay ?? 0
+      }
+    }
+    lineMaxDelays.push(maxDelay + perCellDuration)
+  }
+
+  // 昇順ソート
+  return lineMaxDelays.sort((a, b) => a - b)
+}

@@ -50,7 +50,6 @@ interface GameCanvasProps {
   onClearAnimationEnd: () => void
   onRelicActivationAnimationEnd: () => void
   onAdvanceScoreStep: () => void
-  onEndScoreAnimation: () => void
   onSetFastForward: (isFastForward: boolean) => void
   onAdvanceRound: () => void
   onReset: () => void
@@ -102,7 +101,6 @@ export function GameCanvas({
   onClearAnimationEnd,
   onRelicActivationAnimationEnd,
   onAdvanceScoreStep,
-  onEndScoreAnimation,
   onSetFastForward,
   onAdvanceRound,
   onReset,
@@ -330,7 +328,7 @@ export function GameCanvas({
 
     // スコアアニメーション描画
     if (state.scoreAnimation?.isAnimating && statusPanelResultRef.current) {
-      scoreAnimationResultRef.current = renderScoreAnimation(ctx, state.scoreAnimation, statusPanelResultRef.current.formulaY)
+      scoreAnimationResultRef.current = renderScoreAnimation(ctx, state.scoreAnimation, statusPanelResultRef.current.counterArea)
     } else {
       scoreAnimationResultRef.current = null
     }
@@ -507,21 +505,15 @@ export function GameCanvas({
       if (!anim || !anim.isAnimating) return
 
       const now = Date.now()
-      const stepDuration = anim.isFastForward ? 200 : anim.stepDuration
+      const currentStep = anim.steps[anim.currentStepIndex]
+      const stepDuration = currentStep?.duration
+        ? (anim.isFastForward ? SCORE_ANIMATION.countFastForwardDuration : currentStep.duration)
+        : (anim.isFastForward ? SCORE_ANIMATION.fastForwardDuration : anim.stepDuration)
 
-      if (anim.isCountingUp) {
-        // カウントアップ完了チェック
-        const countElapsed = now - anim.countStartTime
-        if (countElapsed >= 500) {
-          onEndScoreAnimation()
-          return
-        }
-      } else {
-        // ステップ時間経過で次のステップへ
-        const elapsed = now - anim.stepStartTime
-        if (elapsed >= stepDuration) {
-          onAdvanceScoreStep()
-        }
+      // ステップ時間経過で次のステップへ
+      const elapsed = now - anim.stepStartTime
+      if (elapsed >= stepDuration) {
+        onAdvanceScoreStep()
       }
 
       render()
@@ -533,7 +525,7 @@ export function GameCanvas({
     return () => {
       cancelAnimationFrame(animationId)
     }
-  }, [state.scoreAnimation?.isAnimating, state.scoreAnimation?.currentStepIndex, state.scoreAnimation?.isCountingUp, state.scoreAnimation?.isFastForward, render, onAdvanceScoreStep, onEndScoreAnimation])
+  }, [state.scoreAnimation?.isAnimating, state.scoreAnimation?.currentStepIndex, state.scoreAnimation?.isFastForward, render, onAdvanceScoreStep])
 
 
   // キーボードイベントリスナー（Shift + 1 でデバッグウィンドウのトグル）
