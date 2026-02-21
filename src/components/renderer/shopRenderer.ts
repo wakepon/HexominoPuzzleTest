@@ -4,7 +4,6 @@
 
 import type { CanvasLayout, Piece } from '../../lib/game/types'
 import type { ShopState, BlockShopItem, RelicShopItem, AmuletShopItem } from '../../lib/game/Domain/Shop/ShopTypes'
-import type { BlockData, BlockDataMap } from '../../lib/game/Domain/Piece/BlockData'
 import {
   SHOP_STYLE,
   COLORS,
@@ -135,33 +134,6 @@ function wrapText(
   return lines
 }
 
-/**
- * BlockDataMapから効果名（パターン/シール）を取得
- */
-function getEffectLabels(blocks: BlockDataMap): string[] {
-  const blocksArray: BlockData[] = Array.from(blocks.values())
-  const labels: string[] = []
-
-  // パターン名を取得
-  const patternBlock = blocksArray.find((b) => b.pattern)
-  if (patternBlock?.pattern) {
-    const patternDef = getPatternDefinition(patternBlock.pattern)
-    if (patternDef) {
-      labels.push(patternDef.name)
-    }
-  }
-
-  // シール名を取得
-  const sealBlock = blocksArray.find((b) => b.seal)
-  if (sealBlock?.seal) {
-    const sealDef = getSealDefinition(sealBlock.seal)
-    if (sealDef) {
-      labels.push(sealDef.name)
-    }
-  }
-
-  return labels
-}
 
 /**
  * 価格表示を描画（購入済み/セール/購入不可/通常の4パターン）
@@ -465,15 +437,6 @@ function renderBlockShopItem(
   const shapeCenterY = boxY + boxHeight / 2 - SHOP_STYLE.shapeVerticalOffset
   renderPieceShape(ctx, piece, shapeCenterX, shapeCenterY, cellSize)
   ctx.restore()
-
-  // パターン名・シール名を表示
-  const effectLabels = getEffectLabels(piece.blocks)
-  if (effectLabels.length > 0) {
-    ctx.font = `bold 11px Arial, sans-serif`
-    ctx.textAlign = 'center'
-    ctx.fillStyle = '#FFD700'
-    ctx.fillText(effectLabels.join(' / '), boxX + boxWidth / 2, boxY + 20)
-  }
 
   // 価格表示
   const priceY = boxY + boxHeight - SHOP_STYLE.priceVerticalOffset
