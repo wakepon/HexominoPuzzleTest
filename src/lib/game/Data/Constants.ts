@@ -506,6 +506,12 @@ export const BLESSING_SYMBOL_STYLE = {
   fontFamily: 'serif',
 }
 
+// 加護アウトラインスタイル（ブロック上のカラー枠線）
+export const BLESSING_OUTLINE_STYLE = {
+  lineWidth: 2,   // アウトライン太さ
+  inset: 1,       // padding境界からさらに内側のオフセット
+}
+
 // バフ別カラー定義（セル上の永続効果用）
 export const BUFF_COLORS: Record<string, string> = {
   enhancement: '#FF6347',   // 赤系（増強）
@@ -518,6 +524,16 @@ export const BUFF_COLORS: Record<string, string> = {
 export const BUFF_SYMBOL_STYLE = {
   fontSize: 10,
   fontFamily: 'serif',
+}
+
+// バフオーバーレイスタイル（セル上のカラー枠線＋半透明塗り）
+export const BUFF_OVERLAY_STYLE = {
+  outlineWidth: 2,
+  fillAlphaBase: 0.08,       // オーバーレイ塗りの基本alpha
+  fillAlphaPerLevel: 0.04,   // レベルごとの追加alpha
+  outlineAlphaBase: 0.4,     // アウトラインの基本alpha
+  outlineAlphaPerLevel: 0.1, // レベルごとの追加alpha
+  levelFontSizeRatio: 0.18,
 }
 
 // シール別カラー定義

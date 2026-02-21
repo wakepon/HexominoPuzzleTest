@@ -1,10 +1,8 @@
-import { COLORS, CELL_STYLE, PATTERN_COLORS, PATTERN_SYMBOL_STYLE, SEAL_COLORS, SEAL_SYMBOL_STYLE, BLESSING_COLORS, BLESSING_SYMBOL_STYLE, BUFF_COLORS, BUFF_SYMBOL_STYLE } from '../../lib/game/Data/Constants'
+import { COLORS, CELL_STYLE, PATTERN_COLORS, PATTERN_SYMBOL_STYLE, SEAL_COLORS, SEAL_SYMBOL_STYLE, BLESSING_COLORS, BLESSING_OUTLINE_STYLE, BUFF_COLORS, BUFF_OVERLAY_STYLE } from '../../lib/game/Data/Constants'
 import type { PatternId, SealId, BlessingId } from '../../lib/game/Domain/Core/Id'
 import type { BuffType } from '../../lib/game/Domain/Effect/Buff'
 import { getPatternDefinition } from '../../lib/game/Domain/Effect/Pattern'
 import { getSealDefinition } from '../../lib/game/Domain/Effect/Seal'
-import { getBlessingDefinition } from '../../lib/game/Domain/Effect/Blessing'
-import { getBuffDefinition } from '../../lib/game/Domain/Effect/Buff'
 
 /**
  * パターン用のカラーセットを取得
@@ -195,53 +193,36 @@ export function drawWoodenCellWithBorder(
 }
 
 /**
- * ブロック上の加護マークを描画（左上のバッジ）
+ * ブロック上の加護マークを描画（カラーアウトライン）
  */
 export function drawBlessingOnBlock(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
-  _size: number,
+  size: number,
   blessing: BlessingId
 ): void {
-  const blessingDef = getBlessingDefinition(blessing)
-  if (!blessingDef) return
-
-  const { fontSize, fontFamily } = BLESSING_SYMBOL_STYLE
   const blessingColor = BLESSING_COLORS[blessing as string] ?? '#FFFFFF'
+  const { lineWidth, inset } = BLESSING_OUTLINE_STYLE
+  const { padding } = CELL_STYLE
 
+  // padding + inset の位置にアウトライン描画
+  const offset = padding + inset
   ctx.save()
-
-  ctx.font = `bold ${fontSize}px ${fontFamily}`
-  const metrics = ctx.measureText(blessingDef.symbol)
-  const textWidth = metrics.width
-  const textHeight = fontSize
-
-  // 左上に配置
-  const padding = 1
-  const bgWidth = textWidth + padding * 4
-  const bgHeight = textHeight + padding * 2
-  const bgX = x + 2
-  const bgY = y + 2
-
-  // 背景
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.6)'
-  ctx.beginPath()
-  ctx.roundRect(bgX, bgY, bgWidth, bgHeight, 2)
-  ctx.fill()
-
-  // 記号
-  ctx.fillStyle = blessingColor
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
-  ctx.fillText(blessingDef.symbol, bgX + bgWidth / 2, bgY + bgHeight / 2)
-
+  ctx.strokeStyle = blessingColor
+  ctx.lineWidth = lineWidth
+  ctx.strokeRect(
+    x + offset,
+    y + offset,
+    size - offset * 2,
+    size - offset * 2
+  )
   ctx.restore()
 }
 
 /**
  * 空セルのバフインジケーターを描画
- * セルに淡いシンボルを表示（レベルで明るさが変化）
+ * セル全体にカラーオーバーレイ＋アウトライン（レベルで濃さが変化）
  */
 export function drawBuffIndicator(
   ctx: CanvasRenderingContext2D,
@@ -252,34 +233,34 @@ export function drawBuffIndicator(
   level: number,
   isObstacle: boolean = false
 ): void {
-  const buffDef = getBuffDefinition(buff)
-  if (!buffDef) return
-
   const buffColor = BUFF_COLORS[buff] ?? '#FFFFFF'
-  // レベルで明るさ変化: Lv1=0.2, Lv2=0.35, Lv3=0.5
-  const baseAlpha = isObstacle ? 0.1 : 0.15 + level * 0.1
-  const fontSize = Math.max(10, Math.floor(size * 0.3))
+  const { outlineWidth, fillAlphaBase, fillAlphaPerLevel, outlineAlphaBase, outlineAlphaPerLevel, levelFontSizeRatio } = BUFF_OVERLAY_STYLE
+  const { padding } = CELL_STYLE
+
+  const obstacleScale = isObstacle ? 0.5 : 1.0
+  const fillAlpha = (fillAlphaBase + fillAlphaPerLevel * level) * obstacleScale
+  const outlineAlpha = (outlineAlphaBase + outlineAlphaPerLevel * level) * obstacleScale
+
+  const innerX = x + padding
+  const innerY = y + padding
+  const innerSize = size - padding * 2
 
   ctx.save()
 
-  // 背景に淡い色の丸
+  // 半透明オーバーレイ塗り
+  ctx.globalAlpha = fillAlpha
   ctx.fillStyle = buffColor
-  ctx.globalAlpha = baseAlpha * 0.5
-  ctx.beginPath()
-  ctx.arc(x + size / 2, y + size / 2, size * 0.3, 0, Math.PI * 2)
-  ctx.fill()
+  ctx.fillRect(innerX, innerY, innerSize, innerSize)
 
-  // シンボル
-  ctx.globalAlpha = isObstacle ? 0.2 : baseAlpha + 0.1
-  ctx.font = `bold ${fontSize}px ${BUFF_SYMBOL_STYLE.fontFamily}`
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
-  ctx.fillStyle = buffColor
-  ctx.fillText(buffDef.symbol, x + size / 2, y + size / 2)
+  // カラーアウトライン
+  ctx.globalAlpha = outlineAlpha
+  ctx.strokeStyle = buffColor
+  ctx.lineWidth = outlineWidth
+  ctx.strokeRect(innerX, innerY, innerSize, innerSize)
 
-  // レベル表示（右下に小さく）
+  // Lv2以上: 右下にレベル数字
   if (level > 1) {
-    const lvFontSize = Math.max(8, Math.floor(size * 0.18))
+    const lvFontSize = Math.max(8, Math.floor(size * levelFontSizeRatio))
     ctx.globalAlpha = isObstacle ? 0.3 : 0.7
     ctx.font = `bold ${lvFontSize}px Arial, sans-serif`
     ctx.textAlign = 'right'
