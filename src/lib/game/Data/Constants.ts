@@ -143,8 +143,9 @@ export const CLEAR_ANIMATION = {
   finalScale: 0,                 // 最終スケール
   // 効果ラベル表示パラメータ
   effectLabelRise: 40,           // 効果ラベルの上昇距離（px）
-  // 列点ポップ表示パラメータ
-  linePointPopDuration: 300,     // 列点ポップの表示時間（ms）
+  // ポイントポップ表示パラメータ
+  blockPointPopDuration: 900,    // ブロック点ポップの表示時間（ms）
+  linePointPopDuration: 800,     // 列点ポップの表示時間（ms）
 }
 
 // HDレイアウト用ステータスパネルスタイル
