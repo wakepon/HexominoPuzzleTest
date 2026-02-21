@@ -3,6 +3,7 @@
  */
 
 import { ClearingAnimationState, ClearingCell, CanvasLayout } from '../../lib/game/types'
+import { GRID_SIZE } from '../../lib/game/Data/Constants'
 import {
   CLEAR_ANIMATION,
   COLORS,
@@ -161,6 +162,88 @@ export function renderClearAnimation(
       )
       ctx.restore()
     }
+
+    // ブロック点ポップ表示（全ブロック）
+    if (cell.blockPoint !== undefined && cell.blockPoint > 0 && cellProgress > 0 && cellProgress < 1) {
+      const popProgress = Math.min(1, cellProgress / 0.15)
+      const popScale = popProgress < 1
+        ? 1 + (1 - popProgress) * 0.3  // 1.3→1.0
+        : 1.0
+      const pointAlpha = cellProgress < 0.7
+        ? 1.0
+        : 1.0 - (cellProgress - 0.7) / 0.3
+
+      ctx.save()
+      ctx.globalAlpha = pointAlpha
+      ctx.font = 'bold 16px Arial, sans-serif'
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.shadowColor = '#000000'
+      ctx.shadowBlur = 4
+      ctx.fillStyle = '#88CCFF'
+
+      const pointY = cellY + cellSize / 2 - effectLabelRise * eased * 0.6
+      ctx.translate(cellX + cellSize / 2, pointY)
+      ctx.scale(popScale, popScale)
+      const pointText = Number.isInteger(cell.blockPoint)
+        ? `+${cell.blockPoint}`
+        : `+${cell.blockPoint.toFixed(1)}`
+      ctx.fillText(pointText, 0, 0)
+      ctx.restore()
+    }
+  }
+
+  // ライン列点ポップ表示
+  if (animation.linePoints) {
+    const LINE_POINT_POP_DURATION = CLEAR_ANIMATION.linePointPopDuration
+    for (const lp of animation.linePoints) {
+      const lpElapsed = elapsed - lp.completionTime
+      if (lpElapsed < 0 || lpElapsed > LINE_POINT_POP_DURATION) continue
+
+      const lpProgress = lpElapsed / LINE_POINT_POP_DURATION
+
+      // ポップイン(0〜0.15) → 表示維持 → フェードアウト(0.7〜1.0)
+      const popInRatio = 0.15
+      const popScale = lpProgress < popInRatio
+        ? 1 + (1 - lpProgress / popInRatio) * 0.3  // 1.3→1.0
+        : 1.0
+      const lpAlpha = lpProgress < 0.7
+        ? 1.0
+        : 1.0 - (lpProgress - 0.7) / 0.3
+
+      // 表示位置
+      let lpX: number
+      let lpY: number
+      if (lp.type === 'col') {
+        // 列: ボード下端のすぐ下
+        lpX = boardOffsetX + lp.index * cellSize + cellSize / 2
+        lpY = boardOffsetY + GRID_SIZE * cellSize + 8
+      } else {
+        // 行: ボード右端のすぐ右
+        lpX = boardOffsetX + GRID_SIZE * cellSize + 8
+        lpY = boardOffsetY + lp.index * cellSize + cellSize / 2
+      }
+
+      ctx.save()
+      ctx.globalAlpha = lpAlpha
+      ctx.font = 'bold 16px Arial, sans-serif'
+      ctx.textAlign = lp.type === 'col' ? 'center' : 'left'
+      ctx.textBaseline = 'middle'
+      ctx.shadowColor = '#000000'
+      ctx.shadowBlur = 4
+      ctx.fillStyle = '#FF6666'
+      ctx.translate(lpX, lpY)
+      ctx.scale(popScale, popScale)
+      ctx.fillText(`+${lp.point}`, 0, 0)
+      ctx.restore()
+    }
+  }
+
+  // ラインポイントポップがある場合、最後のポップ完了まで待つ
+  if (animation.linePoints && animation.linePoints.length > 0) {
+    const lastCompletionTime = Math.max(...animation.linePoints.map(lp => lp.completionTime))
+    const totalWithPop = lastCompletionTime + CLEAR_ANIMATION.linePointPopDuration
+    return elapsed >= totalWithPop
   }
 
   return overallProgress >= 1

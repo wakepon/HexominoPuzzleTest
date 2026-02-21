@@ -8,7 +8,7 @@
 
 パターンとシールはブロックに特殊効果を付与するシステム。パターンはブロックセット全体に効果を付与し、シールは個別のセルに効果を付与する。同一ブロックセットに両方が付与される場合もある。シールについては [seal-system.md](./seal-system.md) を参照。
 
-## パターン一覧（全9種）
+## パターン一覧（全6種）
 
 ### 強化ブロック (enhanced)
 
@@ -21,7 +21,7 @@
 | 説明 | ブロック点+2 |
 | 効果タイミング | 消去時 |
 
-**効果**: 消去対象セルのうち `enhanced` パターンを持つセルごとに、ブロック点(A)を+2する。multiシール付きの場合はパターン効果が2倍になり+4になる。
+**効果**: 消去対象セルのうち `enhanced` パターンを持つセルごとに、ブロック点(A)を加算する。multiシール付きの場合はパターン効果が2倍になる。
 
 ---
 
@@ -36,52 +36,7 @@
 | 説明 | このブロックが消えると10%の確率で列点x2 |
 | 効果タイミング | 消去時 |
 
-**効果**: 消去対象に `lucky` パターンのセルが1つでも含まれる場合、一定確率（10%）で列点の起点値が2倍になる（luckyMultiplier=2）。当選しなかった場合は倍率1のまま。multiシール付きの場合は2回抽選が行われる。
-
----
-
-### コンボブロック (combo)
-
-| 項目 | 値 |
-|------|-----|
-| type | `combo` |
-| 名前 | コンボブロック |
-| symbol | C |
-| isNegative | false |
-| 説明 | 連続配置でボーナススコア |
-| 効果タイミング | 配置時（スコアへの加算は消去時） |
-
-**効果**: 同時消去されたcomboブロック数nに応じて `2^n - 1` のボーナスがブロック点(A)に加算される（1個→+1、2個→+3、3個→+7）。multiシール付きcomboブロックは2カウントとして扱われる。
-
----
-
-### オーラブロック (aura)
-
-| 項目 | 値 |
-|------|-----|
-| type | `aura` |
-| 名前 | オーラブロック |
-| symbol | ◎ |
-| isNegative | false |
-| 説明 | 隣接するブロックのブロック点+1 |
-| 効果タイミング | 消去時 |
-
-**効果**: 消去対象セルごとに、上下左右に隣接するセルを確認し、別のブロックセットIDを持つ `aura` パターンのセルが1つでも存在すれば乗算対象ブロック数を+1する。1セルあたりの上限は+1（隣接に複数のオーラブロックがあっても+1のまま）。自分と同じブロックセットIDのオーラブロックは対象外（自己強化なし）。multiシール付きの場合はパターン効果が2倍になり+2になる。
-
----
-
-### 苔ブロック (moss)
-
-| 項目 | 値 |
-|------|-----|
-| type | `moss` |
-| 名前 | 苔ブロック |
-| symbol | M |
-| isNegative | false |
-| 説明 | フィールド端と接している辺の数だけスコア加算 |
-| 効果タイミング | 消去時 |
-
-**効果**: 消去対象セルのうち `moss` パターンを持つセルごとに、ボード端と接している辺の数だけ**列点(B)**に加算する（ブロック点ではなく列点に影響）。上端・下端・左端・右端の各1点で最大+4（角のセルの場合）。multiシール付きの場合は加算値が2倍になる。
+**効果**: 消去対象に `lucky` パターンのセルが1つでも含まれる場合、一定確率で列点の起点値が2倍になる（luckyMultiplier=2）。当選しなかった場合は倍率1のまま。multiシール付きの場合は複数回抽選が行われる。
 
 ---
 
@@ -174,7 +129,7 @@
 - パターンとシールの付与判定は独立して行われる（両方付与されることもある）
 - 付与されるパターンの種類はショップ出現可能なものからランダムに均等選択
 
-**ショップ出現可能パターン**: `enhanced`, `lucky`, `aura`, `moss`, `feather`, `nohand`, `charge`（`obstacle` は除外）
+**ショップ出現可能パターン**: `enhanced`, `lucky`, `feather`, `nohand`, `charge`（`obstacle` は除外）
 
 ---
 
@@ -182,11 +137,8 @@
 
 ```
 calculatePatternEffects(board, cellsToRemove):
-    enhancedBonus = cellsToRemove に pattern==='enhanced' のセル数 × 2（multi付きなら×2）
-    auraBonus     = cellsToRemove の各セルについて、
-                    隣接する別 blockSetId の aura セルが存在すれば +1（1セルあたり上限+1、multi付きなら×2）
-    mossBonus     = cellsToRemove に pattern==='moss' のセルの盤面端接触辺数合計（multi付きなら×2）
-    chargeBonus   = cellsToRemove に pattern==='charge' のセルの chargeValue 合計（multi付きなら×2）
+    enhancedBonus = cellsToRemove に pattern==='enhanced' のセル数 × 基準値（multi付きなら2倍）
+    chargeBonus   = cellsToRemove に pattern==='charge' のセルの chargeValue 合計（multi付きなら2倍）
 ```
 
 ### charge 値の蓄積（ピース配置後）
@@ -215,22 +167,21 @@ incrementChargeValues(board, excludeBlockSetId):
 ```
 1. 消去対象セルを収集（filterClearableCells でフィルタリング）
 2. パターン効果を計算
-   - enhancedBonus: enhanced セル × 2（multi付きで×4）→ ブロック点(A)
-   - auraBonus: 隣接別セット aura がある消去セル（multi付きで×2）→ ブロック点(A)
+   - enhancedBonus: enhanced セル数 × 基準値（multi付きで2倍）→ ブロック点(A)
    - chargeBonus: charge セルの chargeValue 合計（multi付きで2倍）→ ブロック点(A)
-   - mossBonus: moss セルの端接触辺数合計（multi付きで2倍）→ 列点(B)
 3. シール効果を計算
    - multiBonus: multi シール数（+1/個）→ ブロック点(A)
-   - arrowBonus: arrow_v/arrow_h 条件一致数 × 10 → ブロック点(A)
-   - sealScoreBonus: score シール数 × 5 → ブロック点(A)
    - goldCount: gold シール数（ゴールド加算用、スコアに影響なし）
-4. totalBlocks = baseBlocks - chargeBlockCount
-              + enhancedBonus + auraBonus + chargeBonus
-              + multiBonus + arrowBonus
-   ※ mossBonus はここに含まれない
-5. ブロック点(A) = totalBlocks + sealScoreBonus + 加算レリック + comboBonus
-6. 列点(B) = linesCleared × luckyMultiplier + mossBonus + 台本加算 × 乗算レリック
-7. 最終スコア = Math.floor(A × B)
+4. バフ効果を計算
+   - buffEnhancementBonus: 増強バフ効果 → ブロック点(A)
+   - buffGoldMineBonus: 金鉱バフ効果 → ゴールド
+   - buffPulsationBonus: 脈動バフ効果 → 列点(B)
+5. totalBlocks = baseBlocks - chargeBlockCount
+              + enhancedBonus + chargeBonus
+              + multiBonus + buffEnhancementBonus
+6. ブロック点(A) = totalBlocks + 加算レリック
+7. 列点(B) = linesCleared × luckyMultiplier + buffPulsationBonus + 台本加算 × 乗算レリック
+8. 最終スコア = Math.floor(A × B)
 ```
 
 ---
@@ -246,6 +197,7 @@ incrementChargeValues(board, excludeBlockSetId):
 
 ## 更新履歴
 
+- 2026-02-20: `combo`, `aura`, `moss` パターンを削除。全6種に更新。バフ効果をスコア計算フローに追加
 - 2026-02-19: pattern-seal-system.md から分離
 - 2026-02-19: マルチシールがパターン効果を2倍化する仕様を明記。各パターンのdescriptionをコードに合わせて更新
 - 2026-02-19: A×B方式（ブロック点×列点）に基づくスコア計算フロー更新。mossBonus→列点(B)、charge蓄積値+1、enhanced/auraのmultiシール効果追記

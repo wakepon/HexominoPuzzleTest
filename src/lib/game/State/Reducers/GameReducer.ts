@@ -42,6 +42,7 @@ import {
   preserveBuffsOnBoard,
 } from '../../Services/BoardService'
 import { canPlacePiece, canPieceBePlacedAnywhere } from '../../Services/CollisionService'
+import type { CompletedLines } from '../../Services/LineService'
 import {
   findCompletedLines,
   getCellsToRemoveWithFilter,
@@ -91,7 +92,7 @@ import { calculateRelicSellPrice } from '../../Services/ShopPriceCalculator'
 import { getPiecePattern, createPieceWithPattern, createPiece } from '../../Services/PieceService'
 import { DefaultRandom } from '../../Utils/Random'
 import { CLEAR_ANIMATION, RELIC_EFFECT_STYLE, GRID_SIZE, MAX_RELIC_SLOTS } from '../../Data/Constants'
-import { createSequentialClearingCells } from '../../Services/ClearingCellService'
+import { createSequentialClearingCells, calculateLineCompletionTimes, enrichCellsWithBlockPoints, createLinePointDisplays } from '../../Services/ClearingCellService'
 import type { Amulet } from '../../Domain/Effect/Amulet'
 import { AMULET_DEFINITIONS, MAX_AMULET_STOCK } from '../../Domain/Effect/Amulet'
 import type { AmuletModalState } from '../../Domain/Effect/AmuletModalState'
@@ -112,6 +113,8 @@ import type { RoundInfo } from '../../Domain/Round/RoundTypes'
 import { generateScriptLines } from '../../Domain/Effect/ScriptRelicState'
 import { GOLDFISH_GOLD_BONUS, GOLDFISH_SCORE_MULTIPLIER } from '../../Domain/Effect/Relics/Goldfish'
 import { MAGNET_CHARGE_INCREMENT } from '../../Domain/Effect/Relics/Magnet'
+import { AMPLIFIED_ENHANCED_BONUS } from '../../Domain/Effect/Relics/Amplifier'
+import { PRISM_MULTI_MULTIPLIER } from '../../Domain/Effect/Relics/Prism'
 
 
 /**
@@ -202,9 +205,10 @@ function tryPhoenixRestart(state: GameState): GameState | null {
 function createScoreAnimation(
   scoreBreakdown: ScoreBreakdown,
   relicDisplayOrder: readonly RelicId[],
-  currentScore: number
+  currentScore: number,
+  lineCompletionTimes?: readonly number[]
 ): ScoreAnimationState | null {
-  const steps = buildFormulaSteps(scoreBreakdown, relicDisplayOrder)
+  const steps = buildFormulaSteps(scoreBreakdown, relicDisplayOrder, lineCompletionTimes)
   if (steps.length === 0) {
     // ステップなし（異常系）→ アニメーションスキップ
     return null
@@ -221,8 +225,8 @@ function createScoreAnimation(
     finalScore: scoreBreakdown.finalScore,
     scoreGain: scoreBreakdown.finalScore,
     startingScore: currentScore,
-    isCountingUp: false,
-    countStartTime: 0,
+    isTransferring: false,
+    transferStartTime: 0,
   }
 }
 
@@ -458,7 +462,18 @@ function tryVolcanoActivation(
 
   const rawFilledCells = getAllFilledCells(newBoard)
   if (rawFilledCells.length === 0) return null
-  const { sortedCells: filledCells, totalDuration: volcanoClearDuration } = createSequentialClearingCells(rawFilledCells, newBoard)
+  const volcanoCompletedLines: CompletedLines = {
+    rows: Array.from({ length: GRID_SIZE }, (_, i) => i),
+    columns: Array.from({ length: GRID_SIZE }, (_, i) => i),
+  }
+  const { sortedCells: sortedFilledCells, totalDuration: volcanoClearDuration } = createSequentialClearingCells(rawFilledCells, newBoard, volcanoCompletedLines)
+
+  // ブロック点を計算して付与
+  const volcanoHasAmplifier = hasRelic(state.player.ownedRelics, 'amplifier')
+  const volcanoHasPrism = hasRelic(state.player.ownedRelics, 'prism')
+  const volcanoEnhancedBonus = volcanoHasAmplifier ? AMPLIFIED_ENHANCED_BONUS : 2
+  const volcanoMultiMultiplier = volcanoHasPrism ? PRISM_MULTI_MULTIPLIER : 2
+  const filledCells = enrichCellsWithBlockPoints(sortedFilledCells, newBoard, volcanoEnhancedBonus, volcanoMultiMultiplier)
 
   // RelicEffectContext を構築（火山は全消去なので全行+全列=12ライン扱い）
   // patternBlockCount/sealBlockCountは calculateScoreBreakdown 内で board から計算されるため、ここでは0初期値
@@ -511,6 +526,7 @@ function tryVolcanoActivation(
     startTime: Date.now(),
     duration: volcanoClearDuration,
     perCellDuration: CLEAR_ANIMATION.perCellDuration,
+    linePoints: createLinePointDisplays(filledCells, volcanoCompletedLines, CLEAR_ANIMATION.perCellDuration),
   }
 
   // レリック発動アニメーション（火山 + 他の発動レリック）
@@ -526,11 +542,15 @@ function tryVolcanoActivation(
     RELIC_EFFECT_STYLE.duration
   )
 
-  // スコアアニメーション
+  // スコアアニメーション（火山は全行+全列消去）
+  const volcanoLineCompletionTimes = calculateLineCompletionTimes(
+    filledCells, volcanoCompletedLines, CLEAR_ANIMATION.perCellDuration
+  )
   const scoreAnim = createScoreAnimation(
     volcanoBreakdown,
     state.player.relicDisplayOrder,
-    state.score
+    state.score,
+    volcanoLineCompletionTimes
   )
 
   return {
@@ -600,7 +620,14 @@ function processPiecePlacement(
   if (totalLines > 0) {
     // 石シールを除いた消去対象セルを取得し、順次消去用にソート＋ディレイ割り当て
     const rawCells = getCellsToRemoveWithFilter(newBoard, completedLines)
-    const { sortedCells: cells, totalDuration: clearDuration } = createSequentialClearingCells(rawCells, newBoard, completedLines)
+    const { sortedCells: sortedCells, totalDuration: clearDuration } = createSequentialClearingCells(rawCells, newBoard, completedLines)
+
+    // ブロック点を計算して付与
+    const hasAmplifier = hasRelic(state.player.ownedRelics, 'amplifier')
+    const hasPrism = hasRelic(state.player.ownedRelics, 'prism')
+    const enhancedBonusPerBlock = hasAmplifier ? AMPLIFIED_ENHANCED_BONUS : 2
+    const multiSealMultiplier = hasPrism ? PRISM_MULTI_MULTIPLIER : 2
+    const cells = enrichCellsWithBlockPoints(sortedCells, newBoard, enhancedBonusPerBlock, multiSealMultiplier)
 
     emitLinesCompleted(
       completedLines.rows,
@@ -672,11 +699,15 @@ function processPiecePlacement(
     const newPlayer = addGold(state.player, goldGain)
     const newPhase = determinePhase(newScore, state.targetScore, finalDeck.remainingHands)
 
-    // スコアアニメーション作成
+    // スコアアニメーション作成（ライン消去タイミングに同期）
+    const lineCompletionTimes = calculateLineCompletionTimes(
+      cells, completedLines, CLEAR_ANIMATION.perCellDuration
+    )
     const scoreAnim = createScoreAnimation(
       scoreBreakdown,
       state.player.relicDisplayOrder,
-      state.score
+      state.score,
+      lineCompletionTimes
     )
 
     emitScoreCalculated(scoreBreakdown.baseScore, buildScoreBonuses(scoreBreakdown), scoreGain)
@@ -730,6 +761,7 @@ function processPiecePlacement(
           startTime: Date.now(),
           duration: clearDuration,
           perCellDuration: CLEAR_ANIMATION.perCellDuration,
+          linePoints: createLinePointDisplays(cells, completedLines, CLEAR_ANIMATION.perCellDuration),
         },
         relicActivationAnimation: relicAnimation,
         scoreAnimation: scoreAnim,
@@ -1156,15 +1188,17 @@ function gameReducerInner(state: GameState, action: GameAction): GameState {
 
     case 'ANIMATION/ADVANCE_SCORE_STEP': {
       if (!state.scoreAnimation?.isAnimating) return state
+      // 転送フェーズ中は進行しない（転送完了はEND_SCOREで処理）
+      if (state.scoreAnimation.isTransferring) return state
       const nextIndex = state.scoreAnimation.currentStepIndex + 1
       if (nextIndex >= state.scoreAnimation.steps.length) {
-        // 全ステップ完了 → カウントアップ開始
+        // 全ステップ完了 → 転送フェーズへ移行
         return {
           ...state,
           scoreAnimation: {
             ...state.scoreAnimation,
-            isCountingUp: true,
-            countStartTime: Date.now(),
+            isTransferring: true,
+            transferStartTime: Date.now(),
           },
         }
       }

@@ -1,5 +1,5 @@
 # アーキテクチャ詳細
-<!-- Updated: 2026-02-20 -->
+<!-- Updated: 2026-02-20T2 -->
 
 ## モジュール依存関係
 
@@ -9,6 +9,7 @@ GameContainer ─→ useGame (dispatch) ─→ GameReducer ─→ Services
      ├→ useCanvasLayout                     ├→ BoardService
      │                                      ├→ LineService ─→ PatternEffectHandler
      └→ GameCanvas ─→ renderer/*            │                  SealEffectHandler
+                                            │                  BlessingEffectHandler
                                             │
                                             ├→ PieceService
                                             ├→ DeckService
@@ -33,7 +34,7 @@ Relics/
 ├── RelicStateDispatcher.ts # 汎用状態更新ディスパッチ（Reducer用）
 ├── index.ts                # レジストリ初期化（全モジュール登録）
 ├── SizeBonusFactory.ts     # サイズボーナス生成（1~6）
-└── *.ts                    # 個別レリック（1ファイル = 1レリック、計46ファイル）
+└── *.ts                    # 個別レリック（1ファイル = 1レリック、計45種）
 ```
 
 **レリック追加手順**: 新規 `Relics/NewRelic.ts` 作成 + `Relics/index.ts` に1行import追加
@@ -165,7 +166,7 @@ calculateTooltipState(mouseX, mouseY, board, layout, ownedRelics, ...): TooltipS
 | ファイル | 主要関数 | 責務 |
 |---------|---------|------|
 | boardRenderer | `renderBoard(ctx, board, layout, clearingCells)` | ボード描画。clearingCells=除外セル |
-| cellRenderer | `drawWoodenCell(ctx, x, y, size, pattern?, seal?, chargeValue?)` | 個別セル描画 |
+| cellRenderer | `drawWoodenCell(ctx, x, y, size, pattern?, seal?, chargeValue?, buff?, buffLevel?)` | 個別セル描画（バフ表示含む） |
 | pieceRenderer | `renderPieceSlots(ctx, slots, layout, dragState)` | スロット内ピース描画 |
 | previewRenderer | `renderPlacementPreview(ctx, board, slots, dragState, layout)` | 配置プレビュー |
 | clearAnimationRenderer | `renderClearAnimation(ctx, animation, layout): boolean` | 消去アニメーション |
@@ -187,15 +188,22 @@ calculateTooltipState(mouseX, mouseY, board, layout, ownedRelics, ...): TooltipS
 ```
 LineService.calculateScoreWithEffects()
   └→ PatternEffectHandler.calculateScoreBreakdown()
-       ├→ calculatePatternEffects()            → パターン効果（enhanced, aura, lucky, combo, moss）
+       ├→ calculatePatternEffects()            → パターン効果（enhanced, charge）
        ├→ SealEffectHandler.calculateSealEffects()
        │    ├→ filterClearableCells()           → 石シール除外
        │    ├→ calculateGoldCount()             → ゴールドシール
-       │    ├→ calculateScoreBonus()            → スコアシール+5
        │    └→ calculateMultiBonus()            → マルチシール×2（prism所持時×3）
+       ├→ BlessingEffectHandler.calculateBuffScoreEffects()
+       │    ├→ enhancement → ブロック点(A)加算（+0.5×LV）
+       │    ├→ gold_mine   → ゴールド加算（LV/4確率で1G）
+       │    └→ pulsation   → 列点(B)加算（+0.2×LV）
        ├→ RelicEffectEngine.evaluateRelicEffects()  → 全レリック発動判定（Registry経由）
        ├→ RelicEffectEngine.evaluateCopyRelicEffect() → コピーレリック評価
        └→ スコア合算（relicEffects Mapから動的に乗算/加算/ライン加算を分類）
+
+LineService (ライン消去後)
+  └→ BlessingEffectHandler.stampBlessingsOnBoard()
+       └→ 消去セルのblockBlessing → blessingToBuffType() → セルのbuff/buffLevel更新
 ```
 
 ### レリック状態更新チェーン（Reducer内）

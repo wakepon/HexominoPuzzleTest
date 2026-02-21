@@ -1,14 +1,14 @@
 /**
- * スコアアニメーション（式ステップ）のCanvas描画
+ * スコアアニメーション（Balatro風）のCanvas描画
  *
- * ステータスパネルのラウンドスコアとゴールドの間に式を描画する。
- * 各ステップをフェードインで表示し、最終結果を大きく表示。
+ * カウンター上部に効果ラベルをフェードイン表示し、
+ * 最終結果をゴールド文字で大きく表示する。
  */
 
 import type { ScoreAnimationState } from '../../lib/game/Domain/Animation/ScoreAnimationState'
 import { SCORE_ANIMATION } from '../../lib/game/Domain/Animation/ScoreAnimationState'
-import { MULTIPLIER_HIGHLIGHT_COLOR } from '../../lib/game/Data/Constants'
-import { drawTextWithMultiplierHighlight } from './TextHighlightUtils'
+import { SCORE_COUNTER_STYLE } from '../../lib/game/Data/Constants'
+import type { CounterArea } from './statusPanelRenderer'
 
 /** 早送りボタンの領域 */
 export interface FastForwardButtonArea {
@@ -29,12 +29,43 @@ export interface ScoreAnimationRenderResult {
 export function renderScoreAnimation(
   ctx: CanvasRenderingContext2D,
   scoreAnimation: ScoreAnimationState,
-  formulaY: number
+  counterArea: CounterArea
 ): ScoreAnimationRenderResult {
   ctx.save()
 
-  const panelX = 30
+  const cs = SCORE_COUNTER_STYLE
   const now = Date.now()
+
+  // 転送フェーズ: C値をカウンター上部に描画
+  if (scoreAnimation.isTransferring) {
+    const holdDuration = scoreAnimation.isFastForward
+      ? SCORE_ANIMATION.transferFastForwardHoldDuration
+      : SCORE_ANIMATION.transferHoldDuration
+    const animDuration = scoreAnimation.isFastForward
+      ? SCORE_ANIMATION.transferFastForwardDuration
+      : SCORE_ANIMATION.transferDuration
+    const elapsed = now - scoreAnimation.transferStartTime
+    const animElapsed = Math.max(0, elapsed - holdDuration)
+    const progress = Math.min(1, animElapsed / animDuration)
+    const eased = 1 - Math.pow(1 - progress, 3)  // ease-out cubic
+    const remaining = Math.round(scoreAnimation.scoreGain * (1 - eased))
+
+    // 0になったら非表示
+    if (remaining > 0) {
+      const labelY = counterArea.y - 8
+      ctx.font = 'bold 26px Arial, sans-serif'
+      ctx.fillStyle = '#FFD700'
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'bottom'
+      ctx.shadowColor = '#000000'
+      ctx.shadowBlur = 6
+      ctx.fillText(`${remaining}`, counterArea.x + counterArea.width / 2, labelY)
+    }
+
+    ctx.restore()
+    return { fastForwardButton: null }
+  }
+
   const step = scoreAnimation.steps[scoreAnimation.currentStepIndex]
 
   if (!step) {
@@ -46,70 +77,74 @@ export function renderScoreAnimation(
   const elapsed = now - scoreAnimation.stepStartTime
   const fadeProgress = Math.min(1, elapsed / SCORE_ANIMATION.fadeInDuration)
 
-  // カウントアップ中の表示
-  if (scoreAnimation.isCountingUp) {
-    const countElapsed = now - scoreAnimation.countStartTime
-    const countProgress = Math.min(1, countElapsed / SCORE_ANIMATION.countUpDuration)
-    // ease-out cubic
-    const eased = 1 - Math.pow(1 - countProgress, 3)
-    const displayScore = Math.floor(scoreAnimation.startingScore + scoreAnimation.scoreGain * eased)
+  // === 効果ラベルの描画（カウンター上部） ===
+  if (step.effectCategory !== 'base' && step.effectCategory !== 'countA' && step.effectCategory !== 'countB') {
+    ctx.globalAlpha = fadeProgress
 
-    ctx.font = 'bold 24px Arial, sans-serif'
-    ctx.fillStyle = '#FFD700'
-    ctx.textAlign = 'left'
-    ctx.textBaseline = 'top'
-    ctx.shadowColor = '#000000'
-    ctx.shadowBlur = 4
-    ctx.fillText(`+${scoreAnimation.scoreGain} → ${displayScore}点`, panelX, formulaY)
+    // スライドアップ計算
+    const slideProgress = Math.min(1, elapsed / SCORE_ANIMATION.fadeInDuration)
+    const slideOffset = (1 - slideProgress) * cs.effectLabelSlideDistance
 
-    ctx.restore()
-    return { fastForwardButton: null }
+    const labelColor = cs.effectLabelColors[step.effectCategory] ?? '#FFFFFF'
+    const labelY = counterArea.y + cs.effectLabelOffsetY + slideOffset
+
+    if (step.effectCategory === 'result') {
+      // 結果ステップ: 大きなゴールド文字で「+N」
+      ctx.font = `bold 26px Arial, sans-serif`
+      ctx.fillStyle = '#FFD700'
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'bottom'
+      ctx.shadowColor = '#000000'
+      ctx.shadowBlur = 6
+      ctx.fillText(step.formula, counterArea.x + counterArea.width / 2, labelY + 4)
+    } else {
+      // 効果名ラベル
+      ctx.font = `bold ${cs.effectLabelFontSize}px Arial, sans-serif`
+      ctx.fillStyle = labelColor
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'bottom'
+      ctx.shadowColor = '#000000'
+      ctx.shadowBlur = 3
+      ctx.fillText(step.label, counterArea.x + counterArea.width / 2, labelY)
+    }
+
+    ctx.globalAlpha = 1.0
   }
 
-  // 式ステップの描画
-  ctx.globalAlpha = fadeProgress
+  // === 乗算時のグローエフェクト ===
+  if (step.effectCategory === 'multB') {
+    const glowProgress = Math.min(1, elapsed / SCORE_ANIMATION.popDuration)
+    const glowAlpha = glowProgress < 0.5
+      ? glowProgress * 2 * 0.4
+      : (1 - glowProgress) * 2 * 0.4
 
-  if (step.type === 'result') {
-    // 最終結果: 大きく金色で表示
-    ctx.font = 'bold 28px Arial, sans-serif'
-    ctx.fillStyle = '#FFD700'
-    ctx.textAlign = 'left'
-    ctx.textBaseline = 'top'
-    ctx.shadowColor = '#000000'
-    ctx.shadowBlur = 6
-    ctx.fillText(step.formula, panelX, formulaY)
-  } else {
-    // ラベル
-    ctx.font = 'bold 13px Arial, sans-serif'
-    ctx.textAlign = 'left'
-    ctx.textBaseline = 'top'
-    ctx.shadowColor = '#000000'
-    ctx.shadowBlur = 2
-    drawTextWithMultiplierHighlight(
-      ctx,
-      step.label,
-      panelX,
-      formulaY,
-      '#AAAAAA',
-      MULTIPLIER_HIGHLIGHT_COLOR
+    // B側のボックス位置を計算
+    const operatorSpace = 40
+    const boxWidth = (counterArea.width - operatorSpace) / 2
+    const boxBX = counterArea.x + boxWidth + operatorSpace
+    const boxBCenterX = boxBX + boxWidth / 2
+    const boxBCenterY = counterArea.y + cs.counterHeight / 2
+
+    ctx.save()
+    ctx.globalAlpha = glowAlpha
+    const gradient = ctx.createRadialGradient(
+      boxBCenterX, boxBCenterY, 0,
+      boxBCenterX, boxBCenterY, boxWidth * 0.8
     )
-
-    // 式文字列
-    const formulaWidth = ctx.measureText(step.formula).width
-    const maxWidth = 300
-    const fontSize = formulaWidth > maxWidth ? Math.floor(16 * maxWidth / formulaWidth) : 16
-    ctx.font = `${fontSize}px Arial, sans-serif`
-    ctx.fillStyle = '#FFFFFF'
-    ctx.fillText(step.formula, panelX, formulaY + 18)
+    gradient.addColorStop(0, 'rgba(255, 68, 68, 0.6)')
+    gradient.addColorStop(1, 'rgba(255, 68, 68, 0)')
+    ctx.fillStyle = gradient
+    ctx.beginPath()
+    ctx.arc(boxBCenterX, boxBCenterY, boxWidth * 0.8, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.restore()
   }
-
-  ctx.globalAlpha = 1.0
 
   // 早送りボタン描画
-  const btnX = panelX + 250
-  const btnY = formulaY
-  const btnW = 40
-  const btnH = 28
+  const btnW = 36
+  const btnH = 26
+  const btnX = counterArea.x + counterArea.width - btnW
+  const btnY = counterArea.y + counterArea.height + 4
 
   ctx.fillStyle = scoreAnimation.isFastForward
     ? 'rgba(255, 215, 0, 0.6)'
@@ -118,7 +153,7 @@ export function renderScoreAnimation(
   ctx.roundRect(btnX, btnY, btnW, btnH, 4)
   ctx.fill()
 
-  ctx.font = '16px Arial, sans-serif'
+  ctx.font = '14px Arial, sans-serif'
   ctx.fillStyle = '#FFFFFF'
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'

@@ -1,39 +1,37 @@
-Codemap Diff Report - 2026-02-20
+Codemap Diff Report - 2026-02-20T2
 ==================================
 
-Trigger: 大量レリック追加（20種→52種）
+Trigger: Blessing/Buff system追加、Pattern/Seal種別整理、DeckState構造変更
 
 ## architecture.md
-- Previous: 217 lines → Updated: 217 lines
-- Diff: ~15% change
+- Previous: 218 lines → Updated: 228 lines
+- Diff: ~8% change
 - Key changes:
-  - Relics/ ディレクトリ説明: 計20ファイル → 計46ファイル + SizeBonusFactory
-  - BoardService: 未使用関数(placePieceShapeOnBoard, getCell)削除反映
-  - RoundService: getMaxPlacements/getDrawCount にownedRelics対応追記
-  - StorageService: hasSavedGame()削除反映
-  - SealEffectHandler: prism対応注釈追加
-  - RelicStateEvent: lines_cleared にpatternBlockCount, clearedPatternTypes追加
-  - hand_consumed にplacedBlockSize追加
-  - 庭師/収集家/筋肉/双子等の新レリック状態更新チェーン追記
+  - BlessingEffectHandler をモジュール依存関係に追加
+  - Relics/ 計46ファイル → 計45種
+  - cellRenderer シグネチャにbuff params追加
+  - Effect処理チェーン更新:
+    - Pattern効果: combo, aura, moss削除 → enhanced, charge のみ
+    - Seal効果: score, arrow_v, arrow_h削除
+    - BlessingEffectHandler.calculateBuffScoreEffects() 追加
+    - stampBlessingsOnBoard() post-clear チェーン追加
 
 ## data.md
-- Previous: 307 lines → Updated: 330 lines
-- Diff: ~55% change (大幅変更)
+- Previous: 387 lines → Updated: 404 lines
+- Diff: ~18% change
 - Key changes:
-  - Relic: 20種 → 52種（+32種追加）
-    - 加算系(additive): +8種 (anchor, featherweight, heavyweight, twin,
-      crown, stamp, compass, gardener, minimalist, furnace, cross, alchemist, snowball)
-    - 乗算系(multiplicative): +9種 (meteor, symmetry, crescent, last_stand,
-      first_strike, patience, muscle, collector, overload, orchestra)
-    - ライン加算系(line_additive): +1種 (gambler)
-    - 非スコア系(none): +14種 (merchant, treasure_hunter, midas, goldfish,
-      extra_draw, extra_hand, recycler, phoenix, amplifier, magnet, prism,
-      compass_rose, jester)
-  - BossCondition: 1種 → 3種 (obstacle, energy_save, two_cards)
-  - RelicContext: 新フィールド5個追加
-  - GameAction: RELIC/RECYCLE_PIECE 追加
-  - Pattern/Seal効果説明: レリック連携情報追記
+  - BlessingId をID型に追加
+  - Cell: buff, buffLevel, blockBlessing フィールド追加
+  - BlockData: blessing フィールド追加
+  - DeckState: 完全に再構造化（cards/allMinos/purchasedPieces/stockSlot）
+  - PieceSlot: used → position フィールド
+  - Pattern: 9種 → 6種（combo, aura, moss 削除）
+  - Seal: 6種 → 3種（score, arrow_v, arrow_h 削除）
+  - NEW: Blessing（加護）4種 セクション追加
+  - NEW: Buff（バフ）4種 セクション追加
+  - ScoreBreakdown: aura/moss/combo/sealScore/arrowBonus削除、buff系3フィールド追加
+  - Relic: compass_rose 削除、45種に更新
+  - DEBUG actions: ADD_RANDOM_EFFECTS 追加
 
 ## Summary
-- Total change: ~35% (data.md の大幅変更が主因)
-- Threshold: 30% exceeded
+- Total change: ~15% (under 30% threshold, auto-approved)

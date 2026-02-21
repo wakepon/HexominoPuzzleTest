@@ -25,8 +25,12 @@ export function renderRoundClear(
   interest: number,
   currentGold: number,
   layout: CanvasLayout
-): void {
-  const { fontSize, subFontSize, color, goldColor, backgroundColor, titleOffsetY, goldTextOffsetY } = ROUND_CLEAR_STYLE
+): ButtonArea {
+  const {
+    fontSize, subFontSize, color, goldColor, backgroundColor,
+    titleOffsetY, goldTextOffsetY,
+    buttonWidth, buttonHeight, buttonColor, buttonTextColor, buttonFontSize, buttonOffsetY
+  } = ROUND_CLEAR_STYLE
 
   ctx.save()
 
@@ -54,7 +58,22 @@ export function renderRoundClear(
     centerY + goldTextOffsetY
   )
 
+  // 「次へ」ボタン
+  const buttonX = centerX - buttonWidth / 2
+  const buttonY = centerY + buttonOffsetY
+
+  ctx.fillStyle = buttonColor
+  ctx.beginPath()
+  ctx.roundRect(buttonX, buttonY, buttonWidth, buttonHeight, 8)
+  ctx.fill()
+
+  ctx.font = `bold ${buttonFontSize}px Arial, sans-serif`
+  ctx.fillStyle = buttonTextColor
+  ctx.fillText('次へ', centerX, buttonY + buttonHeight / 2)
+
   ctx.restore()
+
+  return { x: buttonX, y: buttonY, width: buttonWidth, height: buttonHeight }
 }
 
 /**

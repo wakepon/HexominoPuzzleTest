@@ -18,6 +18,17 @@ export interface ClearingCell {
   readonly seal?: SealId | null
   readonly chargeValue?: number
   readonly blockBlessing?: BlessingId | null
+  readonly blockPoint?: number  // このブロックのブロック点貢献値
+}
+
+/**
+ * ライン消去時の列点ポップ表示データ
+ */
+export interface LinePointDisplay {
+  readonly type: 'row' | 'col'
+  readonly index: number           // 行/列インデックス
+  readonly completionTime: number  // 消去完了タイミング（ms, startTimeからの相対）
+  readonly point: number           // 加算される列点（基本1）
 }
 
 /**
@@ -29,6 +40,7 @@ export interface ClearingAnimationState {
   readonly startTime: number
   readonly duration: number           // 全体の所要時間（スタガード込み）
   readonly perCellDuration: number    // 各セルのアニメーション時間
+  readonly linePoints?: readonly LinePointDisplay[]
 }
 
 /**

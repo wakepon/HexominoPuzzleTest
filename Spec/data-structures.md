@@ -34,14 +34,22 @@ interface Cell {
   readonly blockSetId: BlockSetId | null
   readonly pattern: PatternId | null
   readonly seal: SealId | null
+  readonly chargeValue: number
+  readonly buff: BuffType | null
+  readonly buffLevel: number
+  readonly blockBlessing: BlessingId | null
 }
 ```
 
 **プロパティ:**
 - `filled`: セルが埋まっているかどうか
-- `blockSetId`: 配置されたブロックセットの識別子（オーラ効果判定に使用）
-- `pattern`: パターンID（オーラ、苔、おじゃまブロック等）
-- `seal`: シールID（ゴールド、スコア、石等）
+- `blockSetId`: 配置されたブロックセットの識別子
+- `pattern`: パターンID（強化、ラッキー、羽、ノーハンド、チャージ、おじゃまブロック）
+- `seal`: シールID（ゴールド、マルチ、石）
+- `chargeValue`: チャージパターンの蓄積値
+- `buff`: バフの種類（増強、金鉱、脈動、透過）
+- `buffLevel`: バフのレベル
+- `blockBlessing`: ブロック配置時の加護（消去時にバフとして刻まれる一時フィールド）
 
 **不変性:**
 すべてのプロパティは `readonly` で定義されている。
@@ -226,10 +234,14 @@ interface RelicShopItem {
   readonly onSale: boolean
 }
 
-// 護符商品（追加予定）
+// 護符商品
 interface AmuletShopItem {
   readonly type: 'amulet'
   readonly amuletId: AmuletId
+  readonly amuletType: AmuletType
+  readonly name: string
+  readonly description: string
+  readonly icon: string
   readonly price: number
   readonly originalPrice: number
   readonly purchased: boolean
@@ -239,8 +251,6 @@ interface AmuletShopItem {
 type ShopItem = BlockShopItem | RelicShopItem | AmuletShopItem
 ```
 
-> ※`AmuletShopItem` は未実装。現状は `BlockShopItem | RelicShopItem`。
-
 ### ShopState
 
 ショップ状態。
@@ -248,13 +258,33 @@ type ShopItem = BlockShopItem | RelicShopItem | AmuletShopItem
 ```typescript
 interface ShopState {
   readonly items: readonly ShopItem[]
+  readonly rerollCount: number
+  readonly sellMode: boolean
+  readonly pendingPurchaseIndex: number | null
 }
 ```
 
 **プロパティ:**
-- `items`: 販売中のアイテムリスト（ブロックセット複数 + レリック複数）
+- `items`: 販売中のアイテムリスト（ブロック + レリック + 護符）
+- `rerollCount`: リロール回数（コスト計算用）
+- `sellMode`: 売却モード中かどうか
+- `pendingPurchaseIndex`: 入れ替え購入時の保留商品インデックス
 
-## パターン・シール関連
+## パターン・シール・加護関連
+
+### PatternType
+
+パターンの種類。
+
+```typescript
+type PatternType =
+  | 'enhanced'   // 強化ブロック（ブロック点+2）
+  | 'lucky'      // ラッキーブロック（確率で列点×2）
+  | 'feather'    // 羽ブロック（重ね配置可能）
+  | 'nohand'     // ノーハンドブロック（配置してもハンド消費しない）
+  | 'charge'     // チャージブロック（他ブロック配置でブロック点蓄積）
+  | 'obstacle'   // おじゃまブロック（消去不可、ボス条件）
+```
 
 ### PatternDefinition
 
@@ -262,10 +292,25 @@ interface ShopState {
 
 ```typescript
 interface PatternDefinition {
-  id: string
-  name: string
-  description: string
+  readonly id: PatternId
+  readonly type: PatternType
+  readonly name: string
+  readonly description: string
+  readonly symbol: string
+  readonly isNegative: boolean
+  readonly price: number
 }
+```
+
+### SealType
+
+シールの種類。
+
+```typescript
+type SealType =
+  | 'gold'   // ゴールドシール（消去時+1G）
+  | 'multi'  // マルチシール（2回発動）
+  | 'stone'  // 石（消去不可）
 ```
 
 ### SealDefinition
@@ -274,11 +319,80 @@ interface PatternDefinition {
 
 ```typescript
 interface SealDefinition {
-  id: string
-  name: string
-  description: string
+  readonly id: SealId
+  readonly type: SealType
+  readonly name: string
+  readonly description: string
+  readonly symbol: string
+  readonly preventsClearing: boolean
+  readonly price: number
 }
 ```
+
+### BlessingType
+
+加護の種類。
+
+```typescript
+type BlessingType =
+  | 'power'  // 力の加護（消滅時にセルに+1増強を付与）
+  | 'gold'   // 金の加護（消滅時にセルに+1金鉱を付与）
+  | 'chain'  // 連の加護（消滅時にセルに+1脈動を付与）
+  | 'phase'  // 透の加護（消滅時に確率でセルに透過を付与）
+```
+
+### BlessingDefinition
+
+加護の定義。
+
+```typescript
+interface BlessingDefinition {
+  readonly id: BlessingId
+  readonly type: BlessingType
+  readonly name: string
+  readonly description: string
+  readonly symbol: string
+  readonly maxLevel: number
+  readonly price: number
+}
+```
+
+**加護とバフの関係:**
+- 加護はピース（ブロック）上に付与される
+- ブロック消去時、加護がセルにバフとして刻まれる
+- バフは消去後もセルに残り続ける永続効果
+
+### BuffType
+
+バフの種類。
+
+```typescript
+type BuffType =
+  | 'enhancement'  // 増強（ブロック点+0.5xLv）
+  | 'gold_mine'    // 金鉱（Lv/4確率で1G）
+  | 'pulsation'    // 脈動（ライン点+0.2xLv）
+  | 'phase'        // 透過（重ね配置可能）
+```
+
+### BuffDefinition
+
+バフの定義。
+
+```typescript
+interface BuffDefinition {
+  readonly type: BuffType
+  readonly name: string
+  readonly description: string
+  readonly symbol: string
+  readonly maxLevel: number
+}
+```
+
+**加護とバフのマッピング:**
+- 力の加護 → 増強バフ
+- 金の加護 → 金鉱バフ
+- 連の加護 → 脈動バフ
+- 透の加護 → 透過バフ
 
 ### BlockData
 
@@ -288,8 +402,14 @@ interface SealDefinition {
 interface BlockData {
   readonly pattern: PatternId | null
   readonly seal: SealId | null
+  readonly blessing: BlessingId | null
 }
 ```
+
+**プロパティ:**
+- `pattern`: パターンID（Piece全体で同じ値が設定される）
+- `seal`: シールID（一部のBlockのみに設定される）
+- `blessing`: 加護ID（一部のBlockのみに設定される、消去時にセルにバフとして刻まれる）
 
 **用途:**
 - Piece.blocks（BlockDataMap）の値として使用される
@@ -297,17 +417,79 @@ interface BlockData {
 
 ## レリック関連
 
+### RelicType
+
+レリックの種類。52種のレリックが定義されている。
+
+```typescript
+type RelicType =
+  | 'full_clear_bonus'  // 全消しボーナス
+  | 'size_bonus_1' | 'size_bonus_2' | 'size_bonus_3'
+  | 'size_bonus_4' | 'size_bonus_5' | 'size_bonus_6'  // サイズボーナス
+  | 'chain_master'      // 連鎖の達人
+  | 'single_line'       // シングルライン
+  | 'takenoko'          // タケノコ
+  | 'kani'              // カニ
+  | 'rensha'            // 連射
+  | 'nobi_takenoko'     // のびのびタケノコ
+  | 'nobi_kani'         // のびのびカニ
+  | 'hand_stock'        // 手札ストック
+  | 'script'            // 台本
+  | 'volcano'           // 火山
+  | 'bandaid'           // 絆創膏
+  | 'timing'            // タイミング
+  | 'copy'              // コピー
+  | 'anchor'            // アンカー
+  | 'crown'             // 王冠
+  | 'stamp'             // スタンプ
+  | 'compass'           // コンパス
+  | 'featherweight'     // 軽量級
+  | 'heavyweight'       // 重量級
+  | 'meteor'            // 流星
+  | 'symmetry'          // シンメトリー
+  | 'crescent'          // 三日月
+  | 'last_stand'        // ラストスタンド
+  | 'first_strike'      // 先制攻撃
+  | 'patience'          // 忍耐
+  | 'snowball'          // 雪だるま
+  | 'muscle'            // 筋肉
+  | 'gardener'          // 庭師
+  | 'collector'         // 収集家
+  | 'merchant'          // 商人
+  | 'treasure_hunter'   // トレジャーハンター
+  | 'cross'             // 十字
+  | 'midas'             // ミダス
+  | 'extra_draw'        // 追加ドロー
+  | 'extra_hand'        // 追加ハンド
+  | 'recycler'          // リサイクラー
+  | 'twin'              // 双子
+  | 'minimalist'        // ミニマリスト
+  | 'overload'          // 過負荷
+  | 'alchemist'         // 錬金術師
+  | 'orchestra'         // オーケストラ
+  | 'amplifier'         // アンプリファイア
+  | 'gambler'           // ギャンブラー
+  | 'phoenix'           // 不死鳥
+  | 'goldfish'          // 金魚
+  | 'magnet'            // 磁石
+  | 'prism'             // プリズム
+  | 'furnace'           // 溶鉱炉
+  | 'jester'            // 道化師
+```
+
 ### RelicDefinition
 
 レリックの定義。
 
 ```typescript
 interface RelicDefinition {
-  id: string
-  name: string
-  description: string
-  rarity: RelicRarity
-  price: number
+  readonly id: RelicId
+  readonly type: RelicType
+  readonly name: string
+  readonly description: string
+  readonly rarity: RelicRarity
+  readonly price: number
+  readonly icon: string
 }
 ```
 
@@ -318,8 +500,6 @@ interface RelicDefinition {
 ```typescript
 type RelicRarity = 'common' | 'uncommon' | 'rare' | 'epic'
 ```
-
-> ※現状のコードでは `'common' | 'rare' | 'epic'`。`uncommon` は未追加。
 
 ### PlayerState
 
@@ -346,33 +526,34 @@ interface PlayerState {
 
 ### RelicMultiplierState
 
-倍率系レリックの状態を一元管理する。
+倍率系・状態系レリックの状態を一元管理する。
 
 ```typescript
 interface RelicMultiplierState {
-  readonly nobiTakenokoMultiplier: number  // のびのびタケノコ倍率
-  readonly nobiKaniMultiplier: number      // のびのびカニ倍率
-  readonly renshaMultiplier: number        // 連射倍率
-  readonly bandaidCounter: number          // 絆創膏カウンター（発動でリセット）
-  readonly timingCounter: number           // タイミングカウンター
-  readonly timingBonusActive: boolean      // タイミングボーナス待機中フラグ
-  readonly copyRelicState: CopyRelicState | null  // コピーレリック状態（未所持時はnull）
+  readonly nobiTakenokoMultiplier: number           // のびのびタケノコ倍率
+  readonly nobiKaniMultiplier: number               // のびのびカニ倍率
+  readonly renshaMultiplier: number                 // 連射倍率
+  readonly bandaidCounter: number                   // 絆創膏カウンター
+  readonly anchorHasClearedInRound: boolean         // アンカー: ラウンド中に消去済みか
+  readonly firstStrikeHasClearedInRound: boolean    // 先制攻撃: ラウンド中に消去済みか
+  readonly patienceConsecutiveNonClearHands: number // 忍耐: 連続非消去ハンド数
+  readonly patienceIsCharged: boolean               // 忍耐: チャージ済みか
+  readonly snowballBonus: number                    // 雪だるま: 累積ブロック点ボーナス
+  readonly muscleAccumulatedBonus: number           // 筋肉: 累積列点ボーナス
+  readonly gardenerAccumulatedBonus: number         // 庭師: 累積ブロック点ボーナス
+  readonly collectorCollectedPatterns: readonly string[]  // 収集家: 収集済みパターン種類
+  readonly collectorAccumulatedBonus: number              // 収集家: 累積列点ボーナス
+  readonly recyclerUsesRemaining: number            // リサイクラー: 残り使用回数
+  readonly twinLastPlacedBlockSize: number          // 双子: 直前配置ブロック数
+  readonly copyRelicState: CopyRelicState | null    // コピーレリック状態（未所持時はnull）
 }
 ```
 
-**プロパティ:**
-- `nobiTakenokoMultiplier`: のびのびタケノコレリックの累積倍率（初期値1.0）
-- `nobiKaniMultiplier`: のびのびカニレリックの累積倍率（初期値1.0）
-- `renshaMultiplier`: 連射レリックの累積倍率（初期値1.0）
-- `bandaidCounter`: 絆創膏カウンター（ハンド消費ごとにカウントし、一定回数で発動）
-- `timingCounter`: タイミングカウンター（ハンド消費ごとに増加）
-- `timingBonusActive`: タイミングボーナスが発動待機中かどうか
-- `copyRelicState`: コピーレリック所持時のみ非null
-
 **更新タイミング:**
 - ライン消去時に連射・のびのび系の倍率を更新
-- ハンド消費時に絆創膏・タイミングのカウンターを更新
-- ラウンド開始時にすべてリセット
+- ハンド消費時に絆創膏カウンターを更新
+- 各レリックの条件に応じてフラグ・カウンターを更新
+- ラウンド開始時に一部をリセット（雪だるまは永続）
 
 ### CopyRelicState
 
@@ -381,12 +562,20 @@ interface RelicMultiplierState {
 ```typescript
 interface CopyRelicState {
   readonly targetRelicId: RelicId | null
-  readonly timingCounter: number
-  readonly timingBonusActive: boolean
   readonly bandaidCounter: number
   readonly renshaMultiplier: number
   readonly nobiTakenokoMultiplier: number
   readonly nobiKaniMultiplier: number
+  readonly anchorHasClearedInRound: boolean
+  readonly firstStrikeHasClearedInRound: boolean
+  readonly patienceConsecutiveNonClearHands: number
+  readonly patienceIsCharged: boolean
+  readonly snowballBonus: number
+  readonly muscleAccumulatedBonus: number
+  readonly gardenerAccumulatedBonus: number
+  readonly collectorCollectedPatterns: readonly string[]
+  readonly collectorAccumulatedBonus: number
+  readonly twinLastPlacedBlockSize: number
 }
 ```
 
@@ -394,14 +583,18 @@ interface CopyRelicState {
 - `targetRelicId`: コピー対象のレリックID（未設定時はnull）
 - その他: コピー先のレリック動作をシミュレートするための独立カウンター群
 
-## 護符関連（追加予定）
+## 護符関連
 
-### AmuletId
+### AmuletType
 
-護符の識別子。
+護符の種類。
 
 ```typescript
-type AmuletId = 'sculpt' | 'pattern_add' | 'seal_add' | 'vanish'
+type AmuletType =
+  | 'sculpt'       // 形状編集: ピースのブロックを追加/削除
+  | 'pattern_add'  // パターン追加: ランダムなパターンを付与
+  | 'seal_add'     // シール追加: ランダムなシールを付与
+  | 'vanish'       // 消去: デッキからピースを削除
 ```
 
 ### Amulet
@@ -411,7 +604,11 @@ type AmuletId = 'sculpt' | 'pattern_add' | 'seal_add' | 'vanish'
 ```typescript
 interface Amulet {
   readonly id: AmuletId
-  readonly price: number  // 購入時の価格（売却額計算に使用）
+  readonly type: AmuletType
+  readonly name: string
+  readonly description: string
+  readonly icon: string
+  readonly price: number  // 購入時の価格（売却額計算用）
 }
 ```
 
@@ -422,14 +619,40 @@ interface Amulet {
 ```typescript
 interface AmuletDefinition {
   readonly id: AmuletId
-  readonly name: string           // 例: '造形の護符'
+  readonly type: AmuletType
+  readonly name: string
   readonly description: string
-  readonly minPrice: number       // 最低価格
-  readonly maxPrice: number       // 最高価格
+  readonly icon: string
+  readonly minPrice: number
+  readonly maxPrice: number
 }
 ```
 
-> ※護符関連型はすべて未実装。
+**護符の最大ストック数:**
+- 最大2個まで保持可能
+
+### AmuletModalState
+
+護符使用時のモーダル状態。
+
+```typescript
+interface AmuletModalState {
+  readonly amuletType: AmuletType
+  readonly amuletIndex: number
+  readonly step: AmuletModalStep
+  readonly selectedMinoId: MinoId | null
+  readonly editingShape: PieceShape | null
+}
+
+type AmuletModalStep = 'select_piece' | 'sculpt_edit'
+```
+
+**プロパティ:**
+- `amuletType`: 使用中の護符の種類
+- `amuletIndex`: 使用中の護符のストック内インデックス
+- `step`: 現在のステップ（ピース選択 or 形状編集）
+- `selectedMinoId`: 選択されたミノID（sculpt_edit時）
+- `editingShape`: 編集中の形状（sculpt_edit時）
 
 ## 台本レリック関連
 
@@ -482,10 +705,20 @@ interface ClearingCell {
   // 新しいコード用エイリアス
   readonly row: number
   readonly col: number
+  // 順次消去用（オプショナル）
+  readonly delay?: number
+  readonly pattern?: PatternId | null
+  readonly seal?: SealId | null
+  readonly chargeValue?: number
+  readonly blockBlessing?: BlessingId | null
 }
 ```
 
 **注意:** `x`/`y` は後方互換性のために保持。新しいコードでは `row`/`col` を使用推奨。
+
+**オプショナルプロパティ:**
+- `delay`: 順次消去時の遅延時間
+- `pattern`, `seal`, `chargeValue`, `blockBlessing`: セル情報（アニメーション表示用）
 
 ### ClearingAnimationState
 
@@ -497,8 +730,13 @@ interface ClearingAnimationState {
   readonly cells: readonly ClearingCell[]
   readonly startTime: number
   readonly duration: number
+  readonly perCellDuration: number
 }
 ```
+
+**プロパティ:**
+- `duration`: 全体の所要時間（スタガード込み）
+- `perCellDuration`: 各セルのアニメーション時間
 
 ## スコア計算・レリック効果・アニメーション関連
 
@@ -633,9 +871,6 @@ interface GameState {
   // ショップ関連
   readonly shopState: ShopState | null
 
-  // コンボ状態
-  readonly comboCount: number
-
   // レリック倍率状態
   readonly relicMultiplierState: RelicMultiplierState
 
@@ -647,6 +882,7 @@ interface GameState {
 
   // UI状態
   readonly deckViewOpen: boolean
+  readonly amuletModal: AmuletModalState | null
 }
 ```
 
@@ -664,13 +900,13 @@ interface GameState {
 - `roundInfo`: ラウンド詳細情報（タイプ、セット番号、ボス条件等）
 - `score`: 現在ラウンドのスコア（ラウンド開始時にリセット）
 - `targetScore`: 現在ラウンドの目標スコア
-- `player`: プレイヤー状態（ゴールド、所持レリック）
+- `player`: プレイヤー状態（ゴールド、所持レリック、護符ストック）
 - `shopState`: ショップ状態（shoppingフェーズでのみ非null）
-- `comboCount`: コンボカウント（コンボパターン効果用）
-- `relicMultiplierState`: 倍率系レリックの累積状態
+- `relicMultiplierState`: 倍率系・状態系レリックの累積状態
 - `scriptRelicLines`: 台本レリックが指定した2本のライン（所持時のみ非null）
 - `volcanoEligible`: 火山レリックの発動条件（ラウンド中にライン消去がなければtrue）
 - `deckViewOpen`: デッキビューが開かれているかどうか
+- `amuletModal`: 護符モーダル状態（護符使用中のみ非null）
 
 **不変性:**
 すべてのプロパティは `readonly` で定義されている。
@@ -741,7 +977,17 @@ interface CanvasLayout {
 ```
 GameState
 ├── Board (Cell[][]）
+│   └── Cell
+│       ├── pattern: PatternId | null
+│       ├── seal: SealId | null
+│       ├── buff: BuffType | null
+│       ├── buffLevel: number
+│       └── blockBlessing: BlessingId | null
 ├── PieceSlot[] → Piece → BlockDataMap (BlockData)
+│   └── BlockData
+│       ├── pattern: PatternId | null
+│       ├── seal: SealId | null
+│       └── blessing: BlessingId | null
 ├── DeckState
 │   ├── cards: MinoId[]
 │   ├── purchasedPieces: Map<MinoId, Piece>
@@ -749,10 +995,10 @@ GameState
 │   └── stockSlot2: Piece | null
 ├── PlayerState
 │   ├── gold, earnedGold
-│   ├── ownedRelics: RelicId[]     // 最大5枠（予定）
+│   ├── ownedRelics: RelicId[]
 │   ├── relicDisplayOrder: RelicId[]
-│   └── amuletStock: Amulet[]     // 最大2個（追加予定）
-├── RelicMultiplierState
+│   └── amuletStock: Amulet[]  // 最大2個
+├── RelicMultiplierState (52種レリックの状態管理)
 │   └── copyRelicState: CopyRelicState | null
 ├── scriptRelicLines: ScriptRelicLines | null
 │   ├── target1: ScriptLineTarget
@@ -763,8 +1009,9 @@ GameState
 │   └── activatedRelics: ActivatedRelicInfo[]
 ├── ScoreAnimationState | null
 │   └── steps: FormulaStep[]
-└── ShopState | null
-    └── items: ShopItem[] (BlockShopItem | RelicShopItem | AmuletShopItem)
+├── ShopState | null
+│   └── items: ShopItem[] (BlockShopItem | RelicShopItem | AmuletShopItem)
+└── amuletModal: AmuletModalState | null
 ```
 
 ## データフロー
@@ -800,26 +1047,46 @@ GameState (新しい状態)
 
 ```typescript
 interface TooltipState {
-  readonly isVisible: boolean
-  readonly content: TooltipContent | null
-  readonly position: Position | null
+  readonly visible: boolean
+  readonly x: number
+  readonly y: number
+  readonly effects: readonly EffectInfo[]
 }
 
-interface TooltipContent {
+interface EffectInfo {
   readonly name: string
   readonly description: string
-  readonly effects?: readonly string[]
+  readonly rarity?: RelicRarity
+}
+```
+
+### DebugSettings
+
+デバッグ設定（ショップでのパターン/シール/加護付与確率を調整）。
+
+```typescript
+interface DebugSettings {
+  readonly patternProbability: number    // パターン付与確率 (0-100%)
+  readonly sealProbability: number       // シール付与確率 (0-100%)
+  readonly blessingProbability: number   // 加護付与確率 (0-100%)
 }
 ```
 
 ## 関連ファイル
 
 - `src/lib/game/Domain/GameState.ts` - GameState定義
-- `src/lib/game/Domain/Board/` - ボード関連型
-- `src/lib/game/Domain/Piece/` - ピース関連型
+- `src/lib/game/Domain/Board/Cell.ts` - Cell型定義
+- `src/lib/game/Domain/Piece/BlockData.ts` - BlockData型定義
 - `src/lib/game/Domain/Deck/DeckState.ts` - デッキ関連型
-- `src/lib/game/Domain/Shop/` - ショップ関連型
+- `src/lib/game/Domain/Shop/ShopTypes.ts` - ショップ関連型
+- `src/lib/game/Domain/Effect/Pattern.ts` - パターン定義
+- `src/lib/game/Domain/Effect/Seal.ts` - シール定義
+- `src/lib/game/Domain/Effect/Blessing.ts` - 加護定義
+- `src/lib/game/Domain/Effect/Buff.ts` - バフ定義
+- `src/lib/game/Domain/Effect/Relic.ts` - レリック定義（52種）
 - `src/lib/game/Domain/Effect/RelicState.ts` - レリック状態型（RelicMultiplierState, CopyRelicState）
+- `src/lib/game/Domain/Effect/Amulet.ts` - 護符定義
+- `src/lib/game/Domain/Effect/AmuletModalState.ts` - 護符モーダル状態型
 - `src/lib/game/Domain/Effect/RelicEffectTypes.ts` - レリック効果型
 - `src/lib/game/Domain/Effect/PatternEffectTypes.ts` - パターン・スコア計算型
 - `src/lib/game/Domain/Effect/SealEffectTypes.ts` - シール効果型
@@ -828,6 +1095,8 @@ interface TooltipContent {
 - `src/lib/game/Domain/Player/PlayerState.ts` - プレイヤー関連型
 - `src/lib/game/Domain/Animation/AnimationState.ts` - アニメーション状態型
 - `src/lib/game/Domain/Animation/ScoreAnimationState.ts` - スコアアニメーション状態型
+- `src/lib/game/Domain/Tooltip/TooltipState.ts` - ツールチップ状態型
+- `src/lib/game/Domain/Debug/DebugSettings.ts` - デバッグ設定型
 - `src/lib/game/State/Actions/GameActions.ts` - アクション型定義
 - `src/lib/game/Data/MinoDefinitions.ts` - ミノ定義
 
@@ -847,3 +1116,20 @@ interface TooltipContent {
   - 新規型を追加: RelicMultiplierState, CopyRelicState, ScriptRelicLines, ScriptLineTarget
   - 型の関連図を追加
   - 効果計算型（PatternEffectResult, ScoreBreakdown, RelicEffectResult, ScoreAnimationState等）を data-structures-effect-types.md に分割
+- 2026-02-20: 加護・バフシステム追加とレリック拡充を反映
+  - Cell: chargeValue, buff, buffLevel, blockBlessing を追加
+  - BlockData: blessing プロパティを追加
+  - パターン・シール型を大幅に更新（PatternType, SealType, 削除されたパターン/シールを反映）
+  - 加護・バフ関連型を追加（BlessingType, BlessingDefinition, BuffType, BuffDefinition）
+  - RelicType を52種に拡充（40種以上の新レリック追加）
+  - RelicMultiplierState を拡張（新レリック用のカウンター・フラグ追加）
+  - CopyRelicState を拡張（コピー対象レリック用の独立カウンター追加）
+  - 護符関連型を実装（AmuletType, Amulet, AmuletDefinition, AmuletModalState）
+  - AmuletShopItem を実装
+  - ShopState: rerollCount, sellMode, pendingPurchaseIndex を追加
+  - GameState: amuletModal を追加
+  - ClearingCell: 順次消去用オプショナルプロパティを追加
+  - ClearingAnimationState: perCellDuration を追加
+  - TooltipState を更新（EffectInfo型を追加）
+  - DebugSettings を追加
+  - 型の関連図を更新
