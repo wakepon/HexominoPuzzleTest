@@ -12,8 +12,6 @@ import {
   PATTERN_SYMBOL_STYLE,
   SEAL_COLORS,
   SEAL_SYMBOL_STYLE,
-  BLESSING_COLORS,
-  BLESSING_SYMBOL_STYLE,
   RARITY_COLORS,
 } from '../../lib/game/Data/Constants'
 import type { RelicId } from '../../lib/game/Domain/Core/Id'
@@ -23,9 +21,9 @@ import { isBlockShopItem, isRelicShopItem, isAmuletShopItem } from '../../lib/ga
 import { MAX_AMULET_STOCK } from '../../lib/game/Domain/Effect/Amulet'
 import { getPatternDefinition } from '../../lib/game/Domain/Effect/Pattern'
 import { getSealDefinition } from '../../lib/game/Domain/Effect/Seal'
-import { getBlessingDefinition } from '../../lib/game/Domain/Effect/Blessing'
 import { getRelicDefinition, RELIC_DEFINITIONS } from '../../lib/game/Domain/Effect/Relic'
 import { BlockDataMapUtils } from '../../lib/game/Domain/Piece/BlockData'
+import { drawBlessingOnBlock } from './cellRenderer'
 import { ButtonArea } from './overlayRenderer'
 
 /**
@@ -357,39 +355,10 @@ function renderPieceShape(
         }
       }
 
-      // 加護記号を描画（左上）
+      // 加護アウトラインを描画
       const blessing = blockData?.blessing ?? null
       if (blessing) {
-        const blessingDef = getBlessingDefinition(blessing)
-        if (blessingDef) {
-          const smallFontSize = Math.max(6, Math.floor(size * 0.3))
-          const blessingColor = BLESSING_COLORS[blessing as string] ?? '#FFFFFF'
-
-          ctx.save()
-          ctx.font = `bold ${smallFontSize}px ${BLESSING_SYMBOL_STYLE.fontFamily}`
-          const bMetrics = ctx.measureText(blessingDef.symbol)
-          const bTextWidth = bMetrics.width
-          const bTextHeight = smallFontSize
-          const bgPadding = 1
-
-          const bgWidth = bTextWidth + bgPadding * 4
-          const bgHeight = bTextHeight + bgPadding * 2
-          const bgX = x + 2
-          const bgY = y + 2
-
-          // 背景
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.6)'
-          ctx.beginPath()
-          ctx.roundRect(bgX, bgY, bgWidth, bgHeight, 2)
-          ctx.fill()
-
-          // 記号
-          ctx.fillStyle = blessingColor
-          ctx.textAlign = 'center'
-          ctx.textBaseline = 'middle'
-          ctx.fillText(blessingDef.symbol, bgX + bgWidth / 2, bgY + bgHeight / 2)
-          ctx.restore()
-        }
+        drawBlessingOnBlock(ctx, x, y, size, blessing)
       }
     }
   }
