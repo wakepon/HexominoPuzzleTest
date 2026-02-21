@@ -206,15 +206,12 @@ function renderPriceDisplay(
     ctx.fillStyle = affordable ? SHOP_STYLE.saleColor : SHOP_STYLE.priceDisabledColor
     ctx.fillText(`${price}G`, centerX, salePriceY)
   } else if (!affordable) {
-    // 購入不可時: 打ち消し線
-    renderStrikethroughText(
-      ctx,
-      `${price}G`,
-      centerX,
-      priceY,
-      SHOP_STYLE.priceDisabledColor,
-      fontSize
-    )
+    // 購入不可時: グレー表示のみ（打ち消し線なし）
+    ctx.font = `bold ${fontSize}px Arial, sans-serif`
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillStyle = SHOP_STYLE.priceDisabledColor
+    ctx.fillText(`${price}G`, centerX, priceY)
   } else {
     // 通常価格
     ctx.font = `bold ${fontSize}px Arial, sans-serif`
@@ -540,6 +537,8 @@ function renderRelicShopItem(
 
   // レリック名
   ctx.font = `bold 14px Arial, sans-serif`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
   ctx.fillStyle = '#FFD700'
   ctx.fillText(def.name, boxX + boxWidth / 2, boxY + 75)
 
@@ -672,6 +671,34 @@ function renderAmuletShopItem(
     SHOP_STYLE.priceFontSize,
     { original: -8, sale: 6 }
   )
+}
+
+/**
+ * セクション枠を描画（角丸の半透明背景 + 枠線）
+ */
+function renderSectionFrame(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  borderColor: string,
+  bgColor: string
+): void {
+  const { sectionBorderRadius, sectionBorderWidth } = SHOP_STYLE
+
+  // 背景
+  ctx.fillStyle = bgColor
+  ctx.beginPath()
+  ctx.roundRect(x, y, width, height, sectionBorderRadius)
+  ctx.fill()
+
+  // 枠線
+  ctx.strokeStyle = borderColor
+  ctx.lineWidth = sectionBorderWidth
+  ctx.beginPath()
+  ctx.roundRect(x, y, width, height, sectionBorderRadius)
+  ctx.stroke()
 }
 
 /**
@@ -936,6 +963,18 @@ export function renderShop(
     const topTotalWidth = relicBoxWidth * topRowItems.length + itemBoxGap * (topRowItems.length - 1)
     const topStartX = centerX - topTotalWidth / 2
 
+    // レリック/護符セクション枠
+    const { sectionPadding } = SHOP_STYLE
+    renderSectionFrame(
+      ctx,
+      topStartX - sectionPadding,
+      relicRowY - sectionPadding,
+      topTotalWidth + sectionPadding * 2,
+      relicBoxH + sectionPadding * 2,
+      SHOP_STYLE.relicSectionBorderColor,
+      SHOP_STYLE.relicSectionBgColor
+    )
+
     topRowItems.forEach((item, idx) => {
       const boxX = topStartX + idx * (relicBoxWidth + itemBoxGap)
       const originalIndex = shopState.items.indexOf(item)
@@ -987,6 +1026,20 @@ export function renderShop(
 
   const blockTotalWidth = boxWidth * blockItems.length + itemBoxGap * (blockItems.length - 1)
   const blockStartX = centerX - blockTotalWidth / 2
+
+  // ブロックセクション枠
+  if (blockItems.length > 0) {
+    const { sectionPadding } = SHOP_STYLE
+    renderSectionFrame(
+      ctx,
+      blockStartX - sectionPadding,
+      blockRowY - sectionPadding,
+      blockTotalWidth + sectionPadding * 2,
+      boxHeight + sectionPadding * 2,
+      SHOP_STYLE.pieceSectionBorderColor,
+      SHOP_STYLE.pieceSectionBgColor
+    )
+  }
 
   blockItems.forEach((item, blockIndex) => {
     const boxX = blockStartX + blockIndex * (boxWidth + itemBoxGap)

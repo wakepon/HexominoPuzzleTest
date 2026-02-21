@@ -290,16 +290,26 @@ export const SHOP_STYLE = {
   leaveButtonFontSize: 20,
   leaveButtonGap: 30,             // 商品とボタンの間隔
   titleOffsetY: -250,
-  itemsOffsetY: -135,
+  itemsOffsetY: -120,
   goldDisplayOffsetY: -280,
   shapeVerticalOffset: 15,      // ミノ形状の垂直オフセット
   priceVerticalOffset: 20,      // 価格表示の下からのオフセット
   // レリック行（ブロック行の下）
-  relicRowOffsetY: 15,          // 行間のオフセット
+  relicRowOffsetY: 30,          // 行間のオフセット
   relicBoxWidth: 180,
   relicBoxHeight: 170,
   relicIconSize: 48,
   relicDescFontSize: 11,
+  // セクション枠
+  sectionPadding: 12,
+  sectionBorderRadius: 8,
+  sectionBorderWidth: 2,
+  // レリックセクション
+  relicSectionBorderColor: '#8B7355',
+  relicSectionBgColor: 'rgba(210, 180, 140, 0.1)',
+  // ピースセクション
+  pieceSectionBorderColor: '#6B5344',
+  pieceSectionBgColor: 'rgba(139, 115, 85, 0.1)',
   // セール表示
   saleColor: '#FF4444',               // セール価格の色（赤）
   saleBadgeColor: '#FF0000',          // SALEバッジ背景色
