@@ -3,10 +3,11 @@
  * セルをソートし、スタガードディレイを割り当てる
  */
 
-import type { ClearingCell } from '../Domain/Animation/AnimationState'
+import type { ClearingCell, LinePointDisplay } from '../Domain/Animation/AnimationState'
 import type { Board } from '../Domain/Board/Board'
+import type { SealId } from '../Domain/Core/Id'
 import type { CompletedLines } from './LineService'
-import { CLEAR_ANIMATION } from '../Data/Constants'
+import { CLEAR_ANIMATION, BUFF_ENHANCEMENT_PER_LEVEL } from '../Data/Constants'
 
 /**
  * 従来の (row, col) 昇順ソート
@@ -145,4 +146,100 @@ export function calculateLineCompletionTimes(
 
   // 昇順ソート
   return lineMaxDelays.sort((a, b) => a - b)
+}
+
+/**
+ * 各ラインの列点ポップ表示データを生成する
+ * 各ラインが消え終わるタイミングで「+1」ポップを表示するためのデータ
+ */
+export function createLinePointDisplays(
+  sortedCells: readonly ClearingCell[],
+  completedLines: CompletedLines,
+  perCellDuration: number
+): LinePointDisplay[] {
+  const displays: LinePointDisplay[] = []
+
+  // 列（columns）ごとに完了時刻を計算
+  for (const col of completedLines.columns) {
+    let maxDelay = 0
+    for (const cell of sortedCells) {
+      if (cell.col === col && (cell.delay ?? 0) > maxDelay) {
+        maxDelay = cell.delay ?? 0
+      }
+    }
+    displays.push({
+      type: 'col',
+      index: col,
+      completionTime: maxDelay + perCellDuration,
+      point: 1,
+    })
+  }
+
+  // 行（rows）ごとに完了時刻を計算
+  for (const row of completedLines.rows) {
+    let maxDelay = 0
+    for (const cell of sortedCells) {
+      if (cell.row === row && (cell.delay ?? 0) > maxDelay) {
+        maxDelay = cell.delay ?? 0
+      }
+    }
+    displays.push({
+      type: 'row',
+      index: row,
+      completionTime: maxDelay + perCellDuration,
+      point: 1,
+    })
+  }
+
+  return displays
+}
+
+/**
+ * 各セルのブロック点を計算してClearingCellに付与する
+ *
+ * ブロック点計算ルール:
+ * - 通常: 1
+ * - enhanced: 1 + bonusPerBlock
+ * - charge: chargeValue
+ * - multi付き: 上記 × multiSealMultiplier
+ * - 増強バフ: + BUFF_ENHANCEMENT_PER_LEVEL × buffLevel
+ */
+export function enrichCellsWithBlockPoints(
+  cells: readonly ClearingCell[],
+  board: Board,
+  enhancedBonusPerBlock: number,
+  multiSealMultiplier: number
+): readonly ClearingCell[] {
+  return cells.map(cell => {
+    const boardCell = board[cell.row][cell.col]
+    const pattern = cell.pattern ?? boardCell.pattern
+    const seal = cell.seal ?? boardCell.seal
+    const chargeValue = cell.chargeValue ?? boardCell.chargeValue
+
+    // obstacle は表示しない
+    if (pattern === 'obstacle') {
+      return { ...cell, blockPoint: 0 }
+    }
+
+    // base + patternBonus
+    let baseAndBonus: number
+    if (pattern === 'charge') {
+      baseAndBonus = chargeValue
+    } else if (pattern === 'enhanced') {
+      baseAndBonus = 1 + enhancedBonusPerBlock
+    } else {
+      baseAndBonus = 1
+    }
+
+    // multi乗数
+    const multiplier = seal === ('multi' as SealId) ? multiSealMultiplier : 1
+    let blockPoint = baseAndBonus * multiplier
+
+    // 増強バフ加算
+    if (boardCell.buff === 'enhancement' && boardCell.buffLevel > 0) {
+      blockPoint += BUFF_ENHANCEMENT_PER_LEVEL * boardCell.buffLevel
+    }
+
+    return { ...cell, blockPoint }
+  })
 }
