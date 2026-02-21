@@ -113,7 +113,7 @@ export function createPieceWithPattern(
 /**
  * 形状内の有効ブロック位置をリストアップ
  */
-function getFilledPositions(shape: PieceShape): Array<{ row: number; col: number }> {
+export function getFilledPositions(shape: PieceShape): Array<{ row: number; col: number }> {
   const positions: Array<{ row: number; col: number }> = []
   shape.forEach((rowData, row) => {
     rowData.forEach((filled, col) => {

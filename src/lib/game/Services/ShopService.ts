@@ -29,13 +29,9 @@ import { shuffleDeck } from './DeckService'
 import {
   createPiece,
   createPieceWithPattern,
-  createPieceWithSeal,
-  createPieceWithPatternAndSeal,
-  createPieceWithBlessing,
-  createPieceWithPatternAndBlessing,
-  createPieceWithSealAndBlessing,
-  createPieceWithPatternSealAndBlessing,
+  getFilledPositions,
 } from './PieceService'
+import { BlockDataMapUtils } from '../Domain/Piece/BlockData'
 import { SHOP_AVAILABLE_PATTERNS } from '../Domain/Effect/Pattern'
 import { SHOP_AVAILABLE_SEALS } from '../Domain/Effect/Seal'
 import { SHOP_AVAILABLE_BLESSINGS } from '../Domain/Effect/Blessing'
@@ -50,17 +46,17 @@ const MEDIUM_LARGE_CATEGORIES: MinoCategory[] = ['tetromino', 'pentomino', 'hexo
 /**
  * パターン付与確率（ミノサイズに関わらず一律）
  */
-const PATTERN_PROBABILITY = 0.4 // 40%
+const PATTERN_PROBABILITY = 0.75 // 75%
 
 /**
- * シール付与確率（ミノサイズに関わらず一律、パターンとは独立）
+ * シール付与確率（ブロック単位で独立抽選）
  */
-const SEAL_PROBABILITY = 0.25 // 25%
+const SEAL_PROBABILITY = 0.03 // 3%
 
 /**
- * 加護付与確率（パターン・シールとは独立）
+ * 加護付与確率（ブロック単位で独立抽選）
  */
-const BLESSING_PROBABILITY = 0.15 // 15%
+const BLESSING_PROBABILITY = 0.03 // 3%
 
 /**
  * 指定カテゴリ群からランダムにミノ定義を取得
@@ -104,6 +100,7 @@ function pickRandomBlessing(rng: RandomGenerator): BlessingId {
 
 /**
  * ショップ用のPieceを生成（パターン・シール・加護付与判定含む）
+ * パターンはピース単位、シール・加護はブロック単位で独立抽選
  */
 function createShopPiece(
   categories: MinoCategory[],
@@ -112,64 +109,41 @@ function createShopPiece(
 ): Piece {
   const mino = pickRandomMinoFromCategories(categories, rng)
 
-  // パターン・シール・加護の付与判定（各独立）
+  // 確率設定
   const patternProb = override?.pattern ?? PATTERN_PROBABILITY
   const sealProb = override?.seal ?? SEAL_PROBABILITY
   const blessingProb = override?.blessing ?? BLESSING_PROBABILITY
 
+  // 1. パターン判定（ピース単位）
   const addPattern = patternProb > 0 && rng.next() < patternProb
-  const addSeal = sealProb > 0 && rng.next() < sealProb
-  const addBlessing = blessingProb > 0 && rng.next() < blessingProb
+  const piece = addPattern
+    ? createPieceWithPattern(mino, pickRandomPattern(rng))
+    : createPiece(mino)
 
-  // 8パターンで分岐（pattern × seal × blessing）
-  if (addPattern && addSeal && addBlessing) {
-    const pattern = pickRandomPattern(rng)
-    const seal = pickRandomSeal(rng)
-    const blessing = pickRandomBlessing(rng)
-    return createPieceWithPatternSealAndBlessing(mino, pattern, seal, blessing, rng)
+  // 2. 全ブロックを走査し、各ブロックで独立にシール・加護を抽選
+  const positions = getFilledPositions(piece.shape)
+  let blocks = piece.blocks
+
+  for (const pos of positions) {
+    if (sealProb > 0 && rng.next() < sealProb) {
+      blocks = BlockDataMapUtils.setSeal(blocks, pos.row, pos.col, pickRandomSeal(rng))
+    }
+    if (blessingProb > 0 && rng.next() < blessingProb) {
+      blocks = BlockDataMapUtils.setBlessing(blocks, pos.row, pos.col, pickRandomBlessing(rng))
+    }
   }
 
-  if (addPattern && addSeal) {
-    const pattern = pickRandomPattern(rng)
-    const seal = pickRandomSeal(rng)
-    return createPieceWithPatternAndSeal(mino, pattern, seal, rng)
+  return {
+    ...piece,
+    blocks,
   }
-
-  if (addPattern && addBlessing) {
-    const pattern = pickRandomPattern(rng)
-    const blessing = pickRandomBlessing(rng)
-    return createPieceWithPatternAndBlessing(mino, pattern, blessing, rng)
-  }
-
-  if (addSeal && addBlessing) {
-    const seal = pickRandomSeal(rng)
-    const blessing = pickRandomBlessing(rng)
-    return createPieceWithSealAndBlessing(mino, seal, blessing, rng)
-  }
-
-  if (addPattern) {
-    const pattern = pickRandomPattern(rng)
-    return createPieceWithPattern(mino, pattern)
-  }
-
-  if (addSeal) {
-    const seal = pickRandomSeal(rng)
-    return createPieceWithSeal(mino, seal, rng)
-  }
-
-  if (addBlessing) {
-    const blessing = pickRandomBlessing(rng)
-    return createPieceWithBlessing(mino, blessing, rng)
-  }
-
-  return createPiece(mino)
 }
 
 /**
  * ショップアイテムを生成（2種類）
  * - 小中: モノミノ/ドミノ/トリミノ/テトロミノ
  * - 中大: テトロミノ/ペントミノ/ヘキソミノ
- * パターン付与確率は一律40%
+ * パターン付与確率は一律75%、シール/加護はブロック単位5%
  * @param override デバッグ用の確率オーバーライド
  */
 export function generateShopItems(
