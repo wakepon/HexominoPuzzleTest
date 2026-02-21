@@ -90,6 +90,16 @@ function getEffectsFromBoardCell(
         })
       }
     }
+
+    if (cell.blockBlessing) {
+      const blessingDef = getBlessingDefinition(cell.blockBlessing)
+      if (blessingDef) {
+        effects.push({
+          name: blessingDef.name,
+          description: blessingDef.description,
+        })
+      }
+    }
   }
 
   // バフは空セルでも表示（消去後もセルに残る永続効果）
