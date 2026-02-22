@@ -41,11 +41,10 @@ export function getBlessingPrice(blessingId: BlessingId): number {
  * - パターン付きの場合: パターン定義の価格を加算
  * - シール付きの場合: シール定義の価格を加算
  */
+/** ピースの基本価格（セル数によらず一律） */
+const BASE_PIECE_PRICE = 3
+
 export function calculatePiecePrice(piece: Piece): number {
-  const cellCount = piece.shape.reduce(
-    (sum, row) => sum + row.filter(Boolean).length,
-    0
-  )
 
   // イミュータブルにパターン・シール・加護の価格を取得
   const blocksArray = Array.from(piece.blocks.values())
@@ -59,7 +58,7 @@ export function calculatePiecePrice(piece: Piece): number {
   const sealPrice = sealBlock?.seal ? getSealPrice(sealBlock.seal) : 0
   const blessingPrice = blessingBlock?.blessing ? getBlessingPrice(blessingBlock.blessing) : 0
 
-  return cellCount + patternPrice + sealPrice + blessingPrice
+  return BASE_PIECE_PRICE + patternPrice + sealPrice + blessingPrice
 }
 
 /**
