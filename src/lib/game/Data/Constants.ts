@@ -212,8 +212,10 @@ export const DECK_CONFIG = {
 export const ROUND_CONFIG = {
   initialGold: 3,              // 初期ゴールド
   maxRound: 24,                // 最終ラウンド
-  initialTargetScore: 20,      // 初期目標スコア
-  targetScoreIncrement: 10,    // ラウンドごとの目標スコア増加量
+  /** セットごとのベーススコア（8セット分） */
+  setBaseScores: [20, 50, 100, 200, 500, 1000, 2000, 3000] as const,
+  /** ラウンドタイプ別の目標スコア倍率 (Normal / Elite / Boss) */
+  typeMultipliers: [1.0, 1.5, 2.0] as const,
 }
 
 // ラウンドクリア演出

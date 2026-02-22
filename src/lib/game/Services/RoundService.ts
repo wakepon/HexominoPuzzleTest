@@ -19,10 +19,14 @@ import { EXTRA_HAND_BONUS } from '../Domain/Effect/Relics/ExtraHand'
 
 /**
  * 目標スコアを計算
- * 初期: 20, ラウンドごとに+10
+ * セットごとのベーススコア × ラウンドタイプ倍率（Normal×1.0 / Elite×1.5 / Boss×2.0）
  */
 export function calculateTargetScore(round: number): number {
-  return ROUND_CONFIG.initialTargetScore + (round - 1) * ROUND_CONFIG.targetScoreIncrement
+  const setIndex = Math.floor((round - 1) / 3)
+  const positionInSet = (round - 1) % 3
+  const baseScore = ROUND_CONFIG.setBaseScores[setIndex] ?? ROUND_CONFIG.setBaseScores[ROUND_CONFIG.setBaseScores.length - 1]
+  const multiplier = ROUND_CONFIG.typeMultipliers[positionInSet]
+  return Math.floor(baseScore * multiplier)
 }
 
 /**
