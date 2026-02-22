@@ -805,7 +805,7 @@ function renderOwnedRelicIcons(
     if (!def) return
 
     const iconX = startX + index * (ownedRelicIconSize + ownedRelicGap) + ownedRelicIconSize / 2
-    const iconY = y + 22
+    const iconY = y + 42
 
     ctx.font = `${ownedRelicIconSize}px Arial, sans-serif`
     ctx.textAlign = 'center'
@@ -840,6 +840,7 @@ export function renderShop(
     titleOffsetY,
     itemsOffsetY,
     goldDisplayOffsetY,
+    shopLabelOffsetX,
   } = SHOP_STYLE
 
   ctx.save()
@@ -851,12 +852,22 @@ export function renderShop(
   const centerX = layout.canvasWidth / 2
   const centerY = layout.canvasHeight / 2
 
-  // ゴールド表示
+  // ラベル用のX座標（左に寄せる）
+  const labelX = centerX + shopLabelOffsetX
+
+  // タイトル（ショップ）- 上
+  ctx.fillStyle = titleColor
+  ctx.font = `bold ${titleFontSize}px Arial, sans-serif`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText('ショップ', labelX, centerY + titleOffsetY)
+
+  // ゴールド表示 - 下
   ctx.font = `bold ${titleFontSize}px Arial, sans-serif`
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   ctx.fillStyle = '#FFD700'
-  ctx.fillText(`所持金: ${gold}G`, centerX, centerY + goldDisplayOffsetY)
+  ctx.fillText(`所持金: ${gold}G`, labelX, centerY + goldDisplayOffsetY)
 
   // 売却モード/入れ替えモードの場合は専用UIを描画
   if (shopState.sellMode) {
@@ -874,13 +885,6 @@ export function renderShop(
 
   // 所持レリック一覧を描画（通常モード）
   renderOwnedRelicIcons(ctx, ownedRelics, layout)
-
-  // タイトル
-  ctx.fillStyle = titleColor
-  ctx.font = `bold ${titleFontSize}px Arial, sans-serif`
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
-  ctx.fillText('ショップ', centerX, centerY + titleOffsetY)
 
   // ブロック商品とレリック/護符商品を分離
   const blockItems = shopState.items.filter(isBlockShopItem)

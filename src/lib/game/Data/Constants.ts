@@ -296,9 +296,10 @@ export const SHOP_STYLE = {
   leaveButtonTextColor: '#FFFFFF',
   leaveButtonFontSize: 20,
   leaveButtonGap: 30,             // 商品とボタンの間隔
-  titleOffsetY: -250,
+  titleOffsetY: -295,
   itemsOffsetY: -120,
-  goldDisplayOffsetY: -280,
+  goldDisplayOffsetY: -258,
+  shopLabelOffsetX: -280,    // ショップ/所持金ラベルの左方向オフセット
   shapeVerticalOffset: 15,      // ミノ形状の垂直オフセット
   priceVerticalOffset: 20,      // 価格表示の下からのオフセット
   // レリック行（ブロック行の下）
@@ -357,8 +358,8 @@ export const SHOP_STYLE = {
   sellModeInfoFontSize: 18,
   sellModeInfoColor: '#FFFFFF',
   // 所持レリック一覧（ショップ上部）
-  ownedRelicIconSize: 22,
-  ownedRelicGap: 6,
+  ownedRelicIconSize: 48,
+  ownedRelicGap: 10,
   ownedRelicOffsetY: -300,
   ownedRelicCountFontSize: 14,
   ownedRelicCountColor: '#AAAAAA',
