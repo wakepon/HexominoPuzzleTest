@@ -304,10 +304,16 @@ export function renderStatusPanel(
   ctx.fillText('ラウンドスコア', padding, y)
   y += style.roundScoreLabelFontSize + itemGap
 
-  // 転送アニメーション中はスコアを補間表示
+  // スコアアニメーション中は表示スコアを制御
   let displayScore = data.roundScore
-  if (data.scoreAnimation?.isTransferring) {
-    displayScore = calculateTransferDisplayScore(data.scoreAnimation)
+  if (data.scoreAnimation?.isAnimating) {
+    if (data.scoreAnimation.isTransferring) {
+      // 転送中: スコアを補間表示
+      displayScore = calculateTransferDisplayScore(data.scoreAnimation)
+    } else {
+      // 式表示フェーズ: アニメーション前のスコアを表示
+      displayScore = data.scoreAnimation.startingScore
+    }
   }
 
   ctx.font = `${style.fontWeight} ${style.roundScoreFontSize}px ${style.fontFamily}`
