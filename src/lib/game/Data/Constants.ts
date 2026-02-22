@@ -210,27 +210,34 @@ export const DECK_CONFIG = {
 
 // ラウンド設定
 export const ROUND_CONFIG = {
-  initialGold: 5,              // 初期ゴールド
+  initialGold: 3,              // 初期ゴールド
   maxRound: 24,                // 最終ラウンド
-  initialTargetScore: 20,      // 初期目標スコア
-  targetScoreIncrement: 10,    // ラウンドごとの目標スコア増加量
+  /** セットごとのベーススコア（8セット分） */
+  setBaseScores: [20, 50, 100, 200, 500, 1000, 2000, 3000] as const,
+  /** ラウンドタイプ別の目標スコア倍率 (Normal / Elite / Boss) */
+  typeMultipliers: [1.0, 1.5, 2.0] as const,
 }
 
 // ラウンドクリア演出
 export const ROUND_CLEAR_STYLE = {
   fontSize: 36,
-  subFontSize: 24,
+  subFontSize: 18,
   color: '#FFFFFF',
   goldColor: '#FFD700',
+  labelColor: '#CCCCCC',
   backgroundColor: 'rgba(0, 0, 0, 0.7)',
-  titleOffsetY: -50,
-  goldTextOffsetY: -5,
+  titleOffsetY: -90,
+  tableStartY: -35,
+  tableLineHeight: 26,
+  tableWidth: 320,
+  separatorOffsetY: 45,
+  totalOffsetY: 65,
   buttonWidth: 160,
   buttonHeight: 50,
   buttonColor: '#4CAF50',
   buttonTextColor: '#FFFFFF',
   buttonFontSize: 20,
-  buttonOffsetY: 60,
+  buttonOffsetY: 100,
 }
 
 // ゲームオーバー表示

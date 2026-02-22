@@ -35,7 +35,7 @@ export const PATTERN_DEFINITIONS: Record<PatternType, PatternDefinition> = {
   enhanced: {
     id: 'enhanced' as PatternId,
     type: 'enhanced',
-    name: '強化ブロック',
+    name: 'パターン:強化',
     description: 'ブロック点+2',
     symbol: '★',
     isNegative: false,
@@ -44,7 +44,7 @@ export const PATTERN_DEFINITIONS: Record<PatternType, PatternDefinition> = {
   lucky: {
     id: 'lucky' as PatternId,
     type: 'lucky',
-    name: 'ラッキーブロック',
+    name: 'パターン:ラッキー',
     description: 'このブロックが消えると10%の確率で列点x2',
     symbol: '♣',
     isNegative: false,
@@ -53,7 +53,7 @@ export const PATTERN_DEFINITIONS: Record<PatternType, PatternDefinition> = {
   feather: {
     id: 'feather' as PatternId,
     type: 'feather',
-    name: '羽ブロック',
+    name: 'パターン:羽',
     description: '既にブロックがある場所に重ねて配置できる',
     symbol: 'F',
     isNegative: false,
@@ -62,7 +62,7 @@ export const PATTERN_DEFINITIONS: Record<PatternType, PatternDefinition> = {
   nohand: {
     id: 'nohand' as PatternId,
     type: 'nohand',
-    name: 'ノーハンドブロック',
+    name: 'パターン:ノーハンド',
     description: '配置してもハンドを消費しない',
     symbol: 'N',
     isNegative: false,
@@ -71,7 +71,7 @@ export const PATTERN_DEFINITIONS: Record<PatternType, PatternDefinition> = {
   charge: {
     id: 'charge' as PatternId,
     type: 'charge',
-    name: 'チャージブロック',
+    name: 'パターン:チャージ',
     description: '他のブロックが置かれるたび、このブロックのブロック点+1',
     symbol: '⚡',
     isNegative: false,
@@ -80,7 +80,7 @@ export const PATTERN_DEFINITIONS: Record<PatternType, PatternDefinition> = {
   obstacle: {
     id: 'obstacle' as PatternId,
     type: 'obstacle',
-    name: 'おじゃまブロック',
+    name: 'パターン:おじゃま',
     description: '消去できないブロック',
     symbol: '×',
     isNegative: true,

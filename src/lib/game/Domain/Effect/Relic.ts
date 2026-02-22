@@ -95,7 +95,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: '全消しボーナス',
     description: '盤面を全て空にした際に列点×5',
     rarity: 'common',
-    price: 10,
+    price: 6,
     icon: '🏆',
   },
   size_bonus_1: {
@@ -104,7 +104,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: '1サイズボーナス',
     description: '1ブロックのピースでライン消去時、各ブロック点を+1',
     rarity: 'common',
-    price: 10,
+    price: 6,
     icon: '1️⃣',
   },
   size_bonus_2: {
@@ -113,7 +113,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: '2サイズボーナス',
     description: '2ブロックのピースでライン消去時、各ブロック点を+1',
     rarity: 'common',
-    price: 10,
+    price: 6,
     icon: '2️⃣',
   },
   size_bonus_3: {
@@ -122,7 +122,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: '3サイズボーナス',
     description: '3ブロックのピースでライン消去時、各ブロック点を+1',
     rarity: 'common',
-    price: 10,
+    price: 6,
     icon: '3️⃣',
   },
   size_bonus_4: {
@@ -131,7 +131,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: '4サイズボーナス',
     description: '4ブロックのピースでライン消去時、各ブロック点を+1',
     rarity: 'common',
-    price: 10,
+    price: 6,
     icon: '4️⃣',
   },
   size_bonus_5: {
@@ -140,7 +140,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: '5サイズボーナス',
     description: '5ブロックのピースでライン消去時、各ブロック点を+1',
     rarity: 'common',
-    price: 10,
+    price: 6,
     icon: '5️⃣',
   },
   size_bonus_6: {
@@ -149,7 +149,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: '6サイズボーナス',
     description: '6ブロックのピースでライン消去時、各ブロック点を+1',
     rarity: 'common',
-    price: 10,
+    price: 6,
     icon: '6️⃣',
   },
   chain_master: {
@@ -158,7 +158,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: '連鎖の達人',
     description: '複数行列を同時消しで列点×1.5',
     rarity: 'rare',
-    price: 20,
+    price: 10,
     icon: '⛓️',
   },
   single_line: {
@@ -167,7 +167,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: 'シングルライン',
     description: '1行または1列のみ消した時、列点×3',
     rarity: 'uncommon',
-    price: 15,
+    price: 8,
     icon: '➖',
   },
   takenoko: {
@@ -176,7 +176,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: 'タケノコ',
     description: '縦列のみ揃った時、列点×揃った列数',
     rarity: 'common',
-    price: 10,
+    price: 6,
     icon: '🎋',
   },
   kani: {
@@ -185,7 +185,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: 'カニ',
     description: '横列のみ揃った時、列点×揃った行数',
     rarity: 'common',
-    price: 10,
+    price: 6,
     icon: '🦀',
   },
   rensha: {
@@ -194,7 +194,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: '連射',
     description: 'ライン揃うたびに列点+1（揃わないとリセット）',
     rarity: 'rare',
-    price: 20,
+    price: 10,
     icon: '🔫',
   },
   nobi_takenoko: {
@@ -203,7 +203,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: 'のびのびタケノコ',
     description: '縦列のみ揃えるたびに列点+0.5を加える（横列消しでリセット）初期値は列点×1',
     rarity: 'uncommon',
-    price: 15,
+    price: 8,
     icon: '🌱',
   },
   nobi_kani: {
@@ -212,7 +212,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: 'のびのびカニ',
     description: '横列のみ揃えるたびに列点+0.5を加える（縦列消しでリセット）初期値は列点×1',
     rarity: 'uncommon',
-    price: 15,
+    price: 8,
     icon: '🦞',
   },
   hand_stock: {
@@ -221,7 +221,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: '手札ストック',
     description: 'ストック枠が出現し、ブロックを1つ保管可能',
     rarity: 'epic',
-    price: 25,
+    price: 12,
     icon: '📦',
   },
   script: {
@@ -230,7 +230,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: '台本',
     description: 'ラウンド開始時に指定ラインが2本出現。揃えた際の列数+1、2本同時で+2',
     rarity: 'uncommon',
-    price: 15,
+    price: 8,
     icon: '📜',
   },
   volcano: {
@@ -239,7 +239,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: '火山',
     description: 'ラウンド中にブロックが消えなかった場合、ハンド0で全消去（ブロック数×フィールド最大列数）',
     rarity: 'uncommon',
-    price: 15,
+    price: 8,
     icon: '🌋',
   },
   bandaid: {
@@ -248,7 +248,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: '絆創膏',
     description: '3ハンド消費ごとにノーハンド付きモノミノが手札に追加',
     rarity: 'rare',
-    price: 20,
+    price: 10,
     icon: '🩹',
   },
   timing: {
@@ -257,7 +257,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: 'タイミング',
     description: '残りハンド数が3で割り切れるとき、列点×3',
     rarity: 'uncommon',
-    price: 15,
+    price: 8,
     icon: '⌛',
   },
   copy: {
@@ -266,7 +266,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: 'コピー',
     description: '1つ上のレリックの効果をコピー',
     rarity: 'epic',
-    price: 25,
+    price: 12,
     icon: '🪞',
   },
   anchor: {
@@ -275,7 +275,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: 'アンカー',
     description: 'ラウンド中の最初のライン消去時、各ブロック点+5',
     rarity: 'common',
-    price: 10,
+    price: 6,
     icon: '⚓',
   },
   crown: {
@@ -284,7 +284,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: '王冠',
     description: 'ライン消去時、消去セルのパターン付きブロック1個につきブロック点+2',
     rarity: 'uncommon',
-    price: 15,
+    price: 8,
     icon: '👑',
   },
   stamp: {
@@ -293,7 +293,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: 'スタンプ',
     description: 'ライン消去時、消去セルのシール付きブロック1個につきブロック点+5',
     rarity: 'uncommon',
-    price: 15,
+    price: 8,
     icon: '📬',
   },
   compass: {
@@ -302,7 +302,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: 'コンパス',
     description: '行と列を同時に消した時、各ブロック点+3',
     rarity: 'uncommon',
-    price: 15,
+    price: 8,
     icon: '🧭',
   },
   featherweight: {
@@ -311,7 +311,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: '軽量級',
     description: '2ブロック以下のピース配置でライン消去時、各ブロック点+4',
     rarity: 'common',
-    price: 10,
+    price: 6,
     icon: '🪶',
   },
   heavyweight: {
@@ -320,7 +320,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: '重量級',
     description: '5ブロック以上のピース配置でライン消去時、各ブロック点+3',
     rarity: 'common',
-    price: 10,
+    price: 6,
     icon: '🏋️',
   },
   meteor: {
@@ -329,7 +329,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: '流星',
     description: '3ライン以上同時消しで列点×2',
     rarity: 'rare',
-    price: 20,
+    price: 10,
     icon: '☄️',
   },
   symmetry: {
@@ -338,7 +338,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: 'シンメトリー',
     description: '消去した行数と列数が同数の時、列点×2',
     rarity: 'uncommon',
-    price: 15,
+    price: 8,
     icon: '⚖️',
   },
   crescent: {
@@ -347,7 +347,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: '三日月',
     description: '残りハンド数が奇数の時、列点×1.5',
     rarity: 'uncommon',
-    price: 15,
+    price: 8,
     icon: '🌙',
   },
   last_stand: {
@@ -356,7 +356,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: 'ラストスタンド',
     description: '残りハンド数が2以下の時、列点×4',
     rarity: 'rare',
-    price: 20,
+    price: 10,
     icon: '🔥',
   },
   first_strike: {
@@ -365,7 +365,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: '先制攻撃',
     description: 'ラウンド中の最初のライン消去で列点×2.5',
     rarity: 'uncommon',
-    price: 15,
+    price: 8,
     icon: '⚡',
   },
   patience: {
@@ -374,7 +374,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: '忍耐',
     description: '連続3回以上消去なしの後の次の消去で列点×3',
     rarity: 'rare',
-    price: 20,
+    price: 10,
     icon: '🧘',
   },
   snowball: {
@@ -383,7 +383,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: '雪だるま',
     description: 'ライン消去ごとにブロック点+0.5（ラウンドをまたいで永続）',
     rarity: 'rare',
-    price: 20,
+    price: 10,
     icon: '⛄',
   },
   muscle: {
@@ -392,7 +392,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: '筋肉',
     description: '4ブロック以上のピースを配置するたびに列点+0.3を累積（ラウンド中）',
     rarity: 'uncommon',
-    price: 15,
+    price: 8,
     icon: '💪',
   },
   gardener: {
@@ -401,7 +401,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: '庭師',
     description: 'パターン付きブロックを消すたびにブロック点+0.2を累積（ラウンド中）',
     rarity: 'uncommon',
-    price: 15,
+    price: 8,
     icon: '🌻',
   },
   collector: {
@@ -410,7 +410,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: '収集家',
     description: 'ラウンド中に消去した異なるパターン種類1種につき列点+0.5を累積',
     rarity: 'uncommon',
-    price: 15,
+    price: 8,
     icon: '🎪',
   },
   merchant: {
@@ -419,7 +419,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: '商人',
     description: 'ショップのリロール費用を-2G',
     rarity: 'uncommon',
-    price: 15,
+    price: 8,
     icon: '🏪',
   },
   treasure_hunter: {
@@ -428,7 +428,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: 'トレジャーハンター',
     description: 'ゴールドシール（G）付きブロック消去時、追加で+1G',
     rarity: 'common',
-    price: 10,
+    price: 6,
     icon: '💎',
   },
   cross: {
@@ -437,7 +437,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: '十字',
     description: '行と列を同時に消した時、交差セルのブロック点+30',
     rarity: 'rare',
-    price: 20,
+    price: 10,
     icon: '✝️',
   },
   midas: {
@@ -446,7 +446,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: 'ミダス',
     description: '全消し時に+5G獲得',
     rarity: 'uncommon',
-    price: 15,
+    price: 8,
     icon: '✨',
   },
   extra_draw: {
@@ -455,7 +455,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: '追加ドロー',
     description: 'ドロー枚数が+1',
     rarity: 'epic',
-    price: 25,
+    price: 12,
     icon: '🃏',
   },
   extra_hand: {
@@ -464,7 +464,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: '追加ハンド',
     description: 'ラウンド中のハンド数が+2',
     rarity: 'epic',
-    price: 25,
+    price: 12,
     icon: '✋',
   },
   recycler: {
@@ -473,7 +473,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: 'リサイクラー',
     description: 'ラウンド中3回まで手札1枚を入替可能',
     rarity: 'uncommon',
-    price: 15,
+    price: 8,
     icon: '♻️',
   },
   twin: {
@@ -482,7 +482,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: '双子',
     description: '同サイズのピースを連続配置してライン消去時、ブロック点+4',
     rarity: 'common',
-    price: 10,
+    price: 6,
     icon: '👯',
   },
   minimalist: {
@@ -491,7 +491,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: 'ミニマリスト',
     description: 'デッキ枚数が5枚以下の時、全ブロック点+5',
     rarity: 'uncommon',
-    price: 15,
+    price: 8,
     icon: '🔳',
   },
   overload: {
@@ -500,7 +500,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: '過負荷',
     description: '盤面の75%以上が埋まっている状態でライン消去すると列点×2',
     rarity: 'rare',
-    price: 20,
+    price: 10,
     icon: '⚡',
   },
   alchemist: {
@@ -509,7 +509,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: '錬金術師',
     description: 'パターンとシール両方持ちのブロック消去時、1個につきブロック点+10',
     rarity: 'rare',
-    price: 20,
+    price: 10,
     icon: '⚗️',
   },
   orchestra: {
@@ -518,7 +518,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: 'オーケストラ',
     description: '1回の消去で3種類以上の異なるパターンが含まれると列点×2',
     rarity: 'uncommon',
-    price: 15,
+    price: 8,
     icon: '🎵',
   },
   amplifier: {
@@ -527,7 +527,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: 'アンプリファイア',
     description: 'enhancedパターン（★）のブロック点ボーナスを+2から+5に強化',
     rarity: 'epic',
-    price: 25,
+    price: 12,
     icon: '🔊',
   },
   gambler: {
@@ -536,7 +536,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: 'ギャンブラー',
     description: 'ライン消去時、ランダムに列数+0〜3',
     rarity: 'uncommon',
-    price: 15,
+    price: 8,
     icon: '🎰',
   },
   phoenix: {
@@ -545,7 +545,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: '不死鳥',
     description: 'ラウンド失敗時、1度だけラウンドをやり直せる（使用後消滅）',
     rarity: 'epic',
-    price: 25,
+    price: 12,
     icon: '🐦‍🔥',
   },
   goldfish: {
@@ -554,7 +554,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: '金魚',
     description: 'ラウンドクリア時にスコアが目標の2倍以上で+3G',
     rarity: 'common',
-    price: 10,
+    price: 6,
     icon: '🐠',
   },
   magnet: {
@@ -563,7 +563,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: '磁石',
     description: 'chargeパターン（⚡）の蓄積速度を2倍にする',
     rarity: 'uncommon',
-    price: 15,
+    price: 8,
     icon: '🧲',
   },
   prism: {
@@ -572,7 +572,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: 'プリズム',
     description: 'multiシール（×2）の効果を×3に強化',
     rarity: 'rare',
-    price: 20,
+    price: 10,
     icon: '🔻',
   },
   furnace: {
@@ -581,7 +581,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: '溶鉱炉',
     description: 'stoneシール付きブロック消去時、1個につきブロック点+15',
     rarity: 'uncommon',
-    price: 15,
+    price: 8,
     icon: '🏭',
   },
   jester: {
@@ -590,7 +590,7 @@ export const RELIC_DEFINITIONS: Record<RelicType, RelicDefinition> = {
     name: '道化師',
     description: 'レリック枠が1枠減少する代わりに、ショップで全商品が30%OFF',
     rarity: 'rare',
-    price: 20,
+    price: 10,
     icon: '🃎',
   },
 }

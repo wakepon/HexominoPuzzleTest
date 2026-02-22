@@ -16,19 +16,27 @@ export interface ButtonArea {
 }
 
 /**
+ * 報酬内訳データ
+ */
+export interface RewardBreakdown {
+  readonly baseReward: number
+  readonly handBonus: number
+  readonly interest: number
+}
+
+/**
  * ラウンドクリア演出を描画
  */
 export function renderRoundClear(
   ctx: CanvasRenderingContext2D,
   round: number,
-  goldReward: number,
-  interest: number,
-  currentGold: number,
+  reward: RewardBreakdown,
   layout: CanvasLayout
 ): ButtonArea {
   const {
-    fontSize, subFontSize, color, goldColor, backgroundColor,
-    titleOffsetY, goldTextOffsetY,
+    fontSize, subFontSize, color, goldColor, labelColor, backgroundColor,
+    titleOffsetY, tableStartY, tableLineHeight, tableWidth,
+    separatorOffsetY, totalOffsetY,
     buttonWidth, buttonHeight, buttonColor, buttonTextColor, buttonFontSize, buttonOffsetY
   } = ROUND_CLEAR_STYLE
 
@@ -48,15 +56,48 @@ export function renderRoundClear(
   ctx.fillStyle = color
   ctx.fillText(`Round ${round} Clear!`, centerX, centerY + titleOffsetY)
 
-  // 報酬内訳表示
-  const interestPart = interest > 0 ? ` + Interest ${interest}G` : ''
-  ctx.font = `bold ${subFontSize}px Arial, sans-serif`
+  // 報酬内訳テーブル
+  const tableLeft = centerX - tableWidth / 2
+  const tableRight = centerX + tableWidth / 2
+  ctx.font = `${subFontSize}px Arial, sans-serif`
+
+  const rows = [
+    { label: '基本報酬', value: reward.baseReward },
+    { label: 'ハンド（残りハンドにつき1G）', value: reward.handBonus },
+    { label: '利息（5Gにつき1G）', value: reward.interest },
+  ]
+
+  rows.forEach((row, i) => {
+    const y = centerY + tableStartY + i * tableLineHeight
+    // ラベル（左寄せ）
+    ctx.textAlign = 'left'
+    ctx.fillStyle = labelColor
+    ctx.fillText(row.label, tableLeft, y)
+    // 値（右寄せ）
+    ctx.textAlign = 'right'
+    ctx.fillStyle = goldColor
+    ctx.fillText(`${row.value} G`, tableRight, y)
+  })
+
+  // 区切り線
+  const sepY = centerY + separatorOffsetY
+  ctx.strokeStyle = labelColor
+  ctx.lineWidth = 1
+  ctx.beginPath()
+  ctx.moveTo(tableLeft, sepY)
+  ctx.lineTo(tableRight, sepY)
+  ctx.stroke()
+
+  // 合計
+  const totalY = centerY + totalOffsetY
+  ctx.font = `bold ${subFontSize + 2}px Arial, sans-serif`
+  ctx.textAlign = 'left'
+  ctx.fillStyle = color
+  ctx.fillText('合計', tableLeft, totalY)
+  ctx.textAlign = 'right'
   ctx.fillStyle = goldColor
-  ctx.fillText(
-    `Gold ${currentGold}G + Reward ${goldReward}G${interestPart}`,
-    centerX,
-    centerY + goldTextOffsetY
-  )
+  const total = reward.baseReward + reward.handBonus + reward.interest
+  ctx.fillText(`${total} G`, tableRight, totalY)
 
   // 「次へ」ボタン
   const buttonX = centerX - buttonWidth / 2
@@ -68,6 +109,7 @@ export function renderRoundClear(
   ctx.fill()
 
   ctx.font = `bold ${buttonFontSize}px Arial, sans-serif`
+  ctx.textAlign = 'center'
   ctx.fillStyle = buttonTextColor
   ctx.fillText('次へ', centerX, buttonY + buttonHeight / 2)
 

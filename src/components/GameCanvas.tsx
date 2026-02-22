@@ -23,7 +23,7 @@ import type { DebugSettings } from '../lib/game/Domain/Debug'
 import type { RelicType } from '../lib/game/Domain/Effect/Relic'
 import { hasRelic } from '../lib/game/Domain/Effect/RelicEffectHandler'
 import { getBandaidCountdown } from '../lib/game/Domain/Effect/RelicState'
-import { calculateGoldReward, calculateInterest } from '../lib/game/Services/RoundService'
+import { getBaseReward, calculateInterest } from '../lib/game/Services/RoundService'
 import { resolveCopyTarget, isCopyRelicInactive } from '../lib/game/Domain/Effect/CopyRelicResolver'
 import type { RelicId } from '../lib/game/Domain/Core/Id'
 import type { TooltipState } from '../lib/game/Domain/Tooltip'
@@ -347,9 +347,12 @@ export function GameCanvas({
       buttonAreaRef.current = null
       shopRenderResultRef.current = null
     } else if (state.phase === 'round_clear') {
-      const goldReward = calculateGoldReward(state.deck.remainingHands, state.roundInfo.roundType)
-      const interest = calculateInterest(state.player.gold)
-      buttonAreaRef.current = renderRoundClear(ctx, state.round, goldReward, interest, state.player.gold, layout)
+      const reward = {
+        baseReward: getBaseReward(state.roundInfo.roundType),
+        handBonus: state.deck.remainingHands,
+        interest: calculateInterest(state.player.gold),
+      }
+      buttonAreaRef.current = renderRoundClear(ctx, state.round, reward, layout)
       shopRenderResultRef.current = null
       roundProgressResultRef.current = null
     } else if (state.phase === 'shopping' && state.shopState) {
