@@ -39,7 +39,7 @@ export const PATTERN_DEFINITIONS: Record<PatternType, PatternDefinition> = {
     description: 'ブロック点+2',
     symbol: '★',
     isNegative: false,
-    price: 4, // 安定したブロック点+2
+    price: 2,
   },
   lucky: {
     id: 'lucky' as PatternId,
@@ -48,7 +48,7 @@ export const PATTERN_DEFINITIONS: Record<PatternType, PatternDefinition> = {
     description: 'このブロックが消えると10%の確率で列点x2',
     symbol: '♣',
     isNegative: false,
-    price: 5, // 10%で2倍という高いリターン
+    price: 2,
   },
   feather: {
     id: 'feather' as PatternId,
@@ -57,7 +57,7 @@ export const PATTERN_DEFINITIONS: Record<PatternType, PatternDefinition> = {
     description: '既にブロックがある場所に重ねて配置できる',
     symbol: 'F',
     isNegative: false,
-    price: 3,
+    price: 2,
   },
   nohand: {
     id: 'nohand' as PatternId,
@@ -75,7 +75,7 @@ export const PATTERN_DEFINITIONS: Record<PatternType, PatternDefinition> = {
     description: '他のブロックが置かれるたび、このブロックのブロック点+1',
     symbol: '⚡',
     isNegative: false,
-    price: 3,
+    price: 2,
   },
   obstacle: {
     id: 'obstacle' as PatternId,

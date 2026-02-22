@@ -45,7 +45,7 @@ export const SEAL_DEFINITIONS: Record<SealType, SealDefinition> = {
     description: 'このブロックは2回発動する',
     symbol: '×2',
     preventsClearing: false,
-    price: 4, // 2倍カウントで高い効果
+    price: 3,
   },
   stone: {
     id: 'stone' as SealId,
