@@ -450,7 +450,8 @@ function tryVolcanoActivation(
   state: GameState,
   resolved: { finalSlots: PieceSlot[]; finalDeck: DeckState; phase: ReturnType<typeof determinePhase> },
   newBoard: Board,
-  newRelicMultiplierState: RelicMultiplierState
+  newRelicMultiplierState: RelicMultiplierState,
+  preDecrementRemainingHands: number
 ): PlacementResult | null {
   if (
     resolved.phase !== 'game_over' ||
@@ -489,7 +490,7 @@ function tryVolcanoActivation(
     completedCols: Array.from({ length: GRID_SIZE }, (_, i) => i),
     scriptRelicLines: null,
     copyRelicState: newRelicMultiplierState.copyRelicState,
-    remainingHands: resolved.finalDeck.remainingHands,
+    remainingHands: preDecrementRemainingHands,
     patternBlockCount: 0,
     sealBlockCount: 0,
     deckSize: state.deck.allMinos.length,
@@ -671,7 +672,7 @@ function processPiecePlacement(
       completedCols: completedLines.columns,
       scriptRelicLines: state.scriptRelicLines,
       copyRelicState: preUpdatedMultState.copyRelicState,
-      remainingHands: finalDeck.remainingHands,
+      remainingHands: newDeck.remainingHands, // タイミング系レリックは配置前のハンド数で判定
       patternBlockCount: 0,
       sealBlockCount: 0,
       deckSize: state.deck.allMinos.length,
@@ -790,7 +791,7 @@ function processPiecePlacement(
 
   // 火山レリック発動判定
   const volcanoResult = tryVolcanoActivation(
-    state, resolved, newBoard, newRelicMultiplierState
+    state, resolved, newBoard, newRelicMultiplierState, newDeck.remainingHands
   )
   if (volcanoResult) {
     return volcanoResult
